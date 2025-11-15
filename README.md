@@ -84,8 +84,7 @@ maPiscinev4Web-d1_mini/
 │   ├── PiscineWebActionControler.cpp    # Synchronisation NTP, init params
 │   ├── PiscineWebTelecom.cpp            # Communication ICSC avec ESP32
 │   ├── logger.cpp                       # Système logging SD Card
-│   ├── ManagerTelecom.cpp               # ESP-NOW (expérimental, non utilisé)
-│   └── blink.cpp                        # Blynk legacy (partiellement actif)
+│   └── ManagerTelecom.cpp               # ESP-NOW (expérimental, non utilisé)
 │
 ├── include/
 │   ├── globalPiscineWeb.h               # Constantes web (SIZE, IND_*, debug)
@@ -96,10 +95,7 @@ maPiscinev4Web-d1_mini/
 │   ├── PiscineWebActionControler.h      # Classe ActionControler
 │   ├── PiscineWebTelecom.h              # Classe PiscineWebTelecomClass
 │   ├── Logger.h                         # Classe LoggerClass
-│   ├── ManagerTelecom.h                 # Template callbacks ESP-NOW
-│   ├── blink.h                          # Classe blinkClass (legacy)
-│   ├── controlerTelecomDefs.h           # Blynk Virtual Pins (legacy)
-│   └── controlerTelecomCallBacks.h      # Blynk callbacks (legacy)
+│   └── ManagerTelecom.h                 # Template callbacks ESP-NOW
 │
 ├── html/                                # Sources HTML/CSS/JS
 │   ├── index.html
@@ -529,7 +525,7 @@ paulstoffregen/Time @ ^1.6.1
 | 3.1     | 11/2024    | Migration ArduinoJson v7, AsyncWebServer         |
 | 3.0     | 10/2024    | Ajout SSE, logging SD Card amélioré              |
 | 2.0     | 09/2024    | Refonte architecture, séparation modules         |
-| 1.0     | 08/2024    | Version initiale avec Blynk                      |
+| 1.0     | 08/2024    | Version initiale                                 |
 
 ---
 

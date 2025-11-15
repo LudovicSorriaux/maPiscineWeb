@@ -50,7 +50,6 @@
 #include "ManagerTelecom.h"
 #include "PiscineWeb.h"
 #include "PiscineWebActionControler.h"
-//#include "blink.h"
 
  /* ------------- Parameter Variables  -------------*/
 
@@ -133,8 +132,7 @@
 
  /* -------------   Classes  -------------*/
 
-    LoggerClass logger;                                     // Logger (send both to Serial1 and blynk terminal at once)
-//    blinkClass blink;
+    LoggerClass logger;                                     // Logger vers Serial et SD Card
     PiscineWebClass maPiscineWeb;                           // gestion sur serveur web              
     PiscineWebTelecomClass webTelecom;      // telecoms avec controleur 
     PiscineWebActionControlerClass webAction;                    
