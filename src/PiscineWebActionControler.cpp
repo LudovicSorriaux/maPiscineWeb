@@ -1,3 +1,13 @@
+/*******************************************************************************
+ * @file    PiscineWebActionControler.cpp
+ * @brief   Implémentation contrôleur d'actions web
+ * @details Synchronisation NTP, mise à jour date/heure, initialisation
+ *          paramètres piscine, rafraîchissement données périodique.
+ * 
+ * @author  Ludovic Sorriaux
+ * @date    2024
+ *******************************************************************************/
+
 #include "PiscineWebActionControler.h"
 #include "Logger.h"
 #include "PiscineWebTelecom.h"
@@ -6,15 +16,33 @@
 
     PiscineWebActionControlerClass::~PiscineWebActionControlerClass(void)
       {};
+  /*
+   * PiscineWebActionControlerClass::PiscineWebActionControlerClass
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     PiscineWebActionControlerClass::PiscineWebActionControlerClass(){
       if(debug){
           logger.println("  in PiscineWebActionControler setup : ");
       }
     }
 
+  /*
+   * void PiscineWebActionControlerClass::setStartupApp
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
       void PiscineWebActionControlerClass::setStartupApp() {
       }
       
+  /*
+   * void PiscineWebActionControlerClass::initializePiscineParams
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
       void PiscineWebActionControlerClass::initializePiscineParams(){
         for(int i=0;i<IND_MAX_PISCINE+1;i++){
           piscineParams[i].changedWeb = false;
@@ -24,10 +52,22 @@
       }
 
 
+  /*
+   * void PiscineWebActionControlerClass::refreshData
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
       void PiscineWebActionControlerClass::refreshData() {
           webTelecom.sendAskSyncMess('C');
       }
       
+  /*
+   * void PiscineWebActionControlerClass::doChangeDate
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
       void PiscineWebActionControlerClass::doChangeDate(){    // called from get ntp_time to set the new time to the controler
         webTelecom.sendTimeMess();
 /*   
@@ -43,6 +83,12 @@
 */
       }
 
+  /*
+   * void PiscineWebActionControlerClass::OnUpdate
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
       void PiscineWebActionControlerClass::OnUpdate(){
           static uint8_t nbCall = 0;
 
@@ -73,6 +119,12 @@
 // private :
  
 
+  /*
+   * void PiscineWebActionControlerClass::getControlerValues
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebActionControlerClass::getControlerValues(){
       dataStruct tabRead[MAX_READ_DATA];
       bool gotData = false;
@@ -127,6 +179,12 @@
         }
     }
 
+  /*
+   * void PiscineWebActionControlerClass::processAction
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebActionControlerClass::processAction(uint8_t index, int16_t valeur) {
       
         switch(index) {
@@ -161,6 +219,12 @@
         
     }
 
+  /*
+   * void PiscineWebActionControlerClass::sendWebValuesToControler
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebActionControlerClass::sendWebValuesToControler(){
       for(int i=0;i<IND_MAX_PISCINE;i++){  
         if(piscineParams[i].changedWeb) {  
@@ -170,6 +234,12 @@
       }
     }
 
+  /*
+   * void PiscineWebActionControlerClass::sendManagerValuesToControler
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebActionControlerClass::sendManagerValuesToControler(){
       for(int i=0;i<IND_MAX_PISCINE;i++){  
         if(piscineParams[i].changedFromManager) {  

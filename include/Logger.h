@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * @file    Logger.h
+ * @brief   Système de logging SD Card
+ * @details Enregistrement horodaté des données piscine (TempEau, pH, Redox, etc.)
+ *          sur carte SD. Fonctions print/printf pour debug. Récupération données
+ *          pour affichage web historique. Gestion répertoires par date.
+ * 
+ * Usage   : Logging automatique toutes les X minutes + debug messages
+ * Référencé par : PiscineWeb.cpp, maPiscinev3Web.cpp
+ * Référence     : SDFS (carte SD), TimeLib (horodatage), globalPiscineWeb.h
+ * 
+ * @author  Ludovic Sorriaux
+ * @date    2024
+ *******************************************************************************/
+
 #include <globalPiscine.h>
 #include <globalPiscineWeb.h>
 #include <FS.h>                 //this needs to be first, or it all crashes and burns...

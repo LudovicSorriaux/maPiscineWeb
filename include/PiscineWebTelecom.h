@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * @file    PiscineWebTelecom.h
+ * @brief   Communication ICSC avec contrôleur ESP32
+ * @details Gestion protocole ICSC série pour échange données/commandes avec
+ *          le contrôleur principal (ESP32). Buffer lecture/écriture, callbacks
+ *          réception (data, time, sync, hello, tempAdd)
+ * 
+ * Usage   : Communication bidirectionnelle Web ↔ Contrôleur
+ * Référencé par : PiscineWeb.cpp, maPiscinev3Web.cpp
+ * Référence     : ICSC (protocole série), globalPiscine.h (structures)
+ * 
+ * @author  Ludovic Sorriaux
+ * @date    2024
+ *******************************************************************************/
+
 #include <Arduino.h>
 #include <globalPiscine.h>
 #include <globalPiscineWeb.h>

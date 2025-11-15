@@ -1,3 +1,14 @@
+/*******************************************************************************
+ * @file    PiscineWeb.cpp
+ * @brief   Implémentation classe PiscineWebClass - Coeur serveur web
+ * @details Gestion AsyncWebServer, routes API (/api/status, /api/command, etc.),
+ *          SSE (Server-Sent Events), authentification, mise à jour données,
+ *          interface entre web et contrôleur ESP32.
+ * 
+ * @author  Ludovic Sorriaux
+ * @date    2024
+ *******************************************************************************/
+
 #include "PiscineWeb.h"
 #include "Logger.h"
 #include "PiscineWebTelecom.h"
@@ -5,12 +16,24 @@
     PiscineWebClass::~PiscineWebClass(void)
       {};
 
+  /*
+   * PiscineWebClass::PiscineWebClass
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     PiscineWebClass::PiscineWebClass(){
         //logger.println("init maPiscineWeb");
     }
 
 
 // public
+  /*
+   * void PiscineWebClass::startup
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::startup(){
       logger.println("maPiscineWeb Startup ... ");
       startServer();               // Start a HTTP server with a file read handler and an upload handler
@@ -22,6 +45,12 @@
     }
 
 
+  /*
+   * void PiscineWebClass::OnUpdate
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::OnUpdate(){
         MDNS.update();
     //    sendNewParams();              // for debuging
@@ -31,10 +60,22 @@
         }
     }
 
+  /*
+   * void PiscineWebClass::OnUpdatePiscineLCD
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::OnUpdatePiscineLCD(){
         managePiscineLCD();
     }
 
+  /*
+   * void PiscineWebClass::printDirectory
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::printDirectory(File dir, int numTabs) {
 
         dir.rewindDirectory();
@@ -65,6 +106,12 @@
 
 
 // for debug 
+  /*
+   * void PiscineWebClass::prepareNewParamsPiscine
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::prepareNewParamsPiscine(){
             float phVal, redoxVal, clVal, tempAir,tempEau, tempInt, tempPAC;
             uint8_t PAC, P3;
@@ -122,6 +169,12 @@
         }
     }
 
+  /*
+   * void PiscineWebClass::sendNewParams
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::sendNewParams(){
         prepareNewParamsPiscine();
         sendNewParamsPiscine();
@@ -129,6 +182,12 @@
 
 // private 
 
+  /*
+   * void PiscineWebClass::sendNewParamsPiscine
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::sendNewParamsPiscine(){
             String jsonBuff;
             String jsonBuffParams;
@@ -171,6 +230,12 @@
         }
     }
 
+  /*
+   * void PiscineWebClass::managePiscineLCD
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::managePiscineLCD(){
             char strTempo[30];
             String strTempo1,strTempo2,strTempo3;
@@ -223,6 +288,12 @@
         }
     }
 
+  /*
+   * void PiscineWebClass::manageDebugLCD
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::manageDebugLCD(){
             String strTempo1;
             String jsonBuff;
@@ -239,6 +310,12 @@
         }
     }
 
+  /*
+   * void PiscineWebClass::setEtalonData
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::setEtalonData(){
         String jsonBuff;
         JsonDocument piscineEtalonJson;  
@@ -258,6 +335,12 @@
         piscineMaintenanceEvents.send(jsonBuff.c_str(), "piscineMaintenance", millis());  
     }
 
+  /*
+   * void PiscineWebClass::sendTempAdd
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::sendTempAdd(unsigned char len, char *data){
         String jsonBuff;
         JsonDocument piscineTempAddJson;         
@@ -309,6 +392,12 @@
 
     }
 
+  /*
+   * void PiscineWebClass::setTempAdd
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::setTempAdd(char *jsonSondes){
         JsonDocument sondes;
  
@@ -372,6 +461,12 @@
 /*__________________________________________________________SETUP_FUNCTIONS__________________________________________________________*/
 
   
+  /*
+   * void PiscineWebClass::startMDNS
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::startMDNS() { // Start the mDNS responder
       if (!MDNS.begin(mdnsName,WiFi.localIP())) {
         logger.println("Error setting up MDNS responder!");
@@ -383,6 +478,12 @@
       }
     }
 
+  /*
+   * void PiscineWebClass::startServer
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::startServer() { // Start a HTTP server with a file read handler and an upload handler
 
         logger.println("Starting Piscine Web Server");
@@ -467,6 +568,12 @@
 
 /*__________________________________________________________SERVER_HANDLERS__________________________________________________________*/
 
+  /*
+   * void PiscineWebClass::handleLogin
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
   void PiscineWebClass::handleLogin(AsyncWebServerRequest *request) {                         // If a POST request is made to URI /login
         bool flgVerified = false;
         char newusername[11], newuserpassword[11];
@@ -521,6 +628,12 @@
     }
   }
 
+  /*
+   * void PiscineWebClass::handleRegister
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
   void PiscineWebClass::handleRegister(AsyncWebServerRequest *request){ 							// If a POST request is made to URI /register
     int8_t flgFoundUser = -1;
     int8_t flgFoundEmpty = -1;
@@ -609,6 +722,12 @@
     logger.println(jsonBuff);
   }
 
+  /*
+   * void PiscineWebClass::handleChangAdminPW
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
   void PiscineWebClass::handleChangAdminPW(AsyncWebServerRequest *request){
     char theadminpassword[11];
     char newadminpassword[11];
@@ -643,6 +762,12 @@
     logger.println(jsonBuff);
     }
 
+  /*
+   * void PiscineWebClass::handleUserProfile
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
   void PiscineWebClass::handleUserProfile(AsyncWebServerRequest *request){
     bool flgfound = false;
     char newusername[11], newuserpassword[11], oldusername[11];
@@ -692,6 +817,12 @@
     logger.println(jsonBuff);
     }
 
+  /*
+   * void PiscineWebClass::handleGetUsers
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
   void PiscineWebClass::handleGetUsers(AsyncWebServerRequest *request){
     String jsonBuff;
     JsonDocument  jsonRoot;
@@ -714,6 +845,12 @@
 
     }
 
+  /*
+   * void PiscineWebClass::handleDeleteUsers
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
   void PiscineWebClass::handleDeleteUsers(AsyncWebServerRequest *request){
     bool flgfound = false;
     char theadminpassword[11];
@@ -774,6 +911,12 @@
 
 /*__________________________________________________________WEB HOOKS__________________________________________________________*/
 
+  /*
+   * void PiscineWebClass::handleRoot
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::handleRoot(AsyncWebServerRequest *request) {                         // When URI / is requested, send a login web page
         logger.println("Enter handleRoot");
         if(!handleFileRead("/main.html",request)){
@@ -781,6 +924,12 @@
         } 
     }
 
+  /*
+   * void PiscineWebClass::handleOtherFiles
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::handleOtherFiles(AsyncWebServerRequest *request){ 	// if the requested file or page doesn't exist, return a 404 not found error
         logger.println("Enter handleOtherFiles");
         logger.printf(" http://%s %s\n", request->host().c_str(), request->url().c_str());
@@ -789,6 +938,12 @@
         } 
     }
 
+  /*
+   * void PiscineWebClass::handleNotFound
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::handleNotFound(AsyncWebServerRequest *request){ 	// if the requested file or page doesn't exist, return a 404 not found error
         logger.println("Enter handleNotFound");
 
@@ -834,6 +989,12 @@
 
 /*__________________________________________________________REST_HANDLERS__________________________________________________________*/
 
+  /*
+   * bool PiscineWebClass::checkSessionParam
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     bool PiscineWebClass::checkSessionParam(AsyncWebServerRequest *request){
         char sessionID[16];
         bool rtn = false;
@@ -846,6 +1007,12 @@
     }
 
                 // --- Piscine ----
+  /*
+   * void PiscineWebClass::handleInitPiscinePP
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::handleInitPiscinePP(AsyncWebServerRequest *request){
         String jsonBuff;
         JsonDocument piscineEventsJson;
@@ -860,6 +1027,12 @@
         logger.println("OK initPiscinePPParams done");
     }    
 
+  /*
+   * void PiscineWebClass::handleInitPiscinePParams
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::handleInitPiscinePParams(AsyncWebServerRequest *request){
         String jsonBuffParams;
         JsonDocument piscineParamsEventsJson;
@@ -874,6 +1047,12 @@
         logger.println("OK initPiscinePParamParams done");
     }    
 
+  /*
+   * void PiscineWebClass::handlePiscineParams
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::handlePiscineParams(AsyncWebServerRequest *request) {   // /setLampe?sess=x&state=ON|OFF
         char param[13];
         int16_t valParam;
@@ -1125,6 +1304,12 @@
         }
     }
 
+  /*
+   * void PiscineWebClass::handlePiscineGraphDatas
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::handlePiscineGraphDatas(AsyncWebServerRequest *request) {   // /setLampe?sess=x&state=ON|OFF
         char start[11], end[11];
         String jsonBuff;
@@ -1175,6 +1360,12 @@
         }
     }
 
+  /*
+   * void PiscineWebClass::handlePiscinePageDebug
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::handlePiscinePageDebug(AsyncWebServerRequest *request){
         int showDebug = 0;
 
@@ -1196,6 +1387,12 @@
         }
     }
 
+  /*
+   * void PiscineWebClass::handleInitPiscinePageMaintenance
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::handleInitPiscinePageMaintenance(AsyncWebServerRequest *request){
 
         String jsonBuff;
@@ -1210,6 +1407,12 @@
 
     }
 
+  /*
+   * void PiscineWebClass::handlePiscinePageMaintenance
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::handlePiscinePageMaintenance(AsyncWebServerRequest *request){
         char command[15];
         char type[7];
@@ -1306,6 +1509,12 @@
 
 /*__________________________________________________________SDFS_HANDLERS__________________________________________________________*/
 
+  /*
+   * bool PiscineWebClass::handleFileRead
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     bool PiscineWebClass::handleFileRead(String path, AsyncWebServerRequest *request) { // send the right file to the client (if it exists)
         String contentType, pathWithGz;
         File file;
@@ -1339,6 +1548,12 @@
         return rtn;
     }
 
+  /*
+   * bool PiscineWebClass::handleFileError
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     bool PiscineWebClass::handleFileError(String path, AsyncWebServerRequest *request) {         // send file not found to the client
         String page404Path = "/404.html";
     if (!handleFileRead(page404Path, request)){      // try sending 404.html file from SDFS before static one
@@ -1414,6 +1629,12 @@
     return false;
     }
 
+  /*
+   * void PiscineWebClass::handleFileList
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::handleFileList( AsyncWebServerRequest *request) {
       String output = "";
       File root = SDFS.open("/","r");
@@ -1422,6 +1643,12 @@
       request->send(200, "text/json", output);
     }
 
+  /*
+   * void PiscineWebClass::printDirectory
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::printDirectory(File dir, int numTabs, String *output) {
 
       while (true) {
@@ -1452,6 +1679,12 @@
 
 /*________________________________________Config_FUNCTIONS____________________________________________________*/
 
+  /*
+   * void PiscineWebClass::showJsonConfig
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::showJsonConfig(AsyncWebServerRequest *request){
         String jsonBuff;
         JsonDocument jsonConfig;         // config file
@@ -1491,6 +1724,12 @@
 
 /*__________________________________________________________AUTHENTIFY_FUNCTIONS__________________________________________________________*/
 
+  /*
+   * bool PiscineWebClass::isSessionValid
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     bool PiscineWebClass::isSessionValid(char *sessID){
         uint8_t i = 0;
         bool flagOK=false;
@@ -1521,6 +1760,12 @@
 /*__________________________________________________________HELPER_FUNCTIONS__________________________________________________________*/
 
 
+  /*
+   * String PiscineWebClass::formatBytes
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     String PiscineWebClass::formatBytes(size_t bytes) { // convert sizes in bytes to KB and MB
     String rtn;
     if (bytes < 1024) {
@@ -1533,6 +1778,12 @@
     return rtn;
     }
 
+  /*
+   * String PiscineWebClass::getContentType
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     String PiscineWebClass::getContentType(String filename) { // determine the filetype of a given filename, based on the extension
     if (filename.endsWith(".html")) return "text/html";
     else if (filename.endsWith(".css")) return "text/css";
@@ -1542,6 +1793,12 @@
     return "text/plain";
     }
 
+  /*
+   * bool PiscineWebClass::generateKey
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     bool PiscineWebClass::generateKey(char *sessID,long ttl){
     char strSess[16];
     char alphabeth[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; 
@@ -1580,6 +1837,12 @@
     return flagOK;   //  if (!flagOK){   // couldn't store no room left.
     }
 
+  /*
+   * void PiscineWebClass::printActiveSessions
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::printActiveSessions(){   // to help debug
         logger.printf("Dump of Active session tab, now is: %lld\n",now());
         for (uint8_t i=0; i<10;i++){
@@ -1588,6 +1851,12 @@
         }  
     }
 
+  /*
+   * void PiscineWebClass::getDateFormated
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::getDateFormated(char *datestr, uint8_t len, uint8_t mode){
         // mode is 0 : full "Lundi, le 10 Avril 2021" (30 caract) 
         //         1 : medium "Le 20 mai 2022" (20 caract)
@@ -1610,6 +1879,12 @@
         dateString.toCharArray(datestr,len);
     }
 
+  /*
+   * String PiscineWebClass::minuteToHeureMinute
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     String PiscineWebClass::minuteToHeureMinute(int16_t mn){
         String output = String("");
         uint8_t heures = 0;
@@ -1628,6 +1903,12 @@
         return output;
     }
 
+  /*
+   * String PiscineWebClass::secondsToMinuteSeconds
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     String PiscineWebClass::secondsToMinuteSeconds(int16_t sec){
         String output = String("");
         float mn;
@@ -1664,6 +1945,12 @@
         return output;
     }
 
+  /*
+   * void PiscineWebClass::addInText
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::addInText(byte *addresse, char *printableAdd){
         char *ptrTab = printableAdd;
         byte *ptrAdd = addresse;
@@ -1704,6 +1991,12 @@
   
     }
 */
+  /*
+   * void PiscineWebClass::addToHex
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::addToHex(byte *add,const char *printableAdd){
         byte hex;
         uint i,j;
@@ -1728,6 +2021,12 @@
         logger.println();
     }
 
+  /*
+   * void PiscineWebClass::resetEtalonData
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebClass::resetEtalonData(bool all){
         if(all){
             etalon_Data.mesure = 0.0;

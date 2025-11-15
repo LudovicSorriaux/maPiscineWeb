@@ -1,3 +1,17 @@
+/*******************************************************************************
+ * @file    ManagerTelecom.h
+ * @brief   Gestionnaire de télécommunication ESP-NOW (expérimental)
+ * @details Template callbacks pour communication ESP-NOW entre ESP8266
+ *          Fournit infrastructure callback C++ → C pour ESP-NOW
+ *          (Alternative/Complément au protocole ICSC série)
+ * 
+ * Usage   : Communication sans fil optionnelle (non utilisé actuellement)
+ * Référencé par : (expérimental)
+ * Référence     : espnow.h (ESP-NOW), ArduinoJson, globalPiscine.h
+ * 
+ * @author  Ludovic Sorriaux
+ * @date    2024
+ *******************************************************************************/
 
 #include "globalPiscine.h"
 

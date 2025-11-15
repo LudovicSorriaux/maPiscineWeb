@@ -1,3 +1,17 @@
+/*******************************************************************************
+ * @file    blink.h
+ * @brief   Gestionnaire Blynk (LEGACY - partiellement actif)
+ * @details Ancienne classe blinkClass pour intégration Blynk.
+ *          Certaines fonctions peuvent être réutilisées pour compatibilité.
+ *          Version actuelle privilégie AsyncWebServer.
+ * 
+ * Usage   : [LEGACY] Interface Blynk (partiellement désactivée)
+ * Référencé par : (legacy)
+ * Référence     : ESPAsyncWebServer, ArduinoJson, globalPiscineWeb.h
+ * 
+ * @author  Ludovic Sorriaux
+ * @date    2024
+ *******************************************************************************/
 
 #include "globalPiscine.h"
 

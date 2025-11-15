@@ -1,3 +1,17 @@
+/*******************************************************************************
+ * @file    indexesDef.h
+ * @brief   Définitions chaînes PROGMEM pour labels des index
+ * @details Table de correspondance index → labels (Alertes, temp Eau, PH val, etc.)
+ *          Stocké en PROGMEM pour économiser RAM. Utilisé pour affichage web.
+ * 
+ * Usage   : Affichage noms paramètres dans interface web
+ * Référencé par : PiscineWeb.cpp, interface HTML/JS
+ * Référence     : pgmspace.h (PROGMEM)
+ * 
+ * @author  Ludovic Sorriaux
+ * @date    2024
+ *******************************************************************************/
+
 #if (defined(__AVR__))
 #include <avr\pgmspace.h>
 #else

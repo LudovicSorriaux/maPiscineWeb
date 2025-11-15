@@ -1,3 +1,17 @@
+/*******************************************************************************
+ * @file    globalStructs.h
+ * @brief   Structures de données globales
+ * @details Définitions structures: piscineParametres (valeur + flags changed),
+ *          users_t (authentification), wifi_t (config WiFi), configuration_t,
+ *          data_t (échange données). Partagées entre tous les modules.
+ * 
+ * Usage   : Stockage état piscine, configuration WiFi, gestion utilisateurs
+ * Référencé par : globalPiscineWeb.h, PiscineWeb.cpp, tous modules
+ * Référence     : Aucune
+ * 
+ * @author  Ludovic Sorriaux
+ * @date    2024
+ *******************************************************************************/
 
     // global structures definitions 
 

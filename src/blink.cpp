@@ -1,9 +1,25 @@
+/*******************************************************************************
+ * @file    blink.cpp
+ * @brief   Implémentation gestionnaire Blynk (LEGACY - partiellement actif)
+ * @details Ancienne intégration Blynk avec fonctions startup, blink LED,
+ *          gestion SSE. Code conservé pour compatibilité/référence.
+ * 
+ * @author  Ludovic Sorriaux
+ * @date    2024
+ *******************************************************************************/
+
 #include <Arduino.h> //needed for Serial.println
 #include "blink.h"
 #include "Logger.h"
 #include "PiscineWebTelecom.h"
 
 
+  /*
+   * blinkClass::blinkClass
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     blinkClass::blinkClass(){
         pinMode(LED_BUILTIN, OUTPUT);
         if(debug){
@@ -14,6 +30,12 @@
     {};
 
 
+  /*
+   * void blinkClass::blink
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::blink() {
         digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
         delay(1000);                      // wait for a second
@@ -26,6 +48,12 @@
 
 
 // public
+  /*
+   * void blinkClass::startup
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::startup(){
       logger.println("maPiscineWeb Startup ... ");
       startServer();               // Start a HTTP server with a file read handler and an upload handler
@@ -37,6 +65,12 @@
     }
 
 
+  /*
+   * void blinkClass::OnUpdate
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::OnUpdate(){
         MDNS.update();
     //    sendNewParams();              // for debuging
@@ -46,10 +80,22 @@
         }
     }
 
+  /*
+   * void blinkClass::OnUpdatePiscineLCD
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::OnUpdatePiscineLCD(){
         managePiscineLCD();
     }
 
+  /*
+   * void blinkClass::printDirectory
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::printDirectory(File dir, int numTabs) {
 
         dir.rewindDirectory();
@@ -80,6 +126,12 @@
 
 
 // for debug 
+  /*
+   * void blinkClass::prepareNewParamsPiscine
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::prepareNewParamsPiscine(){
             float phVal, redoxVal, clVal, tempAir,tempEau, tempInt, tempPAC;
             uint8_t PAC, P3;
@@ -137,6 +189,12 @@
         }
     }
 
+  /*
+   * void blinkClass::sendNewParams
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::sendNewParams(){
         prepareNewParamsPiscine();
         sendNewParamsPiscine();
@@ -144,6 +202,12 @@
 
 // private 
 
+  /*
+   * void blinkClass::sendNewParamsPiscine
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::sendNewParamsPiscine(){
             String jsonBuff;
             String jsonBuffParams;
@@ -186,6 +250,12 @@
         }
     }
 
+  /*
+   * void blinkClass::managePiscineLCD
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::managePiscineLCD(){
             char strTempo[30];
             String strTempo1,strTempo2,strTempo3;
@@ -238,6 +308,12 @@
         }
     }
 
+  /*
+   * void blinkClass::manageDebugLCD
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::manageDebugLCD(){
             String strTempo1;
             String jsonBuff;
@@ -254,6 +330,12 @@
         }
     }
 
+  /*
+   * void blinkClass::setEtalonData
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::setEtalonData(){
         String jsonBuff;
         JsonDocument piscineEtalonJson;  
@@ -273,6 +355,12 @@
         piscineMaintenanceEvents.send(jsonBuff.c_str(), "piscineMaintenance", millis());  
     }
 
+  /*
+   * void blinkClass::sendTempAdd
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::sendTempAdd(unsigned char len, char *data){
         String jsonBuff;
         JsonDocument piscineTempAddJson;         
@@ -324,6 +412,12 @@
 
     }
 
+  /*
+   * void blinkClass::setTempAdd
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::setTempAdd(char *jsonSondes){
         JsonDocument sondes;
 
@@ -383,6 +477,12 @@
 /*__________________________________________________________SETUP_FUNCTIONS__________________________________________________________ */
 
   
+  /*
+   * void blinkClass::startMDNS
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::startMDNS() { // Start the mDNS responder
       if (!MDNS.begin(mdnsName,WiFi.localIP())) {
         logger.println("Error setting up MDNS responder!");
@@ -394,6 +494,12 @@
       }
     }
 
+  /*
+   * void blinkClass::startServer
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::startServer() { // Start a HTTP server with a file read handler and an upload handler
 
         logger.println("Starting Piscine Web Server");
@@ -478,6 +584,12 @@
 
 /*__________________________________________________________SERVER_HANDLERS__________________________________________________________ */
 
+  /*
+   * void blinkClass::handleLogin
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
   void blinkClass::handleLogin(AsyncWebServerRequest *request) {                         // If a POST request is made to URI /login
         bool flgVerified = false;
         char newusername[11], newuserpassword[11];
@@ -532,6 +644,12 @@
     }
   }
 
+  /*
+   * void blinkClass::handleRegister
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
   void blinkClass::handleRegister(AsyncWebServerRequest *request){ 							// If a POST request is made to URI /register
     int8_t flgFoundUser = -1;
     int8_t flgFoundEmpty = -1;
@@ -620,6 +738,12 @@
     logger.println(jsonBuff);
   }
 
+  /*
+   * void blinkClass::handleChangAdminPW
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
   void blinkClass::handleChangAdminPW(AsyncWebServerRequest *request){
     char theadminpassword[11];
     char newadminpassword[11];
@@ -654,6 +778,12 @@
     logger.println(jsonBuff);
     }
 
+  /*
+   * void blinkClass::handleUserProfile
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
   void blinkClass::handleUserProfile(AsyncWebServerRequest *request){
     bool flgfound = false;
     char newusername[11], newuserpassword[11], oldusername[11];
@@ -703,6 +833,12 @@
     logger.println(jsonBuff);
     }
 
+  /*
+   * void blinkClass::handleGetUsers
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
   void blinkClass::handleGetUsers(AsyncWebServerRequest *request){
     String jsonBuff;
     JsonDocument  jsonRoot;
@@ -725,6 +861,12 @@
 
     }
 
+  /*
+   * void blinkClass::handleDeleteUsers
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
   void blinkClass::handleDeleteUsers(AsyncWebServerRequest *request){
     bool flgfound = false;
     char theadminpassword[11];
@@ -785,6 +927,12 @@
 
 /*__________________________________________________________WEB HOOKS__________________________________________________________ */
 
+  /*
+   * void blinkClass::handleRoot
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::handleRoot(AsyncWebServerRequest *request) {                         // When URI / is requested, send a login web page
         logger.println("Enter handleRoot");
         if(!handleFileRead("/main.html",request)){
@@ -792,6 +940,12 @@
         } 
     }
 
+  /*
+   * void blinkClass::handleOtherFiles
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::handleOtherFiles(AsyncWebServerRequest *request){ 	// if the requested file or page doesn't exist, return a 404 not found error
         Serial.println("Enter handleOtherFiles");
         Serial.printf(" http://%s %s\n", request->host().c_str(), request->url().c_str());
@@ -800,6 +954,12 @@
         } 
     }
 
+  /*
+   * void blinkClass::handleNotFound
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::handleNotFound(AsyncWebServerRequest *request){ 	// if the requested file or page doesn't exist, return a 404 not found error
         Serial.println("Enter handleNotFound");
 
@@ -845,6 +1005,12 @@
 
 /*__________________________________________________________REST_HANDLERS__________________________________________________________ */
 
+  /*
+   * bool blinkClass::checkSessionParam
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     bool blinkClass::checkSessionParam(AsyncWebServerRequest *request){
         char sessionID[16];
         bool rtn = false;
@@ -857,6 +1023,12 @@
     }
 
                 // --- Piscine ----
+  /*
+   * void blinkClass::handleInitPiscinePP
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::handleInitPiscinePP(AsyncWebServerRequest *request){
         String jsonBuff;
         JsonDocument piscineEventsJson;
@@ -871,6 +1043,12 @@
         logger.println("OK initPiscinePPParams done");
     }    
 
+  /*
+   * void blinkClass::handleInitPiscinePParams
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::handleInitPiscinePParams(AsyncWebServerRequest *request){
         String jsonBuffParams;
         JsonDocument piscineParamsEventsJson;
@@ -885,6 +1063,12 @@
         logger.println("OK initPiscinePParamParams done");
     }    
 
+  /*
+   * void blinkClass::handlePiscineParams
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::handlePiscineParams(AsyncWebServerRequest *request) {   // /setLampe?sess=x&state=ON|OFF
         char param[13];
         int16_t valParam;
@@ -1118,6 +1302,12 @@
         }
     }
 
+  /*
+   * void blinkClass::handlePiscineGraphDatas
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::handlePiscineGraphDatas(AsyncWebServerRequest *request) {   // /setLampe?sess=x&state=ON|OFF
         char start[11], end[11];
         String jsonBuff;
@@ -1168,6 +1358,12 @@
         }
     }
 
+  /*
+   * void blinkClass::handlePiscinePageDebug
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::handlePiscinePageDebug(AsyncWebServerRequest *request){
         int showDebug = 0;
 
@@ -1189,6 +1385,12 @@
         }
     }
 
+  /*
+   * void blinkClass::handleInitPiscinePageMaintenance
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::handleInitPiscinePageMaintenance(AsyncWebServerRequest *request){
 
         String jsonBuff;
@@ -1203,6 +1405,12 @@
 
     }
 
+  /*
+   * void blinkClass::handlePiscinePageMaintenance
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::handlePiscinePageMaintenance(AsyncWebServerRequest *request){
         char command[15];
         char type[7];
@@ -1287,6 +1495,12 @@
 
 /*__________________________________________________________SDFS_HANDLERS__________________________________________________________ */
 
+  /*
+   * bool blinkClass::handleFileRead
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     bool blinkClass::handleFileRead(String path, AsyncWebServerRequest *request) { // send the right file to the client (if it exists)
         String contentType, pathWithGz;
         File file;
@@ -1320,6 +1534,12 @@
         return rtn;
     }
 
+  /*
+   * bool blinkClass::handleFileError
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     bool blinkClass::handleFileError(String path, AsyncWebServerRequest *request) {         // send file not found to the client
         String page404Path = "/404.html";
     if (!handleFileRead(page404Path, request)){      // try sending 404.html file from SDFS before static one
@@ -1395,6 +1615,12 @@
     return false;
     }
 
+  /*
+   * void blinkClass::handleFileList
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::handleFileList( AsyncWebServerRequest *request) {
       String output = "";
       File root = SDFS.open("/","r");
@@ -1403,6 +1629,12 @@
       request->send(200, "text/json", output);
     }
 
+  /*
+   * void blinkClass::printDirectory
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::printDirectory(File dir, int numTabs, String *output) {
 
       while (true) {
@@ -1433,6 +1665,12 @@
 
 /*________________________________________Config_FUNCTIONS____________________________________________________ */
 
+  /*
+   * void blinkClass::showJsonConfig
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::showJsonConfig(AsyncWebServerRequest *request){
         String jsonBuff;
         JsonDocument jsonConfig;         // config file
@@ -1472,6 +1710,12 @@
 
 /*__________________________________________________________AUTHENTIFY_FUNCTIONS__________________________________________________________ */
 
+  /*
+   * bool blinkClass::isSessionValid
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     bool blinkClass::isSessionValid(char *sessID){
         uint8_t i = 0;
         bool flagOK=false;
@@ -1502,6 +1746,12 @@
 /*__________________________________________________________HELPER_FUNCTIONS__________________________________________________________ */
 
 
+  /*
+   * String blinkClass::formatBytes
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     String blinkClass::formatBytes(size_t bytes) { // convert sizes in bytes to KB and MB
     String rtn;
     if (bytes < 1024) {
@@ -1514,6 +1764,12 @@
     return rtn;
     }
 
+  /*
+   * String blinkClass::getContentType
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     String blinkClass::getContentType(String filename) { // determine the filetype of a given filename, based on the extension
     if (filename.endsWith(".html")) return "text/html";
     else if (filename.endsWith(".css")) return "text/css";
@@ -1523,6 +1779,12 @@
     return "text/plain";
     }
 
+  /*
+   * bool blinkClass::generateKey
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     bool blinkClass::generateKey(char *sessID,long ttl){
     char strSess[16];
     char alphabeth[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; 
@@ -1561,6 +1823,12 @@
     return flagOK;   //  if (!flagOK){   // couldn't store no room left.
     }
 
+  /*
+   * void blinkClass::printActiveSessions
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::printActiveSessions(){   // to help debug
         logger.printf("Dump of Active session tab, now is: %lld\n",now());
         for (uint8_t i=0; i<10;i++){
@@ -1569,6 +1837,12 @@
         }  
     }
 
+  /*
+   * void blinkClass::getDateFormated
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::getDateFormated(char *datestr, uint8_t len, uint8_t mode){
         // mode is 0 : full "Lundi, le 10 Avril 2021" (30 caract) 
         //         1 : medium "Le 20 mai 2022" (20 caract)
@@ -1591,6 +1865,12 @@
         dateString.toCharArray(datestr,len);
     }
 
+  /*
+   * String blinkClass::minuteToHeureMinute
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     String blinkClass::minuteToHeureMinute(int16_t mn){
         String output = String("");
         uint8_t heures = 0;
@@ -1609,6 +1889,12 @@
         return output;
     }
 
+  /*
+   * String blinkClass::secondsToMinuteSeconds
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     String blinkClass::secondsToMinuteSeconds(int16_t sec){
         String output = String("");
         float mn;
@@ -1645,6 +1931,12 @@
         return output;
     }
 
+  /*
+   * void blinkClass::addInText
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::addInText(byte *addresse, char *printableAdd){
         char *ptrTab = printableAdd;
         byte *ptrAdd = addresse;
@@ -1668,6 +1960,12 @@
       }
     }  
 
+  /*
+   * void blinkClass::addToHex
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::addToHex(byte *add,const char *printableAdd){
         char x[3];
         uint i,j;
@@ -1681,6 +1979,12 @@
         }    
     }
 
+  /*
+   * void blinkClass::resetEtalonData
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void blinkClass::resetEtalonData(bool all){
         if(all){
             etalon_Data.mesure = 0.0;

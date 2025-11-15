@@ -1,6 +1,18 @@
-// Ma Piscine Manager web site (ESP8266)
-// The good one !! 
-// Version 3.0
+/*******************************************************************************
+ * @file    maPiscinev3Web.cpp
+ * @brief   Point d'entrée principal - Serveur web asynchrone ESP8266
+ * @details Setup WiFi (WiFiManager), AsyncWebServer, routes API REST, SSE,
+ *          initialisation SD card, Logger, NTP, ICSC. Loop principal avec
+ *          gestion mises à jour (PiscineWeb, ActionControler, Telecom, Logger).
+ * 
+ * @version 4.0.0
+ * @date    Novembre 2024
+ * @author  Ludovic Sorriaux
+ * 
+ * Ma Piscine Manager web site (ESP8266)
+ * The good one !! 
+ * Ce projet gère le site web de gestion de la piscine et les logs sur carte SD
+ ******************************************************************************/
 
 #define TZ_OFFSET 1
 

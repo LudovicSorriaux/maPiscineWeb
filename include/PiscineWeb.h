@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Fichier : PiscineWeb.h
+ * Usage : Classe PiscineWebClass - Serveur web asynchrone (ESP Async WebServer),
+ *         gestion des endpoints API REST, SSE (Server-Sent Events),
+ *         mDNS, routes HTTP, handlers de requêtes.
+ * 
+ * Référencé par :
+ *   - maPiscinev3Web.cpp (utilise piscineWeb)
+ * 
+ * Référence :
+ *   - globalPiscine.h
+ *   - globalPiscineWeb.h
+ *   - Logger.h (via PiscineWeb.cpp)
+ *   - PiscineWebTelecom.h (via PiscineWeb.cpp)
+ *******************************************************************************/
+
 #include <globalPiscine.h>
 #include <globalPiscineWeb.h>
 

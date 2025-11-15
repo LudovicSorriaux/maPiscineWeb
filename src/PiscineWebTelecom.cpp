@@ -1,3 +1,14 @@
+/*******************************************************************************
+ * @file    PiscineWebTelecom.cpp
+ * @brief   Implémentation communication ICSC avec contrôleur ESP32
+ * @details Gestion protocole ICSC série, callbacks réception (data, time,
+ *          sync, hello, tempAdd), buffer lecture/écriture, détection présence
+ *          contrôleur.
+ * 
+ * @author  Ludovic Sorriaux
+ * @date    2024
+ *******************************************************************************/
+
 #include "PiscineWebTelecom.h"
 #include "Logger.h"
 #include "ManagerTelecom.h"
@@ -34,12 +45,24 @@
     PiscineWebTelecomClass::~PiscineWebTelecomClass(void)
       {};
     
+  /*
+   * PiscineWebTelecomClass::PiscineWebTelecomClass
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     PiscineWebTelecomClass::PiscineWebTelecomClass() {
         if(debug){
           logger.println(F("  in PiscineWebTelecom setup : "));
         }
       };
 
+  /*
+   * void PiscineWebTelecomClass::initTelecom
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebTelecomClass::initTelecom(){
         telecom.begin(Serial, 'W');
         telecom.registerCommand('V', &recData);
@@ -51,6 +74,12 @@
         telecom.registerCommand('E', &recEtalonData);
     }
 
+  /*
+   * bool PiscineWebTelecomClass::getReadData
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     bool PiscineWebTelecomClass::getReadData(dataStruct *tabRead, uint8_t taille){
       uint8_t maxtab = 0;         
         if(maxReadData != 0){
@@ -64,6 +93,12 @@
         } else return false;    
     }
 
+  /*
+   * void PiscineWebTelecomClass::setWriteData
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebTelecomClass::setWriteData(uint8_t index, int16_t value){
         writeData[maxWriteData].index = index;
         writeData[maxWriteData].value = value;
@@ -79,10 +114,22 @@
         if(!waitToTransmit) waitToTransmit = true;  
     }
 
+  /*
+   * bool PiscineWebTelecomClass::isControleurPresent
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     bool PiscineWebTelecomClass::isControleurPresent(){
       return controleurPresent;
     }
 
+  /*
+   * void PiscineWebTelecomClass::OnUpdate
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebTelecomClass::OnUpdate(){
         char theMessage[sizeof(dataStruct)];
         uint8_t index;
@@ -134,6 +181,12 @@
     }
 
               /*   Callback from telecom */
+  /*
+   * void PiscineWebTelecomClass::receiveData
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebTelecomClass::receiveData(unsigned char src, char command, unsigned char len, char *data){
         dataStruct mess;
       logger.printf("Got Data message : source is : %c, cmd is : %c, size is : %0X, sizeof datastruc is %0X message is : ", src, command, len, sizeof(dataStruct) );
@@ -157,6 +210,12 @@
       }  
     }
 
+  /*
+   * void PiscineWebTelecomClass::receiveTime
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebTelecomClass::receiveTime(unsigned char src, char command, unsigned char len, char *data){
         time_t newTime=0;
         tmElements_t tm;
@@ -182,6 +241,12 @@
       }  
     }
 
+  /*
+   * void PiscineWebTelecomClass::receiveSync
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebTelecomClass::receiveSync(unsigned char src, char command, unsigned char len, char *data){
         char typeSync; // typeSync is 'F' full, 'C' critical Values, 'W' web page
         uint16_t maxInd = 0;
@@ -233,6 +298,12 @@
       }  
     }
 
+  /*
+   * void PiscineWebTelecomClass::receiveTempAdd
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebTelecomClass::receiveTempAdd(unsigned char src, char command, unsigned char len, char *data){
 //      char typeSync; // typeSync is 'F' full, 'K' critical Values
 
@@ -250,6 +321,12 @@
 
     }
 
+  /*
+   * void PiscineWebTelecomClass::receiveEtalonData
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebTelecomClass::receiveEtalonData(unsigned char src, char command, unsigned char len, char *data){
 
       if(debug){
@@ -268,6 +345,12 @@
 
     }
 
+  /*
+   * void PiscineWebTelecomClass::receiveHello
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebTelecomClass::receiveHello(unsigned char src, char command, unsigned char len, char *data){
 
       logger.printf("Got Hello message : source is : %c, cmd is : %c, size is : %0X, sizeof datastruc is %0X message is : ", src, command, len, sizeof(dataStruct) );
@@ -291,6 +374,12 @@
       }  
     }
 
+  /*
+   * void PiscineWebTelecomClass::sendTimeMess
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebTelecomClass::sendTimeMess(){
           char theMessage[sizeof(time_t)];
           time_t maintenant;
@@ -308,6 +397,12 @@
           }
         }
 
+  /*
+   * void PiscineWebTelecomClass::sendAskSyncMess
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebTelecomClass::sendAskSyncMess(char typeSync){  
       // typeSync is 'F' full, 'C' critical Values, 'W' web page
       char theMessage[1] = {typeSync};
@@ -320,6 +415,12 @@
       flgAckSyncInd = typeSync;
     }
  
+  /*
+   * void PiscineWebTelecomClass::sendRouteurData
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebTelecomClass::sendRouteurData(bool data=true){  // !data = hello
       // command (V values,J jsonText, T time,S sync, H hello, R routeurHello, D routeurData)
           char theMessage[sizeof(routeurData)];
@@ -337,6 +438,12 @@
       }
     }
  
+  /*
+   * void PiscineWebTelecomClass::sendTempAddMess
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebTelecomClass::sendTempAddMess(bool set, char *theMessage, uint8_t len){
 
       if(set) {     // setting new adreses
@@ -348,6 +455,12 @@
       }
     }
 
+  /*
+   * void PiscineWebTelecomClass::sendEtalonMode
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebTelecomClass::sendEtalonMode(){
 
       char message[sizeof(etalon_Data)]; 
@@ -358,6 +471,12 @@
       telecom.send('C', 'E', sizeof(etalon_Data), message); 
     }
 
+  /*
+   * void PiscineWebTelecomClass::sendHelloMess
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void PiscineWebTelecomClass::sendHelloMess(){
       char theMessage[1] = {0};
 

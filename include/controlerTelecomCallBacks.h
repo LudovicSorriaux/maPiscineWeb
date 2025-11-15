@@ -1,3 +1,17 @@
+/*******************************************************************************
+ * @file    controlerTelecomCallBacks.h
+ * @brief   Callbacks Blynk (LEGACY - non utilisé dans version AsyncWebServer)
+ * @details Ancien code Blynk pour interface mobile iOS/Android.
+ *          Conservé pour référence mais NON ACTIF dans version actuelle.
+ *          La version actuelle utilise AsyncWebServer + REST API.
+ * 
+ * Usage   : [LEGACY] Anciennes fonctions Blynk (remplacées par API REST)
+ * Référencé par : Aucun (code désactivé)
+ * Référence     : Blynk library (legacy)
+ * 
+ * @author  Ludovic Sorriaux
+ * @date    2024
+ *******************************************************************************/
 
 BLYNK_CONNECTED() {
     Logger.println(F("Blynk connected, start sync"));

@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Fichier : globalPiscineWeb.h
+ * Usage : Constantes globales et définitions spécifiques au serveur web.
+ *         Macros utilitaires, index de communication, modes de fonctionnement.
+ * 
+ * Référencé par :
+ *   - maPiscinev3Web.cpp
+ *   - PiscineWeb.h/cpp
+ *   - PiscineWebActionControler.h/cpp
+ *   - PiscineWebTelecom.h/cpp
+ *   - ManagerTelecom.h/cpp
+ *   - Logger.h/cpp
+ * 
+ * Référence :
+ *   - globalPiscine.h (index ICSC partagés)
+ *******************************************************************************/
 
 #define lowByte(w) ((uint8_t) ((w) & 0xff))
 #define highByte(w) ((uint8_t) ((w) >> 8))

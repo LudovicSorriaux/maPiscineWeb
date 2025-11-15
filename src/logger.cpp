@@ -1,3 +1,13 @@
+/*******************************************************************************
+ * @file    logger.cpp
+ * @brief   Implémentation système de logging SD Card
+ * @details Enregistrement horodaté sur carte SD, gestion répertoires par date,
+ *          fonctions print/printf pour debug, récupération historique pour web.
+ * 
+ * @author  Ludovic Sorriaux
+ * @date    2024
+ *******************************************************************************/
+
 #define H_A
 
 #include <Arduino.h> //needed for Serial.println
@@ -5,12 +15,24 @@
 #include "Logger.h"
 
 
+  /*
+   * LoggerClass::LoggerClass
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     LoggerClass::LoggerClass(){
       if(debug){
         println ("  in Logger setup ");
       }
     };
 
+  /*
+   * bool LoggerClass::initDirs
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     bool LoggerClass::initDirs() {
       char directory[50];
       String dir;
@@ -45,6 +67,12 @@
       return rtn;
     }
 
+  /*
+   * void LoggerClass::OnUpdate
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void LoggerClass::OnUpdate(){
       String dir;
       String message;
@@ -113,6 +141,12 @@
         }
     } 
 
+  /*
+   * void LoggerClass::logData
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void LoggerClass::logData(){                         // // TempEau,TempAir,TempPAC,TempInt,PHVal,RedoxVal,CLVal,PompePH,PompeCL,PompeALG,PP,PAC,Auto
         String message; 
         float valFloat;
@@ -162,6 +196,12 @@
       nbEchan += 1;   
     }
     
+  /*
+   * bool LoggerClass::setStartEnd
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     bool LoggerClass::setStartEnd(char *start,char *end){   // format("DD-MM-YYYY")
       struct tm tm;
       bool rtn;
@@ -180,6 +220,12 @@
       return rtn; 
     }
     
+  /*
+   * size_t LoggerClass::fetchDatas
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     size_t LoggerClass::fetchDatas(char *buffer, size_t maxLen){
 
         String fileName;
@@ -238,10 +284,22 @@
       return currLen;
     }
     
+  /*
+   * String LoggerClass::getDebugMessage
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     String LoggerClass::getDebugMessage(){
       return debugMessage;
     }
     
+  /*
+   * void LoggerClass::setDebugMessage
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void LoggerClass::setDebugMessage(bool onOff){
       if(onOff){ 
         triggerDebugMessage = true;
@@ -252,6 +310,12 @@
     }
     
 
+  /*
+   * size_t LoggerClass::printf
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     size_t LoggerClass::printf(const char *format, ...) {
       va_list arg;
       size_t rtn = 0;
@@ -277,6 +341,12 @@
         return rtn;
     }
 
+  /*
+   * size_t LoggerClass::print
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     size_t LoggerClass::print(const String &s) {
         size_t rtn;
 
@@ -285,6 +355,12 @@
         return rtn;
     }
 
+  /*
+   * size_t LoggerClass::print
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     size_t LoggerClass::print(const char str[]) {
         size_t rtn;
 
@@ -293,6 +369,12 @@
         return rtn;
     }
 
+  /*
+   * size_t LoggerClass::print
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     size_t LoggerClass::print(char c) {
       size_t rtn;
       char str[2];
@@ -303,12 +385,24 @@
         return rtn;
     }
 
+  /*
+   * size_t LoggerClass::println
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     size_t LoggerClass::println(unsigned int data) {
       size_t rtn;
       rtn = printf("%d\n",data);
       return rtn;
     }
 
+  /*
+   * size_t LoggerClass::println
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     size_t LoggerClass::println(void) {
       size_t rtn;
         rtn = print("\r\n");
@@ -316,6 +410,12 @@
         return rtn;
     }
 
+  /*
+   * size_t LoggerClass::println
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     size_t LoggerClass::println(const String &s) {
       size_t rtn;
         rtn = print(s);
@@ -323,6 +423,12 @@
         return rtn;
     }
 
+  /*
+   * size_t LoggerClass::println
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     size_t LoggerClass::println(const char c[]) {
       size_t rtn;
         rtn = print(c);
@@ -332,6 +438,12 @@
     
 // private :
 
+  /*
+   * void LoggerClass::logMessage
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void LoggerClass::logMessage(const char logmessage[]){
       String message;
         if(!alertFile) { 
@@ -358,6 +470,12 @@
         }
     }
 
+  /*
+   * void LoggerClass::printDate
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void LoggerClass::printDate(char *date,uint8_t length){
       String theDate;
     
@@ -365,6 +483,12 @@
         theDate.toCharArray(date,length);
     }
 
+  /*
+   * int LoggerClass::calculMoyenne
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     int LoggerClass::calculMoyenne(int16_t valeur){
       float valFloat;
       int valInt;
@@ -382,6 +506,12 @@
       return valInt;
     }
 
+  /*
+   * void LoggerClass::checkSD
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     void LoggerClass::checkSD(){
       if(!cardPresent){
         if(!SDFS.begin()){          // see if the card is present and can be initialized:
@@ -394,14 +524,32 @@
       }
     }
     
+  /*
+   * String LoggerClass::getAlertFileName
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     String LoggerClass::getAlertFileName(){
       return alertFileName;
     }
     
+  /*
+   * String LoggerClass::getLogFileName
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     String LoggerClass::getLogFileName(){
       return logFileName;
     }
 
+  /*
+   * String LoggerClass::getLogFileByDate
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
     String LoggerClass::getLogFileByDate(time_t date){
       String fileName;
 

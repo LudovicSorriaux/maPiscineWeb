@@ -1,3 +1,17 @@
+/*******************************************************************************
+ * @file    PiscineWebActionControler.h
+ * @brief   Contrôleur d'actions web - Gestion synchronisation temps et paramètres
+ * @details Responsable de la synchronisation NTP, mise à jour date/heure,
+ *          initialisation paramètres piscine et rafraîchissement données
+ * 
+ * Usage   : maPiscinev3Web.cpp (gestion actions web)
+ * Référencé par : maPiscinev3Web.cpp, PiscineWeb.cpp
+ * Référence     : globalPiscine.h (structures données), TimeLib (NTP sync)
+ * 
+ * @author  Ludovic Sorriaux
+ * @date    2024
+ *******************************************************************************/
+
 #include <TimeLib.h>
 #include "globalPiscine.h"
 

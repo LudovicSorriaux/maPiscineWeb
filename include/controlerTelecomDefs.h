@@ -1,3 +1,17 @@
+/*******************************************************************************
+ * @file    controlerTelecomDefs.h
+ * @brief   Définitions index Blynk (LEGACY - non utilisé)
+ * @details Ancien mapping des Virtual Pins Blynk (V0-V99) vers fonctions piscine.
+ *          Code legacy conservé pour référence historique.
+ *          Version actuelle utilise API REST au lieu de Blynk.
+ * 
+ * Usage   : [LEGACY] Mapping Blynk Virtual Pins (inactif)
+ * Référencé par : Aucun (code désactivé)
+ * Référence     : Blynk library (legacy)
+ * 
+ * @author  Ludovic Sorriaux
+ * @date    2024
+ *******************************************************************************/
 
 // ------------- Indexes pour Blink -----------------
 

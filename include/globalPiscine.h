@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * @file    globalPiscine.h
+ * @brief   Constantes globales système piscine (partagées 3 projets)
+ * @details Codes messages ICSC (DATA_MSG, CLIENT_HELLO, SYNCH_TIME, etc.),
+ *          IDs systèmes (PISCINE_ID, ARROSAGE_ID, etc.), états transmission.
+ *          DOIT RESTER SYNCHRONISÉ avec Controler et Clavier.
+ * 
+ * Usage   : Communication ICSC, identification systèmes, états messages
+ * Référencé par : TOUS les modules (Controler, Clavier, Web)
+ * Référence     : Arduino.h
+ * 
+ * @author  Ludovic Sorriaux
+ * @date    2024
+ *******************************************************************************/
+
 #include <Arduino.h>
 
 #define DATA_MSG 0
