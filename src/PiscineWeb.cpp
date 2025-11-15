@@ -16,24 +16,18 @@
     PiscineWebClass::~PiscineWebClass(void)
       {};
 
-  /*
-   * PiscineWebClass::PiscineWebClass
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Constructeur : Initialisation de la classe PiscineWebClass (actuellement vide, juste log)
+ */
     PiscineWebClass::PiscineWebClass(){
         //logger.println("init maPiscineWeb");
     }
 
 
 // public
-  /*
-   * void PiscineWebClass::startup
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Démarrage complet du serveur web : Appelle startServer() (routes AsyncWebServer) et startMDNS() (mDNS responder piscine.local)
+ */
     void PiscineWebClass::startup(){
       logger.println("maPiscineWeb Startup ... ");
       startServer();               // Start a HTTP server with a file read handler and an upload handler
@@ -45,12 +39,9 @@
     }
 
 
-  /*
-   * void PiscineWebClass::OnUpdate
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Mise à jour périodique : Appelle MDNS.update(), sendNewParamsPiscine() (SSE push), et manageDebugLCD() si debug actif
+ */
     void PiscineWebClass::OnUpdate(){
         MDNS.update();
     //    sendNewParams();              // for debuging
@@ -60,22 +51,16 @@
         }
     }
 
-  /*
-   * void PiscineWebClass::OnUpdatePiscineLCD
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Rafraîchissement affichage LCD : Appelle managePiscineLCD() pour mettre à jour l'écran LCD virtuel (toutes les 10s)
+ */
     void PiscineWebClass::OnUpdatePiscineLCD(){
         managePiscineLCD();
     }
 
-  /*
-   * void PiscineWebClass::printDirectory
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Liste récursive du contenu SD (répertoires + fichiers) avec indentation. Version classe PiscineWebClass (duplicate de maPiscinev3Web.cpp)
+ */
     void PiscineWebClass::printDirectory(File dir, int numTabs) {
 
         dir.rewindDirectory();
@@ -1643,12 +1628,9 @@
       request->send(200, "text/json", output);
     }
 
-  /*
-   * void PiscineWebClass::printDirectory
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Liste récursive du contenu SD (répertoires + fichiers) avec indentation. Version classe PiscineWebClass (duplicate de maPiscinev3Web.cpp)
+ */
     void PiscineWebClass::printDirectory(File dir, int numTabs, String *output) {
 
       while (true) {

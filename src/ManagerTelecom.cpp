@@ -21,12 +21,9 @@
 
 // ------------- Begin all ControlerTelecom manager functions ----------------
   
-  /*
-   * ManagerTelecomClass::ManagerTelecomClass
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Constructeur : Initialise la classe ManagerTelecomClass (log debug si activé)
+ */
     ManagerTelecomClass::ManagerTelecomClass(){
       if(debug){
           logger.println("  in ManagerTelecom setup : ");
@@ -38,12 +35,9 @@
 
 
 
-  /*
-   * void ManagerTelecomClass::managerTelecomInitialisation
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Initialise ESP-NOW : Affiche MAC/channel, appelle InitESPNow(), envoie message Hello en broadcast si manager non trouvé
+ */
     void ManagerTelecomClass::managerTelecomInitialisation(){     // called by setup
         if(debug){
           if (firstTime) logger.println(F("  in ControlerTelecom initialisation : "));
@@ -68,22 +62,16 @@
         } 
     }
 
-  /*
-   * void ManagerTelecomClass::setTimeCallBack
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Enregistre un callback externe pour mise à jour heure (pointeur de fonction, ex: setTheTime)
+ */
     void ManagerTelecomClass::setTimeCallBack(void (*theTimeCallBack)(time_t thetime)){
       timeCallback = theTimeCallBack;
     }
 
-  /*
-   * void ManagerTelecomClass::reconnectControlerTelecom
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Vérifie connexion ESP-NOW au manager. Si perdue, relance managerTelecomInitialisation(). Affiche log toutes les 100 vérifications si OK
+ */
     void ManagerTelecomClass::reconnectControlerTelecom(){
       if(!foundManager){
         logger.println(F("Not connected to ControlerTelecom server.. Retrying"));
@@ -97,22 +85,16 @@
       }
     }
 
-  /*
-   * bool ManagerTelecomClass::isControlerTelecomconnected
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Retourne true si le manager ESP-NOW a été trouvé (foundManager==true), false sinon
+ */
     bool ManagerTelecomClass::isControlerTelecomconnected(){
       return foundManager;
     }   
 
-  /*
-   * void ManagerTelecomClass::askNewTime
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Envoie un message ESP-NOW de type CLIENT_ASKING_TIME pour demander l'heure au manager PAC
+ */
     void ManagerTelecomClass::askNewTime(){
       if(!foundManager){
         reconnectControlerTelecom();
@@ -123,43 +105,31 @@
       }
     }
 
-  /*
-   * bool ManagerTelecomClass::isTimeSych
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Retourne true si l'heure a été synchronisée avec le manager (flgTimeSynch==true), false sinon
+ */
     bool ManagerTelecomClass::isTimeSych(){
       return synchedTime;
     }
 
-  /*
-   * void ManagerTelecomClass::writeContent
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Ajoute un caractère au buffer outputString[] pour envoi ESP-NOW (utilisé pour messages texte vers terminal manager)
+ */
     void ManagerTelecomClass::writeContent(uint8_t character){
       content.concat(char(character));
     }
           
-  /*
-   * void ManagerTelecomClass::setFlgWaitAckRefresh
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Définit le flag d'attente d'acquittement pour rafraîchissement LCD (flgWaitAckRefresh = etat)
+ */
     void ManagerTelecomClass::setFlgWaitAckRefresh(bool etat){
       flgWaitAckRefresh = etat;
       if(etat) nbWaitACKRefresh=0;
     }
 
-  /*
-   * void ManagerTelecomClass::printToTerminal
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Envoie le buffer outputString[] via ESP-NOW (message WRITE_TERMINAL_FROM_SLAVE). Utilisé pour debug/log sur manager
+ */
     void ManagerTelecomClass::printToTerminal(){   // Sent serial data to ControlerTelecom terminal - Unlimited string readed
      if (content != "") {
 //        ControlerTelecom.virtualWrite (TerminalControlerTelecom, content);
@@ -167,12 +137,9 @@
      }  
    }
 
-  /*
-   * void ManagerTelecomClass::sendNewValue
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Envoie une paire (index, valeur) au manager via ESP-NOW (message DATA_FOR_MANAGER)
+ */
     void ManagerTelecomClass::sendNewValue(uint8_t index,int16_t valeur){
       String key;
       
@@ -182,12 +149,9 @@
       logger.printf("prepare to send to manager %s, id %d is : %d\n",indexName[index],index,piscineParams[index].valeur);
     }
 
-  /*
-   * void ManagerTelecomClass::sendToManagerNewValues
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Parcourt piscineParams[] et envoie toutes les valeurs changedFromManager==true au manager ESP-NOW
+ */
     void ManagerTelecomClass::sendToManagerNewValues() {
       String jsonBuff;
 
@@ -205,24 +169,18 @@
         }
     }
 
-  /*
-   * void ManagerTelecomClass::sendSyncMess
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Envoie un message de synchronisation ESP-NOW au manager (type: LCD_REFRESH, ASK_FOR_SYNC_DATA, etc.)
+ */
     void ManagerTelecomClass::sendSyncMess(uint8_t typeSync){
         // todo
     }
 
 // private 
 
-  /*
-   * bool ManagerTelecomClass::InitESPNow
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Initialise le sous-système ESP-NOW (WiFi.mode(WIFI_STA), esp_now_init). Redémarre si échec. Retourne true si succès
+ */
     bool ManagerTelecomClass::InitESPNow() {                             // Init ESP now with Restart if something goes wrong
         bool rtn = false;
 
@@ -247,24 +205,18 @@
       return rtn;
     }
 
-  /*
-   * void ManagerTelecomClass::registerSendCallback
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Enregistre le callback ESP-NOW d'envoi (sentCallback) via esp_now_register_send_cb
+ */
     void ManagerTelecomClass::registerSendCallback(){
       Callback<void(uint8_t*,uint8_t)>::func = std::bind(&ManagerTelecomClass::sentCallback, this, std::placeholders::_1, std::placeholders::_2);
       esp_now_send_cb_t func = static_cast<esp_now_send_cb_t>(Callback<void(uint8_t*,uint8_t)>::callback);      
       esp_now_register_send_cb(func);     // Once ESPNow is successfully Init, we will register for Send CB to get the status of Trasnmitted packet     
     }
 
-  /*
-   * void ManagerTelecomClass::registerRecvCallback
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Enregistre le callback ESP-NOW de réception (receiveCallback) via esp_now_register_recv_cb
+ */
     void ManagerTelecomClass::registerRecvCallback(){
       Callback<void(uint8_t*,uint8_t*,uint8_t)>::func = std::bind(&ManagerTelecomClass::receiveCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
       esp_now_recv_cb_t func = static_cast<esp_now_recv_cb_t>(Callback<void(uint8_t*,uint8_t*,uint8_t)>::callback);      
@@ -272,22 +224,16 @@
     }
 
 
-  /*
-   * void ManagerTelecomClass::formatMacAddressToStr
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Convertit une adresse MAC (6 octets) en chaîne formatée "XX:XX:XX:XX:XX:XX" (buffer préalloué)
+ */
     void ManagerTelecomClass::formatMacAddressToStr(const uint8_t *macAddr, char *buffer, int maxLength) {
       snprintf(buffer, maxLength, "%02x:%02x:%02x:%02x:%02x:%02x", macAddr[0], macAddr[1], macAddr[2], macAddr[3], macAddr[4], macAddr[5]);
     }
 
-  /*
-   * bool ManagerTelecomClass::registerPeer
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Enregistre un peer ESP-NOW (adresse MAC manager) dans la liste des pairs. Retourne true si succès
+ */
     bool ManagerTelecomClass::registerPeer(uint8_t peerMac[]){           //Register peer (manager for slave)
       bool rtn = false;
         if ( !esp_now_is_peer_exist(peerMac)) {     // Slave not paired, attempt pair       
@@ -306,12 +252,9 @@
         return rtn;
     }
 
-  /*
-   * bool ManagerTelecomClass::compareMacAdd
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Compare 2 adresses MAC (6 octets). Retourne true si identiques, false sinon
+ */
     bool ManagerTelecomClass::compareMacAdd(uint8_t *mac1, uint8_t *mac2){
         bool isSame = true;
       for (int i=0; i<ESP_NOW_ETH_ALEN; i++){
@@ -323,12 +266,9 @@
       return isSame;
     }
 
-  /*
-   * void ManagerTelecomClass::receiveCallback
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Callback ESP-NOW de réception : Parse les messages entrants (MANAGER_HELLO, SENDING_TIME, DATA_FROM_MANAGER, etc.) et met à jour l'état
+ */
     void ManagerTelecomClass::receiveCallback(uint8_t *macAddr, uint8_t *data, uint8_t dataLen){
       // only allow a maximum of 250 characters in the message + a null terminating byte
 
@@ -426,12 +366,9 @@
       }
     }
 
-  /*
-   * void ManagerTelecomClass::doCallbacks
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Traite les callbacks différés (time sync, data update) en appelant les fonctions enregistrées (timeCallback, etc.)
+ */
     void ManagerTelecomClass::doCallbacks(){
       JsonDocument  doc;
 
@@ -453,12 +390,9 @@
 */
     }
 
-  /*
-   * void ManagerTelecomClass::sentCallback
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Callback ESP-NOW d'envoi : Log le statut de transmission (success/error) et affiche l'adresse MAC destinataire
+ */
     void ManagerTelecomClass::sentCallback(uint8_t *macAddr, uint8_t status){        // callback when data is sent
       char macStr[18];
       formatMacAddressToStr(macAddr, macStr, 18);
@@ -474,12 +408,9 @@
         }
       }}
 
-  /*
-   * void ManagerTelecomClass::getMessageType
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Convertit un ID de message ESP-NOW (enum messageType) en chaîne lisible ("MANAGER_HELLO", "SENDING_TIME", etc.)
+ */
     void ManagerTelecomClass::getMessageType(uint8_t messId, char *messagetypeStr){
       switch (messId) {
         case 0:
@@ -532,12 +463,9 @@
 // utils functions
     
     
-  /*
-   * void ManagerTelecomClass::printDate
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Affiche une date time_t formatée (DD/MM/YYYY HH:MM:SS) sur Serial pour debug
+ */
     void ManagerTelecomClass::printDate(time_t newDate){
       tmElements_t tm;
         breakTime(newDate, tm);  // break time_t into elements
@@ -554,12 +482,9 @@
         logger.println(tm.Year+1970);
     }
 
-  /*
-   * String ManagerTelecomClass::toString
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Convertit int16_t en String avec division optionnelle (ex: 235 divisé par 10 -> "23.5")
+ */
     String ManagerTelecomClass::toString(int16_t valeur, int8_t divider){
       int8_t val2;
       String rtn = String(valeur/divider) + ",";
@@ -573,12 +498,9 @@
       return rtn;
     }
   
-  /*
-   * float ManagerTelecomClass::roundFloat
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Arrondit un float à N décimales (precision). Ex: roundFloat(3.14159, 2) -> 3.14
+ */
     float ManagerTelecomClass::roundFloat(float num,int precision){
       
       int temp=(int )(num*pow(10,precision));
@@ -593,12 +515,9 @@
       return num;
     }
   
-  /*
-   * String ManagerTelecomClass::toHeureFormat
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Convertit un temps en minutes (int16_t) en format HH:MM (String). Ex: 125 -> "02:05"
+ */
     String ManagerTelecomClass::toHeureFormat(int16_t mn){
       String output = String("");
       uint8_t heures = 0;

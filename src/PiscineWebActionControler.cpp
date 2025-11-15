@@ -16,33 +16,24 @@
 
     PiscineWebActionControlerClass::~PiscineWebActionControlerClass(void)
       {};
-  /*
-   * PiscineWebActionControlerClass::PiscineWebActionControlerClass
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Constructeur : Initialise la classe PiscineWebActionControlerClass (log debug si activé)
+ */
     PiscineWebActionControlerClass::PiscineWebActionControlerClass(){
       if(debug){
           logger.println("  in PiscineWebActionControler setup : ");
       }
     }
 
-  /*
-   * void PiscineWebActionControlerClass::setStartupApp
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Placeholder fonction startup (actuellement vide, réservée pour initialisations futures)
+ */
       void PiscineWebActionControlerClass::setStartupApp() {
       }
       
-  /*
-   * void PiscineWebActionControlerClass::initializePiscineParams
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Réinitialise tous les flags changed* du tableau piscineParams[] (changedWeb, changedFromManager, changedControler = false)
+ */
       void PiscineWebActionControlerClass::initializePiscineParams(){
         for(int i=0;i<IND_MAX_PISCINE+1;i++){
           piscineParams[i].changedWeb = false;
@@ -52,22 +43,16 @@
       }
 
 
-  /*
-   * void PiscineWebActionControlerClass::refreshData
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Envoie une demande de synchronisation complète au contrôleur ESP32 via webTelecom.sendAskSyncMess('C')
+ */
       void PiscineWebActionControlerClass::refreshData() {
           webTelecom.sendAskSyncMess('C');
       }
       
-  /*
-   * void PiscineWebActionControlerClass::doChangeDate
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Envoie la nouvelle date/heure au contrôleur ESP32 via webTelecom.sendTimeMess() (appelée après synchro NTP réussie)
+ */
       void PiscineWebActionControlerClass::doChangeDate(){    // called from get ntp_time to set the new time to the controler
         webTelecom.sendTimeMess();
 /*   
@@ -83,12 +68,9 @@
 */
       }
 
-  /*
-   * void PiscineWebActionControlerClass::OnUpdate
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Vérifie le timeout de synchronisation (timeoutSynch). Si expiré, envoie une demande de synchro complète au contrôleur (refreshData)
+ */
       void PiscineWebActionControlerClass::OnUpdate(){
           static uint8_t nbCall = 0;
 

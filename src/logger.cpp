@@ -15,24 +15,18 @@
 #include "Logger.h"
 
 
-  /*
-   * LoggerClass::LoggerClass
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Constructeur : Initialise la classe LoggerClass (log debug si activé)
+ */
     LoggerClass::LoggerClass(){
       if(debug){
         println ("  in Logger setup ");
       }
     };
 
-  /*
-   * bool LoggerClass::initDirs
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Crée l'arborescence SD /Log/YYYY/Alerts et /Log/YYYY/Logs/MONTH si absente. Retourne true si succès
+ */
     bool LoggerClass::initDirs() {
       char directory[50];
       String dir;
@@ -67,12 +61,9 @@
       return rtn;
     }
 
-  /*
-   * void LoggerClass::OnUpdate
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Mise à jour périodique : Vérifie changement mois/jour, crée nouveaux fichiers log (alerts, logs CSV), écrit les valeurs piscineParams[] sur SD
+ */
     void LoggerClass::OnUpdate(){
       String dir;
       String message;

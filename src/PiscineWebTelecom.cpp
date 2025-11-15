@@ -45,24 +45,18 @@
     PiscineWebTelecomClass::~PiscineWebTelecomClass(void)
       {};
     
-  /*
-   * PiscineWebTelecomClass::PiscineWebTelecomClass
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Constructeur : Initialise la classe PiscineWebTelecomClass (log debug si activé)
+ */
     PiscineWebTelecomClass::PiscineWebTelecomClass() {
         if(debug){
           logger.println(F("  in PiscineWebTelecom setup : "));
         }
       };
 
-  /*
-   * void PiscineWebTelecomClass::initTelecom
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Initialise le protocole ICSC sur Serial (station 'W') et enregistre 7 callbacks : 'V' (data), 'T' (time), 'S' (sync), 'H' (hello), 'A'/'B' (tempAdd), 'E' (etalon)
+ */
     void PiscineWebTelecomClass::initTelecom(){
         telecom.begin(Serial, 'W');
         telecom.registerCommand('V', &recData);
@@ -74,12 +68,9 @@
         telecom.registerCommand('E', &recEtalonData);
     }
 
-  /*
-   * bool PiscineWebTelecomClass::getReadData
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+/**
+ * @brief Copie les données reçues du buffer readData[] vers tabRead[] (max taille éléments). Retourne true si données disponibles, false si buffer vide
+ */
     bool PiscineWebTelecomClass::getReadData(dataStruct *tabRead, uint8_t taille){
       uint8_t maxtab = 0;         
         if(maxReadData != 0){
@@ -93,12 +84,9 @@
         } else return false;    
     }
 
-  /*
-   * void PiscineWebTelecomClass::setWriteData
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
+  /**
+ * @brief Ajoute une donnée (index, valeur) au buffer d'écriture writeData[] pour envoi ultérieur au contrôleur ESP32
+ */
     void PiscineWebTelecomClass::setWriteData(uint8_t index, int16_t value){
         writeData[maxWriteData].index = index;
         writeData[maxWriteData].value = value;

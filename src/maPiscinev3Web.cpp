@@ -102,32 +102,71 @@
 
 
  /* -------------   Functions prototypes  -------------*/
+/**
+ * @brief Callback manager : Reçoit l'heure depuis le contrôleur ESP32 et met à jour l'horloge système (setTime), puis relance NTP si nécessaire
+ */
     void setTheTime(time_t newTime);
     void startSD();           // Start the SD and list all contents
+/**
+ * @brief Initialise le tableau indexName[IND_TOTAL] avec les noms des paramètres piscine (Temp, pH, Redox, CL, Filtration, etc.) pour affichage web/SD
+ */
     void initIndexNames();
 
+/**
+ * @brief Orchestrateur WiFi complet : 1) Reconnexion au dernier AP, 2) Connexion aux SSIDs stockés (config), 3) Portail captif WiFi Manager si échec
+ */
     bool startWiFi();
     bool useWifiManager();
+/**
+ * @brief Recherche le mot de passe associé à un SSID dans le tableau config.wifi[]. Retourne pointeur vers password ou nullptr si non trouvé
+ */
     char* findPassword(const char *ssid);
     bool WiFiConnect(const char *ssid, const char *passphrase);
+/**
+ * @brief Scanne les réseaux WiFi disponibles et tente connexion aux SSIDs stockés dans config.wifi[] (jusqu'à 3 entrées)
+ */
     bool ConnectWithStoredCredentials();
     void resetWifiSettings();
 
+/**
+ * @brief Charge la configuration admin/user depuis EEPROM (addresses 0-499). Structure : adminPassword(64), user(64), user_password(64), wifi[3].ssid(64), wifi[3].password(64)
+ */
     void loadConfigurationEEprom();
     void saveConfigurationEEprom(const char *adminPassword,const char *user,const char * user_password,const char * ssid, const char * ssid_password);
+/**
+ * @brief Affiche le contenu de la config EEPROM sur Serial (admin, user, passwords, SSIDs) pour debug
+ */
     void printConfigurationEEprom();
     void printConfiguration() ;
+/**
+ * @brief Charge la configuration admin/user depuis EEPROM (addresses 0-499). Structure : adminPassword(64), user(64), user_password(64), wifi[3].ssid(64), wifi[3].password(64)
+ */
     void loadConfiguration() ;
     void saveConfiguration() ;
+/**
+ * @brief Met à jour config en mémoire (adminPassword, user, user_password, wifi[0]), puis appelle saveConfiguration() et saveConfigurationEEprom()
+ */
     void saveNewConfiguration(const char *adminPassword,const char *user,const char * user_password,const char * ssid, const char * ssid_password);
     void printDirectory(File dir, int numTabs);
+/**
+ * @brief Efface les paramètres WiFi (config.wifi[] remis à zéro), sauve config sur SD, puis redémarre l'ESP8266
+ */
     void resetWifiSettingsInConfig();
 
+/**
+ * @brief Synchronise l'horloge système via NTP (europe.pool.ntp.org, pool 123). Applique timezone TZ_OFFSET + DST (heure d'été France). Retourne true si succès
+ */
     bool getNTPTime();
     int dstOffset(time_t newTime);
 
+/**
+ * @brief Convertit une taille en octets vers chaîne formatée (B, KB ou MB) selon magnitude (ex: 1536 -> "1.50 KB")
+ */
     String formatBytes(size_t bytes);
     String getContentType(String filename);
+/**
+ * @brief Convertit un code de statut WiFi (wl_status_t enum) en chaîne lisible ("WL_CONNECTED", "WL_NO_SSID_AVAIL", etc.) pour debug
+ */
     const char* wl_status_to_string(wl_status_t status);
 
  /* -------------   Classes  -------------*/
@@ -140,34 +179,58 @@
  
  /* -------------   Callback functions  -------------*/
               /* --- Timer Callbacks  --- */
+/**
+ * @brief Callback timer : Appelle webTelecom.OnUpdate() pour traiter les messages UART entrants depuis le contrôleur ESP32 (protocole ICSC)
+ */
     void doCheckMessages() {        // webTelecom
       webTelecom.OnUpdate();
     }
     
+/**
+ * @brief Callback timer : Appelle logger.OnUpdate() pour gérer l'enregistrement CSV périodique des paramètres piscine sur carte SD
+ */
     void doLogger(){                // logger
         logger.OnUpdate();
     }
         
+/**
+ * @brief Callback timer : Appelle webAction.OnUpdate() pour vérifier si une nouvelle synchronisation NTP est nécessaire (timeout)
+ */
     void doAction(){                // webAction
         webAction.OnUpdate();
     }
         
+/**
+ * @brief Callback timer : Vérifie la connexion ESP-NOW avec le manager PAC et tente reconnexion si perdue
+ */
     void doCheckManagerTelecomConnection(){   // managerTelecom
       managerTelecom.reconnectControlerTelecom();  
     }
     
+/**
+ * @brief Callback timer : Envoie les nouvelles valeurs de paramètres piscine au manager ESP-NOW (si actif)
+ */
     void doManagerTelecomManage(){            // managerTelecom   
       managerTelecom.sendToManagerNewValues();                            // ManageNewValues();
     }
 
+/**
+ * @brief Callback timer : Appelle maPiscineWeb.OnUpdate() pour envoyer les paramètres mis à jour via SSE vers les clients web
+ */
     void doSendWebParams(){         // piscineWeb
         maPiscineWeb.OnUpdate();
     }
 
+/**
+ * @brief Callback timer : Appelle maPiscineWeb.OnUpdatePiscineLCD() pour rafraîchir l'affichage LCD virtuel (toutes les 10s)
+ */
     void doUpdatePiscineLCD(){      // piscineWeb
         maPiscineWeb.OnUpdatePiscineLCD();
     }
 
+/**
+ * @brief Callback timer : Surveille la connexion WiFi et tente reconnexion automatique si déconnexion détectée (basculement timer NOK/OK)
+ */
     void doCheckWIFIConnection(){   // WIFI
       if(WiFi.status() != WL_CONNECTED){      // wifi is not connected
         if(startWiFi()){                      // wifi (re)started
@@ -202,6 +265,9 @@
       }
     }
 
+/**
+ * @brief Callback timer : Vérifie la synchronisation NTP et tente nouvelle synchro si échec (basculement timer NOK/OK)
+ */
     void doCheckNTPDate(){          // NTP
         NTPok = getNTPTime();
         if (NTPok){
@@ -221,11 +287,17 @@
 
 
               /* --- Wifi Manager Callbacks  --- */
+/**
+ * @brief Callback WiFi Manager : Levée du flag shouldSaveConfig quand l'utilisateur sauve une nouvelle configuration WiFi
+ */
     void saveConfigCallback () {
       Serial1.println(" !!!!  Should save config is setted  !!! ");
       shouldSaveConfig = true;
     }
 
+/**
+ * @brief Callback WiFi Manager : Exécuté lors de l'entrée en mode AP (portail captif). Affiche l'IP du portail de configuration
+ */
     void configModeCallback (AsyncWiFiManager  *myWiFiManager) {
       Serial1.println("Entered config mode");
       Serial1.println(WiFi.softAPIP());
@@ -235,6 +307,9 @@
     }
 
               /* --- managerTelecom Callbacks  --- */
+/**
+ * @brief Callback manager : Reçoit l'heure depuis le contrôleur ESP32 et met à jour l'horloge système (setTime), puis relance NTP si nécessaire
+ */
     void setTheTime(time_t newTime){     // callback function when time is set up by controler
 //      setTime(newTime);                // done by managerTelecoms to loose less secs.. 
       webAction.doChangeDate();
@@ -248,10 +323,16 @@
  /* -------------   Iterruption functions  -------------*/
     // The interuptCallBack handler will just signal that the interupt has happened
     // we will do the work from the main loop.
+/**
+ * @brief ISR (IRAM) : Routine d'interruption bouton reset WiFi (GPIO D2). Lève le flag interrupted pour traitement dans checkInterrupt()
+ */
     void IRAM_ATTR interuptCallBackRstWifi() {     //
        awakenByInterruptRstWifi=true;
     }
      
+/**
+ * @brief Détecte si le bouton WiFi reset (D2) a été pressé (flag interrupted). Si oui, appelle resetWifiSettings() après 3s de maintien
+ */
     void checkInterrupt() {
       if(awakenByInterruptRstWifi) {
         detachInterrupt(digitalPinToInterrupt(wifiResetPin));
@@ -264,6 +345,9 @@
 
 /*_____________________________________________SETUP___________________________________________________________*/
 
+/**
+ * @brief Initialisation complète ESP8266 : Serial, GPIO, EEPROM, SD card, WiFi, NTP, classes (webTelecom, logger, webAction, maPiscineWeb), et démarrage timers SimpleTimer
+ */
     void setup(){
       uint8_t maxtriesNTP = 10;
       flgInSetup = true;    
@@ -346,6 +430,9 @@
     
 /*_____________________________________________LOOP____________________________________________________________*/
 
+/**
+ * @brief Boucle principale Arduino : Appelle checkInterrupt() (bouton WiFi reset) puis timer.run() (gestion callbacks périodiques)
+ */
     void loop(){
       checkInterrupt();    //Check if an interrupt has occurred and act on it
       timer.run();                  // Run SimpleTimer
@@ -353,6 +440,9 @@
     
 /*_________________________________________SETUP_FUNCTIONS_____________________________________________________*/
 
+/**
+ * @brief Initialise le tableau indexName[IND_TOTAL] avec les noms des paramètres piscine (Temp, pH, Redox, CL, Filtration, etc.) pour affichage web/SD
+ */
     void initIndexNames(){
       strncpy(indexName[IND_Alerte],"Alerte",MAX_KEY_LEN);           // 1 
       strncpy(indexName[IND_TempEau],"tempEau",MAX_KEY_LEN);         // 2 Temp Eau val
@@ -427,6 +517,9 @@
 
     }
 
+/**
+ * @brief Monte la carte SD (FAT, CS=D8), affiche le contenu racine et lève le flag cardPresent si succès. Retourne sans erreur si carte absente
+ */
     void startSD() {            // Start the SD and list all contents
 
         SDFSConfig cfg;
@@ -447,6 +540,9 @@
 */
     }
 
+/**
+ * @brief Orchestrateur WiFi complet : 1) Reconnexion au dernier AP, 2) Connexion aux SSIDs stockés (config), 3) Portail captif WiFi Manager si échec
+ */
     bool startWiFi() {          
         bool rtn = false;
 
@@ -507,6 +603,9 @@
       return rtn;
     }
 
+/**
+ * @brief Lance le portail captif AsyncWiFiManager avec paramètres custom (config.adminPassword, config.user, etc.). Sauve la config si shouldSaveConfig==true
+ */
     bool useWifiManager(){
       bool rtn = true;
       char wifi_ssid[32];
@@ -553,6 +652,9 @@
         return rtn;
     }
 
+/**
+ * @brief Recherche le mot de passe associé à un SSID dans le tableau config.wifi[]. Retourne pointeur vers password ou nullptr si non trouvé
+ */
     char* findPassword(const char *ssid){
       for(int i=0; i<MAX_WIFI; i++){
         if(strcmp(ssid,config.wifi[i].ssid) == 0){
@@ -563,6 +665,9 @@
       return nullptr;
     }
 
+/**
+ * @brief Tente connexion WiFi à un SSID donné avec timeout de 10s. Retourne true si connecté, false si échec
+ */
     bool WiFiConnect(const char *ssid, const char *passphrase){
        unsigned long mytimeout = millis() / 1000;
       if(ssid == nullptr){
@@ -588,6 +693,9 @@
         return false;
     }
 
+/**
+ * @brief Scanne les réseaux WiFi disponibles et tente connexion aux SSIDs stockés dans config.wifi[] (jusqu'à 3 entrées)
+ */
     bool ConnectWithStoredCredentials(){
         const char *ssid = "null";
         const char *password = nullptr;
@@ -634,6 +742,9 @@
       return false;
     }
 
+/**
+ * @brief Efface les paramètres WiFi (config.wifi[] remis à zéro), sauve config sur SD, puis redémarre l'ESP8266
+ */
     void resetWifiSettings() {
       Serial1.println(F("settings invalidated"));
       Serial1.println(F("THIS MAY CAUSE AP NOT TO START UP PROPERLY. YOU NEED TO COMMENT IT OUT AFTER ERASING THE DATA."));
@@ -653,6 +764,9 @@
 /*________________________________________Config_FUNCTIONS____________________________________________________*/
 
     // Loads the configuration from EEprom adminPassword & users
+/**
+ * @brief Charge la configuration admin/user depuis EEPROM (addresses 0-499). Structure : adminPassword(64), user(64), user_password(64), wifi[3].ssid(64), wifi[3].password(64)
+ */
     void loadConfigurationEEprom() {
       char buff[64];
       uint8_t i,j;
@@ -730,6 +844,9 @@
         }     
     }
 
+/**
+ * @brief Sauvegarde config admin/user dans EEPROM (5 entrées : adminPassword, user, user_password, 1er SSID/password). Appelle EEPROM.commit()
+ */
     void saveConfigurationEEprom(const char *adminPassword,const char *user,const char * user_password,const char * ssid, const char * ssid_password) {
       uint8_t i,j,k;
       bool firstTime = true;
@@ -864,6 +981,9 @@
         printConfiguration();
     }
 
+/**
+ * @brief Affiche le contenu de la config EEPROM sur Serial (admin, user, passwords, SSIDs) pour debug
+ */
     void printConfigurationEEprom() {
       char buff[64];
       uint8_t i,j;
@@ -915,6 +1035,9 @@
     } 
 
     // Loads the configuration from a file
+/**
+ * @brief Charge la configuration admin/user depuis EEPROM (addresses 0-499). Structure : adminPassword(64), user(64), user_password(64), wifi[3].ssid(64), wifi[3].password(64)
+ */
     void loadConfiguration() {
         JsonDocument jsonConfig;         // config file
         int j = 0;
@@ -993,6 +1116,9 @@
     }
 
     // Saves the configuration to a file
+/**
+ * @brief Sauvegarde config admin/user dans EEPROM (5 entrées : adminPassword, user, user_password, 1er SSID/password). Appelle EEPROM.commit()
+ */
     void saveConfiguration() {
           JsonDocument jsonConfig;         // config file
           String jsonBuff;
@@ -1038,6 +1164,9 @@
         }
     }
 
+/**
+ * @brief Met à jour config en mémoire (adminPassword, user, user_password, wifi[0]), puis appelle saveConfiguration() et saveConfigurationEEprom()
+ */
     void saveNewConfiguration(const char *adminPassword,const char *user,const char * user_password,const char * ssid, const char * ssid_password) {
           bool foundUser = false, foundSSID = false;
           int i = 0;
@@ -1092,6 +1221,9 @@
       saveConfiguration();
     }
 
+/**
+ * @brief Affiche le contenu de la config EEPROM sur Serial (admin, user, passwords, SSIDs) pour debug
+ */
     void printConfiguration() {    // Prints the content of a file to the Serial1
       uint8_t i = 0;
 
@@ -1106,6 +1238,9 @@
       Serial1.println();
     } 
 
+/**
+ * @brief Efface les paramètres WiFi (config.wifi[] remis à zéro), sauve config sur SD, puis redémarre l'ESP8266
+ */
     void resetWifiSettingsInConfig() {
       uint8_t i,j;
       uint8_t adminPasswordSize = sizeof(config.adminPassword);
@@ -1141,6 +1276,9 @@
     }  
 /*_________________________________________HELPER_FUNCTIONS__________________________________________________*/
 
+/**
+ * @brief Liste récursive du contenu d'un répertoire SD (fichiers + sous-répertoires) avec indentation. Utilisée pour debug SD
+ */
     void printDirectory(File dir, int numTabs) {
 
         dir.rewindDirectory();
@@ -1169,6 +1307,9 @@
         }
     }
 
+/**
+ * @brief Synchronise l'horloge système via NTP (europe.pool.ntp.org, pool 123). Applique timezone TZ_OFFSET + DST (heure d'été France). Retourne true si succès
+ */
     bool getNTPTime(){
       bool rtn = false;
       int counter = 0;
@@ -1214,6 +1355,9 @@
         return rtn;
     }
 
+/**
+ * @brief Calcule l'offset DST (Daylight Saving Time) pour la France : +3600s si été (dernier dimanche mars 2h -> dernier dimanche octobre 3h), sinon 0
+ */
     int dstOffset(time_t newTime){  //Adjust for DST
      // On vérifie si on est en heure d'été, un dimanche après le 25 octobre à 3H
      // On vérifie si on est en heure d'hiver, un dimanche après le 25 mars à 3H
@@ -1239,6 +1383,9 @@
           return (0);                     //NonDST
     }
 
+/**
+ * @brief Convertit une taille en octets vers chaîne formatée (B, KB ou MB) selon magnitude (ex: 1536 -> "1.50 KB")
+ */
     String formatBytes(size_t bytes) { // convert sizes in bytes to KB and MB
       String rtn;
       if (bytes < 1024) {
@@ -1251,6 +1398,9 @@
       return rtn;
     }
 
+/**
+ * @brief Détermine le MIME type d'un fichier selon son extension (.html -> text/html, .css -> text/css, .js -> application/javascript, etc.)
+ */
     String getContentType(String filename) { // determine the filetype of a given filename, based on the extension
       if (filename.endsWith(".html")) return "text/html";
       else if (filename.endsWith(".css")) return "text/css";
@@ -1260,6 +1410,9 @@
       return "text/plain";
     }
 
+/**
+ * @brief Convertit un code de statut WiFi (wl_status_t enum) en chaîne lisible ("WL_CONNECTED", "WL_NO_SSID_AVAIL", etc.) pour debug
+ */
     const char* wl_status_to_string(wl_status_t status) {
       switch (status) {
         case WL_NO_SHIELD: return "WL_NO_SHIELD";
