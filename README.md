@@ -122,6 +122,59 @@ maPiscinev4Web-d1_mini/
 
 ---
 
+## 📖 Documentation Code
+
+### État de la Documentation
+
+✅ **96 fonctions documentées** avec blocs `@brief` explicites (commit 61542a2)
+
+| Fichier Source                     | Fonctions | Description                                    |
+|------------------------------------|-----------|------------------------------------------------|
+| `maPiscinev3Web.cpp`               | 51        | Point d'entrée, WiFi, NTP, config, timers      |
+| `PiscineWeb.cpp`                   | 6         | Coeur serveur web, routes API, SSE             |
+| `PiscineWebActionControler.cpp`    | 6         | Synchronisation NTP, refresh données           |
+| `PiscineWebTelecom.cpp`            | 3         | Protocole ICSC, communication série ESP32      |
+| `ManagerTelecom.cpp`               | 27        | ESP-NOW (expérimental), callbacks manager      |
+| `logger.cpp`                       | 3         | Logging SD Card, historique horodaté           |
+| **TOTAL**                          | **96**    | Descriptions complètes paramètres + mécanismes |
+
+### Groupes Fonctionnels Principaux
+
+**maPiscinev3Web.cpp** — Point d'entrée principal
+- **Timer Callbacks (9)** : `doCheckMessages()`, `doLogger()`, `doAction()`, `doCheckWIFIConnection()`, `doCheckNTPDate()`, etc.
+- **WiFi Functions (6)** : `startWiFi()`, `useWifiManager()`, `WiFiConnect()`, `ConnectWithStoredCredentials()`, `findPassword()`, `resetWifiSettings()`
+- **Config Functions (9)** : `loadConfiguration()`, `saveConfiguration()`, `loadConfigurationEEprom()`, `saveConfigurationEEprom()`, etc.
+- **Helper Functions (5)** : `getNTPTime()`, `dstOffset()`, `formatBytes()`, `getContentType()`, `wl_status_to_string()`
+- **Setup Functions (2)** : `setup()`, `loop()`
+
+**PiscineWeb.cpp** — Serveur web asynchrone
+- Démarrage serveur (`startup()`, `startServer()`, `startMDNS()`)
+- Mise à jour périodique SSE (`OnUpdate()`, `sendNewParamsPiscine()`)
+- Gestion LCD virtuel (`managePiscineLCD()`)
+
+**ManagerTelecom.cpp** — ESP-NOW (expérimental)
+- Initialisation ESP-NOW (`InitESPNow()`, `managerTelecomInitialisation()`)
+- Callbacks réception/envoi (`receiveCallback()`, `sentCallback()`)
+- Synchronisation temps (`askNewTime()`, `isTimeSych()`)
+- Formatage données (`toString()`, `roundFloat()`, `toHeureFormat()`)
+
+### Script d'Amélioration Automatique
+
+Le fichier `improve_comments_piscine.py` permet de régénérer automatiquement les commentaires :
+
+```bash
+cd /Users/ludovic1/Documents/PlatformIO/Projects/maPiscinev4Web-d1_mini
+python3 improve_comments_piscine.py
+```
+
+Le script :
+1. Recherche les blocs commentaires génériques multi-lignes
+2. Les remplace par des blocs `@brief` explicites
+3. Ajoute des `@brief` pour les fonctions sans documentation
+4. Utilise un dictionnaire `FUNCTION_DESCRIPTIONS` (96 entrées)
+
+---
+
 ## 🔌 Matériel Requis
 
 ### Composants
