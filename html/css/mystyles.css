@@ -1,0 +1,194 @@
+.ui-mobile .ui-page{background-image:url(../img/texture1.png) !important;}
+
+form .error {
+	color: #f96868;
+	}
+
+.myh1{
+	 font-family: 'Kaushan Script', cursive;
+	 font-size: 2.5em;
+	 color: #fff;
+	 margin: 0.4em 0 0.2em 0;
+	 }
+.myh2,.myh3{
+	 font-family: 'Kaushan Script', cursive;
+	 }
+.myh4,.myh5,.myh6{
+	 font-family: 'Kaushan Script';
+	 }
+
+.smallLabel{
+	font-size: 10px !important;
+	margin: 0 0 .1em !important;	
+	}
+.smallFillContent{
+	padding: 0 !important;
+	margin: 0.5em 0.4em 0.6em 0.4em !important;
+	}
+.smallTextInput{
+    padding: 0px 0px 0px 7px !important;
+    background-color: #222 !important;
+    margin: auto !important;
+    box-shadow: inset -2px -2px 2px #353535, inset 3px 3px 3px #000000, -2px -2px 4px #353535, 2px 2px 2px #000;
+	font-size: 1.4em;
+}
+
+.borderFeild{
+    background-color: #222 !important;
+    box-shadow: inset -2px -2px 2px #353535, inset 3px 3px 3px #000000, -2px -2px 4px #353535, 2px 2px 2px #000;
+}
+
+.vertical-center {
+  -ms-transform: translateY(50%);
+  transform: translateY(50%);
+}
+.noclick {
+  pointer-events: none;
+}
+
+.tx-fm-up{
+	 text-transform:uppercase;
+	 }
+	 
+.tx-fm-low{
+	 text-transform:lowercase;
+	 }
+
+.mypanel {
+	background-color: #1F2736;
+	margin: 5px 0px;
+	position: relative;
+	border-radius: 1rem;
+	border: .2rem solid;
+	border-bottom-color: #121212;
+	border-left-color: #252525;
+	border-right-color: #080808;
+	border-top-color: #3a3939;
+	box-shadow: inset -2px -2px 2px #353535, inset 5px 5px 3px #000000;
+}	 
+
+.myform{
+	position: relative;
+	display: -ms-flexbox;
+	display: flex;
+	padding: 1rem;
+	-ms-flex-direction: column;
+	flex-direction: column;
+	pointer-events: auto;
+	background-color: #0e0e0e;
+	background-clip: padding-box;
+	border: 1px solid rgba(0,0,0,.2);
+	border-radius: 0.5em;
+	outline: 0;
+	max-width: 400px;
+	color: #777;
+}
+.myinput{
+background-color: #333;
+    color: #777;
+    border-color: #454545;
+    border-width: 1px;
+    border-radius: 0.3em;
+    padding: 3px;
+    margin: 0 0 .4em .4em;
+}
+.mybtn{
+	border-radius:50px !important;
+	margin: 0.6em 0 !important;
+	box-shadow: -2px -2px 4px #353535, 2px 2px 2px #000 !important;
+}
+.myCancelBtn{
+	border-radius:50px !important;
+	margin: 0.6em 0 !important;
+	box-shadow: -2px -2px 4px #353535, 2px 2px 2px #000 !important;
+    font-weight: 400 !important;
+    font-size: 14px !important;
+}
+.myLabelCheck{
+    font-weight: 400 !important;
+    font-size: 12px !important;
+}
+.myControlGroup{
+	margin: 0.6em 0 !important;
+}
+
+.myRoles{
+	font-weight: 400 !important;
+    font-size: 12px !important;
+}
+
+.UsersListRoles .ui-checkbox.ui-state-disabled {
+	opacity: 1;
+}
+
+.passwdInput {
+	width: 100px !important;
+}
+.nameInput{
+	width: 100px !important;
+}
+.floatleft {
+    float:left;
+ }
+.floatright {
+    float:right;
+ }
+.forceinline{  /* Prevent fieldcontain from doing a BLOCK thing */
+    display:inline !important;
+}
+
+.login-or {
+	position: relative;
+	color: #aaa;
+	margin-top: 10px;
+	margin-bottom: 10px;
+	padding-top: 10px;
+	padding-bottom: 10px;
+	}
+.span-or {
+   display: block;
+   position: absolute;
+   left: 50%;
+   top: 0px;
+   margin-left: -25px;
+   background-color: #fff;
+   width: 50px;
+   text-align: center;
+   text-shadow: 0 0 0 #111;
+   color: #424040;
+	}
+.hr-or {
+	height: 0px;
+	margin-top: 0px !important;
+	margin-bottom: 0px !important;
+	}
+
+.vert {
+    color:SpringGreen !important;
+}
+.cyan {
+    color:Cyan !important;
+}
+.rose {
+    color:Orchid !important;
+}
+.violet {
+    color:#ddd3ff !important;
+}
+.blanc {
+    color:OldLace !important;
+}
+.rouge {
+    color:#ff4500 !important;
+  }
+.orange {
+    color:#ffa500 !important;
+  }
+.jaune {
+    color:#ffff00 !important;
+  }
+.bleu {
+    color:#009eff !important;
+}
+
+

@@ -1,0 +1,165 @@
+
+.screenFrame {
+    border-radius: 1rem;
+    border: 4px solid;
+    border-bottom-color: #121212;
+    border-left-color: #252525;
+    border-right-color: #080808;
+    border-top-color: #3a3939;
+    box-shadow: inset -3px -3px 2px #353535, inset 3px 3px 2px #000000;
+    position: inherit;
+    pointer-events: none;
+	height: 8em;
+}
+
+.screenPiece {
+	display: block;
+    height: 91%;
+    color: #15404a;
+    margin: 6px 8px 0px 8px;
+}
+.screenPieceDebug {
+	display: block;
+    height: 98%;
+    color: #15404a;
+    margin: 6px 8px 0px 8px;
+}
+
+.screenOutput {
+	-webkit-animation: crt-output 10ms infinite;
+    animation: crt-output 10ms infinite;
+    overflow: auto;
+    pointer-events: auto;
+    z-index: -1;
+    text-shadow: 1px 1px 0 #111;
+}
+
+.screenTextTitle{
+  text-align: center;
+    font-size: 1.4em;
+    font-weight: bold;
+    margin-block-start: auto;
+}
+
+.screenTextZone{
+  color: #15404a !important;
+  background-color: #887c2e !important;
+  height: 97% !important;
+  font-weight: inherit;
+  font-size: 1.2em;
+  text-shadow: 0 0 black;
+  overflow: auto !important;
+  border : none;
+}
+
+.screenTextLine{
+  margin-block-start: 0.3em;
+    margin-block-end: auto;
+}
+.screenFrameDebug {
+    border-radius: 1rem;
+    border: 4px solid;
+    border-bottom-color: #121212;
+    border-left-color: #252525;
+    border-right-color: #080808;
+    border-top-color: #3a3939;
+    box-shadow: inset -3px -3px 2px #353535, inset 3px 3px 2px #000000;
+    position: inherit;
+    pointer-events: none;
+	height: 43rem;
+}
+
+.screenOutputDebug {
+  color: #14fdce;
+  font-family: "Arial";
+  margin-top: 32px;
+  margin-left: 32px;
+  margin-right: 32px;
+  margin-bottom: 32px;
+  font-size: 24px;
+  -webkit-font-smoothing: none;
+  line-height: 1.2;
+  width: 93%;
+  border: none;
+  -webkit-animation: crt-output 10ms infinite;
+  animation: crt-output 10ms infinite;
+  background-color: #031e11;
+  overflow: auto;
+  padding: 2rem 1rem;
+  pointer-events: auto;
+  text-shadow: 0rem 0.2rem 1rem #0c7b46;
+  z-index: -1;  
+}
+.screenTextZoneDebug{
+  color: #0d1719!important;
+  background-color: #887c2e!important;
+  height: 97%!important;
+  font-weight: normal;
+  font-size: 0.9em;
+  text-shadow: 0 0 black;
+  overflow: auto !important;
+  border : none;
+}
+
+
+.screenOff{
+  animation: screen-turn-off 0.55s ease-out;
+  animation-fill-mode:forwards;
+}
+.screenOn{
+  animation: screen-turn-on 2s linear;
+  animation-fill-mode:forwards;
+}
+
+.displayOff{
+	background-color: #21211e;
+}
+.displayOn{
+	background-color: #887c2e;
+}
+
+@keyframes crt-output {
+  0% { opacity: 0.9; }
+  50% { opacity: 1; }
+}
+
+@keyframes screen-turn-off{
+  0%{
+    transform:scale(1,1.3);
+    -webkit-filter:brightness(1);
+    filter:brightness(1);
+    opacity:1;
+  }
+  60%{
+    transform:scale(1.3,0.001);
+    -webkit-filter:brightness(10);
+    filter:brightness(10);
+  }
+  100%{
+    animation-timing-function: ease-in;
+    transform:scale(0.000,0.0001);
+    -webkit-filter:brightness(50);
+    filter:brightness(50);
+  }
+}
+
+@keyframes screen-turn-on {
+    0% {
+	    transform:scale(1,0.8);
+	    -webkit-filter:brightness(30);
+	    filter:brightness(30);
+	    opacity:1;
+	}
+    10% {
+	    transform:scale(1,1) translate3d(0,0,0);
+    	-webkit-filter:contrast(0) brightness(0) ;
+    	filter:contrast(0) brightness(0);
+    	opacity:0;
+	}
+    100% {
+	    -webkit-filter:contrast(1) brightness(1) saturate(1);
+	    filter:contrast(1) brightness(1) saturate(1);
+	    opacity:1;
+	}
+}
+

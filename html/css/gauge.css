@@ -1,0 +1,54 @@
+
+.gauge-container {
+	width: 9em;
+	height: 8em;
+	display: block;
+	padding: 0px;
+	background-color: #222;
+	margin: 5px auto;
+	border-radius: 3px;
+	position: relative;
+	border-radius: 1rem;
+	border: .2rem solid;
+	border-bottom-color: #121212;
+	border-left-color: #252525;
+	border-right-color: #080808;
+	border-top-color: #3a3939;
+	box-shadow: inset -2px -2px 2px #353535, inset 5px 5px 3px #000000;
+}
+
+ .gauge-container > .label {
+  position: absolute;
+  right: 10px;
+  bottom: 5px;
+  display: inline-block;
+  background-color: #222;
+  color: #98c6f5;
+  font-family: monospace;
+  font-size: 0.8em;
+}
+
+.gauge-container > .gauge .dial {
+  stroke: #334455;
+  stroke-width: 3;
+  fill: rgba(0,0,0,0);
+}
+.gauge-container > .gauge .value {
+  stroke: rgb(47, 227, 255);
+  stroke-width: 9;
+  fill: rgba(0,0,0,0);
+}
+.gauge-container > .gauge .value-text {
+  fill: rgb(145, 176, 255);
+  font-family: sans-serif;
+  font-weight: bold;
+  font-size: 1.9em;
+}
+.gauge-container .value-text {
+  color: #F32450;
+  font-weight: 100;
+  position: absolute;
+  bottom: 30%;
+  right: 45%;
+  display: inline-block;
+} 
