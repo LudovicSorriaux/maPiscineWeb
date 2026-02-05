@@ -13,6 +13,7 @@
 #include "PiscineWebTelecom.h"
 #include "ManagerTelecom.h"
 #include "globalPiscineWeb.h"
+#include "IndexNames.h"  // Optimisation RAM #6 : Noms des paramètres en PROGMEM
 
     PiscineWebActionControlerClass::~PiscineWebActionControlerClass(void)
       {};
@@ -124,15 +125,15 @@
             if (tabRead[i].index != 255) {          // donc != 255 ... 
               index = tabRead[i].index;
               valeur = tabRead[i].value;
+              char nameBuf[MAX_KEY_LEN];  // Optimisation RAM #6 : Buffer pour PROGMEM
+              if (debug) logger.printf(" Action is now processiong command %s with index=%d and value=%d\n",getIndexName(index, nameBuf),index,valeur);
               if(index < IND_ClearAlert){       // only store used parameters
-                if (debug) {
-                  logger.printf(" Action is now processiong command %s with index=%d and value=%d\n",indexName[index],index,valeur);
-                }           
                 piscineParams[index].valeur = valeur;
                 piscineParams[index].changedControler = true;
-                if(managerPresent){
-                  managerTelecom.sendNewValue(index,valeur);
-                }  
+                // DÉSACTIVÉ : ESP-NOW manager (optimisation RAM)
+                // if(managerPresent){
+                //   managerTelecom.sendNewValue(index,valeur);
+                // }  
                 switch (index) {
                   case IND_TempEau:
                   case IND_TempAir:
@@ -168,7 +169,7 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebActionControlerClass::processAction(uint8_t index, int16_t valeur) {
-      
+        
         switch(index) {
           case IND_EPOCH :        //time update
               if (debug) {
@@ -178,9 +179,10 @@
                 logger.println("Ask for new time...");
                 if (!NTPok){                // if NTP OK new date is sent by proc and ack OK 
                   logger.println("Time asked but Can't get time from ntp server");
-                  if(managerPresent) {
-                    managerTelecom.askNewTime();
-                  }  
+                  // DÉSACTIVÉ : ESP-NOW manager (optimisation RAM)
+                  // if(managerPresent) {
+                  //   managerTelecom.askNewTime();
+                  // }  
                 } else {
                   webTelecom.sendTimeMess();
                 } 

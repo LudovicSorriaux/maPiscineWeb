@@ -30,7 +30,7 @@ var statusErrorMap = {
 
 
 // maPiscine.session sigleton class to handle session infos
-  maPiscine.Session = (function () {
+maPiscine.Session = (function () {
 	var instance;
 
 	function init() {
@@ -237,7 +237,34 @@ var statusErrorMap = {
 	}
 	
 	if (now >= sessionData.theExpirationDate) {
-		showSessionExpiredDialog("Invalid Session");
+		console.log("[LocalAuth] Session expirée, redirection login");
+		
+		// Nettoyer session
+		window.localStorage.removeItem("maPiscine-session");
+		setCookie("maPiscine", "", 0);
+		
+		// Mettre à jour contenu dialog dynamiquement
+		var expiredTime = new Date(sessionData.theExpirationDate).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
+		var expiredDate = new Date(sessionData.theExpirationDate).toLocaleDateString('fr-FR');
+		var sessionDuration = Math.floor((sessionData.theExpirationDate - (now - timeRemaining)) / 3600000); // heures
+		
+		var message = "<p><strong>Votre session a expiré.</strong></p>";
+		message += "<p>Heure d'expiration : <strong>" + expiredDate + " à " + expiredTime + "</strong></p>";
+		message += "<p>Utilisateur : <strong>" + (sessionData.username || userName) + "</strong></p>";
+		message += "<p><em>Redirection automatique dans 10 secondes...</em></p>";
+		
+		$('#dlg-EndSessionAlert-message').html(message);
+		
+		// Afficher dialog
+		$.mobile.changePage("#dlg-EndSessionAlert");
+		
+		// Auto-redirect après 10 secondes
+		setTimeout(function() {
+			if ($.mobile.activePage.attr('id') === 'dlg-EndSessionAlert') {
+				$.mobile.changePage("#pageLogin", {transition: "fade"});
+			}
+		}, 10000);
+		
 		return false;
 	}
 	
@@ -249,37 +276,13 @@ var statusErrorMap = {
    * @param action Description de l'action qui a échoué
    * @param xhr Objet XMLHttpRequest contenant erreur serveur
    */
-  function showSessionExpiredDialog(action) {
-
-	console.log("[LocalAuth] Session expirée, redirection login");
-		
-	// Nettoyer session
-	window.localStorage.removeItem("maPiscine-session");
-	setCookie("maPiscine", "", 0);
-	
-	// Mettre à jour contenu dialog dynamiquement
-	var expiredTime = new Date(sessionData.theExpirationDate).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
-	var expiredDate = new Date(sessionData.theExpirationDate).toLocaleDateString('fr-FR');
-	var sessionDuration = Math.floor((sessionData.theExpirationDate - (now - timeRemaining)) / 3600000); // heures
-	
-	var message = "<p><strong>Votre session a expiré.</strong></p>";
-	message += "<p>Heure d'expiration : <strong>" + expiredDate + " à " + expiredTime + "</strong></p>";
-	message += "<p>Utilisateur : <strong>" + (sessionData.username || userName) + "</strong></p>";
+  function showSessionExpiredDialog(action, xhr) {
+	var message = "<p><strong>Session invalide détectée par le serveur.</strong></p>";
 	message += "<p>Action : <strong>" + action + "</strong></p>";
+	message += "<p>Erreur serveur : <strong>" + xhr.status + " - Invalid Session</strong></p>";
 	message += "<p><em>Veuillez vous reconnecter.</em></p>";
-	message += "<p><em>Redirection automatique dans 10 secondes...</em></p>";
-	
 	$('#dlg-EndSessionAlert-message').html(message);
-	
-	// Afficher dialog
 	$.mobile.changePage("#dlg-EndSessionAlert");
-	
-	// Auto-redirect après 10 secondes
-	setTimeout(function() {
-		if ($.mobile.activePage.attr('id') === 'dlg-EndSessionAlert') {
-			$.mobile.changePage("#pageLogin", {transition: "fade"});
-		}
-	}, 10000);
   }
 
   function onError(data, exception){
@@ -501,22 +504,26 @@ var statusErrorMap = {
   $(function() {
     $("#deleteUsersForm").validate({
       submitHandler: function(form){
-		validateLogin($(form),"/deleteUsers");
-	  }	
+		console.log("/deleteUsers\n"+$(form).serialize());
+//		$.mobile.loading("show");
+		$.ajax({
+		  type: 'post',
+		  url: "/deleteUsers",
+		  cache: false,
+		  data: $(form).serialize(),
+		  success: onSuccess,
+		  error: onError
+		});
+  	  }        
     });
   });
 
   function validateLogin(frm,url){
-	// On transforme "/logon" en "/api/auth?action=logon"
-    
-    var action = url.replace('/', ''); // On extrait le nom de l'action depuis l'ancienne URL (en enlevant le '/')
-    var newUrl = "/api/auth?action=" + action;
-
-    console.log(newUrl + "\n" + frm.serialize());
-	$.mobile.loading("show");
+	console.log(url+"\n"+frm.serialize());
+//	$.mobile.loading("show");
 	$.ajax({
 	  type: frm.attr('method'),
-	  url: newUrl,
+	  url: url,
 	  cache: false,
 	  data: frm.serialize(),
 	  success: onSuccess,
@@ -712,8 +719,8 @@ var statusErrorMap = {
 	html += '		<li><a href="#pagePiscinePrincipale" data-transition="slide">Piscine</a></li>';
 	html += '		<li><a href="#pagePiscineParametres" data-transition="slide">Piscine Parametres</a></li>';
 	html += '		<li><a href="#pagePiscineMaintenance" data-transition="slide">Piscine Maintenance</a></li>';
-	html += '		<li><a href="#pagePiscineGraphs" data-transition="slide">Piscine Graphs</a></li>';
-	html += '		<li><a href="#pagePiscineDebug" data-transition="slide">Piscine Debug</a></li>';
+	html += '		<li><a href="#pagePiscineAlertes" data-transition="slide">Piscine Alertes</a></li>';
+	html += '		<li><a href="#pagePiscineDebug" data-transition="slide">Piscuine Debug</a></li>';
 	html += '	</ul>';
 	html += '</div>';
 	return html;
@@ -735,7 +742,7 @@ function onPageSuccess(data){
 function onPageError(xhr) {
 	if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 		console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-		showSessionExpiredDialog("Change Page");
+		showSessionExpiredDialog("Chargement page", xhr);
 	}
 }
 
@@ -803,14 +810,14 @@ function csvToArray(e){
 	return a;
 }
 
-function syncGraphAjax(debut,fin){
-	console.log("Calling /getGraphDatas?sess="+sessID+"&start="+debut+"&end="+fin);
+function syncGraphAjax(e,t){
+	console.log("Calling /getGraphDatas?sess="+sessID+"&start="+e+"&end="+t);
 	return new Promise(
 		function(a,s){
 			$.ajax({
 				type:"POST",
-				url:"/setPiscine?action=getGraphDatas",
-				data:"sess="+sessID+"&start="+debut+"&end="+fin,
+				url:"/getGraphDatas",
+				data:"sess="+sessID+"&start="+e+"&end="+t,
 				dataType:"text",
 				success:function(e){a(e)},
 				error:function(e){s(e)}
@@ -819,27 +826,27 @@ function syncGraphAjax(debut,fin){
 	)
 };
 
-async function fetchData(debut, fin){
-	var datas=[];
-	curr=dayjs(debut);
-	end=dayjs(fin);
+async function fetchData(e,t){
+	var a=[];
+	curr=dayjs(e);
+	fin=dayjs(t);
 	
-	console.log("   ==> fetching chartdata; start:"+curr.format("DD-MM-YYYY")+" end:"+end.format("DD-MM-YYYY"));
+	console.log("   ==> fetching chartdata; start:"+curr.format("DD-MM-YYYY")+" end:"+fin.format("DD-MM-YYYY"));
 	$.mobile.loading("show",{text:"Chargement",textVisible:!0,textonly:!1});
 	try{
-		var returnedData=await syncGraphAjax(curr.format("DD-MM-YYYY"),end.format("DD-MM-YYYY"));
+		var s=await syncGraphAjax(curr.format("DD-MM-YYYY"),fin.format("DD-MM-YYYY"));
 		$.mobile.loading("hide");
 		showToast("Données chargées", 'success');
-		if((returnedData=$.trim(returnedData)).includes("Error")){
-			var returnedDataJson=JSON.parse(returnedData);
-			console.log("returned json is "+returnedData);
-			if("Error"==returnedDataJson.status){
+		if((s=$.trim(s)).includes("Error")){
+			var i=JSON.parse(s);
+			console.log("returned json is "+JSON.stringify(i));
+			if("Error"==i.status){
 				$.mobile.changePage("#piscineError-dlg");
-				$("#PiscineErrorStatus").val(returnedDataJson.message);
-				$("#PiscineErrorCorrection").val(returnedDataJson.correction);
+				$("#PiscineErrorStatus").val(i.message);
+				$("#PiscineErrorCorrection").val(i.correction);
 			} 
 		} else {
-			datas=csvToArray(returnedData)
+			a=csvToArray(s)
 		}
 	} catch(e){
 		$.mobile.loading("hide");
@@ -847,7 +854,7 @@ async function fetchData(debut, fin){
 		showToast("Échec chargement données", 'error');
 		onPageError(e)
 	}
-	return datas;
+	return a;
 }
 
 function getOriginData(){
@@ -861,23 +868,23 @@ function getOriginData(){
 	OrigEnd=CurrEnd=now
 }
 
-function getNewData(debut,fin){
-	var datas=[];
-	console.log("getNewData before; start:"+debut.format("DD-MM")+" end:"+fin.format("DD-MM")+"\nCurrStart:"+CurrStart.format("DD-MM")+" CurrEnd:"+CurrEnd.format("DD-MM")+"\nOrigStart:"+OrigStart.format("DD-MM")+" OrigEnd:"+OrigEnd.format("DD-MM")+"\n");
+function getNewData(e,t){
+	var a=[];
+	console.log("getNewData before; start:"+e.format("DD-MM")+" end:"+t.format("DD-MM")+"\nCurrStart:"+CurrStart.format("DD-MM")+" CurrEnd:"+CurrEnd.format("DD-MM")+"\nOrigStart:"+OrigStart.format("DD-MM")+" OrigEnd:"+OrigEnd.format("DD-MM")+"\n");
 	if(CurrStart==OrigStart){
-		if(debut.isBefore(OrigStart)){
-			if(fin.isAfter(OrigStart)){
-				datas=fetchData(debut,OrigStart),
-				dataOrigin=datas.concat(dataOrigin);
-				OrigStart=CurrStart=debut;
+		if(e.isBefore(OrigStart)){
+			if(t.isAfter(OrigStart)){
+				a=fetchData(e,OrigStart),
+				dataOrigin=a.concat(dataOrigin);
+				OrigStart=CurrStart=e;
 				CurrEnd=OrigEnd;
 				chartdata=dataOrigin;
 				console.log("getNewData; extend orig data by newStart:\nCurrStart:"+CurrStart.format("DD-MM")+" CurrEnd:"+CurrEnd.format("DD-MM")+"\nOrigStart:"+OrigStart.format("DD-MM")+" OrigEnd:"+OrigEnd.format("DD-MM"));
 			} else {
-				datas=fetchData(debut,fin);
-				CurrStart=debut;
-				CurrEnd=fin;
-				chartdata=currData=datas;
+				a=fetchData(e,t);
+				CurrStart=e;
+				CurrEnd=t;
+				chartdata=currData=a;
 				console.log("getNewData; new data  (NewEnd < OrigStart):\nCurrStart:"+CurrStart.format("DD-MM")+" CurrEnd:"+CurrEnd.format("DD-MM")+"\nOrigStart:"+OrigStart.format("DD-MM")+" OrigEnd:"+OrigEnd.format("DD-MM"));
 			}
 		}else{ 
@@ -885,58 +892,58 @@ function getNewData(debut,fin){
 			console.log("getNewData; newStart > OrigStart just zoom on dataOrigin:\nCurrStart:"+CurrStart.format("DD-MM")+" CurrEnd:"+CurrEnd.format("DD-MM")+"\nOrigStart:"+OrigStart.format("DD-MM")+" OrigEnd:"+OrigEnd.format("DD-MM"));
 		}
 	} else {		// curStart != origStart
-		if (debut.isAfter(OrigStart)||debut.isSame(OrigStart)){
+		if (e.isAfter(OrigStart)||e.isSame(OrigStart)){
 			chartdata=dataOrigin;
 			console.log("getNewData; using dataCurr fetching into dataOrigin:\nCurrStart:"+CurrStart.format("DD-MM")+" CurrEnd:"+CurrEnd.format("DD-MM")+"\nOrigStart:"+OrigStart.format("DD-MM")+" OrigEnd:"+OrigEnd.format("DD-MM"));
-		} else {	// debut before origStart
-			if(fin.isAfter(OrigStart)||fin.isSame(OrigStart)){
-				datas=fetchData(debut,OrigStart);
-				dataOrigin=datas.concat(dataOrigin);
-				OrigStart=CurrStart=debut;
+		} else {	// e before origStart
+			if(t.isAfter(OrigStart)||t.isSame(OrigStart)){
+				a=fetchData(e,OrigStart);
+				dataOrigin=a.concat(dataOrigin);
+				OrigStart=CurrStart=e;
 				chartdata=dataOrigin;
 				console.log("getNewData; using dataCurr extend dataOrigin by new start :\nCurrStart:"+CurrStart.format("DD-MM")+" CurrEnd:"+CurrEnd.format("DD-MM")+"\nOrigStart:"+OrigStart.format("DD-MM")+" OrigEnd:"+OrigEnd.format("DD-MM"));
-			} else {	// debut and fin before origStart
-				if(debut.isAfter(CurrStart)||debut.isSame(CurrStart)){
-					if(fin.isBefore(CurrEnd)||fin.isSame(CurrEnd)){
+			} else {	// e and t before origStart
+				if(e.isAfter(CurrStart)||e.isSame(CurrStart)){
+					if(t.isBefore(CurrEnd)||t.isSame(CurrEnd)){
 						chartdata=currData;
 						console.log("getNewData; outside dataOrigin inside currData, just zoom :\nCurrStart:"+CurrStart.format("DD-MM")+" CurrEnd:"+CurrEnd.format("DD-MM")+"\nOrigStart:"+OrigStart.format("DD-MM")+" OrigEnd:"+OrigEnd.format("DD-MM"));
-					} else{	 // debut after curStart and fin after curEnd	
-						if(debut.isBefore(CurrEnd)||debut.isSame(CurrEnd)){
-							datas=fetchData(CurrEnd,fin);
-							CurrEnd=fin;
-							currData=currData.concat(datas);
+					} else{	 // e after curStart and t after curEnd	
+						if(e.isBefore(CurrEnd)||e.isSame(CurrEnd)){
+							a=fetchData(CurrEnd,t);
+							CurrEnd=t;
+							currData=currData.concat(a);
 							chartdata=currData;
 							console.log("getNewData; outside dataOrigin fetching after currEnd\nCurrStart:"+CurrStart.format("DD-MM")+" CurrEnd:"+CurrEnd.format("DD-MM")+"\nOrigStart:"+OrigStart.format("DD-MM")+" OrigEnd:"+OrigEnd.format("DD-MM"));
-						} else { // debut and fin after curEnd
-							datas=fetchData(debut,fin);
-							CurrStart=debut;
-							CurrEnd=fin;
-							chartdata=currData=datas;
+						} else { // e and t after curEnd
+							a=fetchData(e,t);
+							CurrStart=e;
+							CurrEnd=t;
+							chartdata=currData=a;
 							console.log("getNewData; outside dataOrigin fetching outside (before) currdata => new currData\nCurrStart:"+CurrStart.format("DD-MM")+" CurrEnd:"+CurrEnd.format("DD-MM")+"\nOrigStart:"+OrigStart.format("DD-MM")+" OrigEnd:"+OrigEnd.format("DD-MM"));
 						}
 					}
-				} else {	// debut before curStart
-					if(fin.isAfter(CurrEnd)||fin.isSame(CurrEnd)){
-						datas=fetchData(debut,CurrStart);
-						currData=datas.concat(currData);
-						datas=fetchData(CurrEnd,fin);
-						currData=currData.concat(datas);
-						CurrStart=debut;
-						CurrEnd=fin;
+				} else {	// e before curStart
+					if(t.isAfter(CurrEnd)||t.isSame(CurrEnd)){
+						a=fetchData(e,CurrStart);
+						currData=a.concat(currData);
+						a=fetchData(CurrEnd,t);
+						currData=currData.concat(a);
+						CurrStart=e;
+						CurrEnd=t;
 						chartdata=currData;
 						console.log("getNewData; outside dataOrigin fetch before and after currData\nCurrStart:"+CurrStart.format("DD-MM")+" CurrEnd:"+CurrEnd.format("DD-MM")+"\nOrigStart:"+OrigStart.format("DD-MM")+" OrigEnd:"+OrigEnd.format("DD-MM"));
-					} else {	// fin before curEnd	
-						if(fin.isAfter(CurrStart)||fin.isSame(CurrStart)){
-							datas=fetchData(debut,CurrStart);
-							CurrStart=debut;
-							currData=datas.concat(currData);
+					} else {	// t before curEnd	
+						if(t.isAfter(CurrStart)||t.isSame(CurrStart)){
+							a=fetchData(e,CurrStart);
+							CurrStart=e;
+							currData=a.concat(currData);
 							chartdata=currData;
 							console.log("getNewData; outside dataOrigin fetch before currStart but inside cuurEnd\nCurrStart:"+CurrStart.format("DD-MM")+" CurrEnd:"+CurrEnd.format("DD-MM")+"\nOrigStart:"+OrigStart.format("DD-MM")+" OrigEnd:"+OrigEnd.format("DD-MM"));
-						} else {	// debut and fin before curStart
-							datas=fetchData(debut,fin);
-							CurrStart=debut;
-							CurrEnd=fin;
-							chartdata=currData=datas;
+						} else {	// e and t before curStart
+							a=fetchData(e,t);
+							CurrStart=e;
+							CurrEnd=t;
+							chartdata=currData=a;
 							console.log("getNewData; outside dataOrigin fetchig outside of currdata (after) = new currData\nCurrStart:"+CurrStart.format("DD-MM")+" CurrEnd:"+CurrEnd.format("DD-MM")+"\nOrigStart:"+OrigStart.format("DD-MM")+" OrigEnd:"+OrigEnd.format("DD-MM"));
 						}
 					}
@@ -944,8 +951,8 @@ function getNewData(debut,fin){
 			}
 		}
 	}
-	chart.updateOptions({file:chartdata})
-};
+	chart.updateOptions({file:chartdata}
+)}
 
 // --------------------------------  global init ---------------------------------------------------
 	$(document).on("mobileinit", function (event, ui) {
@@ -1266,7 +1273,7 @@ function getNewData(debut,fin){
 				(lampeSWVal==0) ? lampeSWVal=1 : lampeSWVal=0;
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=lampe&val=' + lampeSWVal,
 					dataType: "text",
 					success: function(data){
@@ -1279,7 +1286,7 @@ function getNewData(debut,fin){
 						showToast("Échec commande lampe", 'error');
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -1294,7 +1301,7 @@ function getNewData(debut,fin){
 				(voletSWVal==0) ? voletSWVal=1 : voletSWVal=0;
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=volet&val=' + voletSWVal,
 					dataType: "text",
 					success: function(data){
@@ -1302,10 +1309,9 @@ function getNewData(debut,fin){
 					},
 					error: function (xhr, status, errorThrown) {
 						console.log('An error occurred while calling /setVolet, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
-						showToast("Échec commande volet", 'error');
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -1355,7 +1361,7 @@ function getNewData(debut,fin){
 		// ------ init page ----
 			$.ajax({
 				type: 'POST',
-				url: '/setPiscine?action=InitPagePrincipale',
+				url: '/setPiscinePagePrincip',
 				data: 'sess=' + sessID,
 				dataType: "text",
 				success: function(data){
@@ -1365,7 +1371,7 @@ function getNewData(debut,fin){
 					console.log('An error occurred while calling /setPiscinePagePrincip, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 					if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 						console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-						showSessionExpiredDialog("Invalid Session");		// 	or $("#popupDialog").popup("open") to stay on same page
+						$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 					}
 				}
 			});
@@ -1381,7 +1387,7 @@ function getNewData(debut,fin){
 				if (expirationDate < today.getTime()) {						// check that the ttl is still valid move to login if not. 
 					console.log('Session ttl expired: go to login diag');
 					console.log('expiration is ' + expirationDate + ' and now is ' + today.getTime());
-					showSessionExpiredDialog("Action utilisateur");
+					$.mobile.changePage( "#dlg-EndSessionAlert" );
 				} else {													// session is still valid so perform data!
 					timeLeft = 	(expirationDate - today.getTime())/1000;
 					console.log('Session is still valid, time left to run : ' + timeLeft + ' secs');
@@ -1502,7 +1508,7 @@ function getNewData(debut,fin){
 				if (expirationDate < today.getTime()) {						// check that the ttl is still valid move to login if not. 
 					console.log('Session ttl expired: go to login diag');
 					console.log('expiration is ' + expirationDate + ' and now is ' + today.getTime());
-					showSessionExpiredDialog("Action utilisateur");
+					$.mobile.changePage( "#dlg-EndSessionAlert" );
 				} else {													// session is still valid so perform data!
 					timeLeft = 	(expirationDate - today.getTime())/1000;
 					console.log('Session is still valid, time left to run : ' + timeLeft + ' secs');
@@ -1610,7 +1616,7 @@ function getNewData(debut,fin){
 				(lampeSWVal == 0) ? lampeSWVal=1 : lampeSWVal=0;
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=lampe&val=' + lampeSWVal,
 					dataType: "text",
 					success: function(data){
@@ -1623,7 +1629,7 @@ function getNewData(debut,fin){
 						showToast("Échec commande lampe", 'error');
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -1637,7 +1643,7 @@ function getNewData(debut,fin){
 				(voletSWVal == 0) ? voletSWVal=1 : voletSWVal=0;
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=volet&val=' + voletSWVal,
 					dataType: "text",
 					success: function(data){
@@ -1650,7 +1656,7 @@ function getNewData(debut,fin){
 						showToast("Échec commande volet", 'error');
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -1664,7 +1670,7 @@ function getNewData(debut,fin){
 				var theVal = $('#ModeManuSWitch').is(":checked") ? 0 : 1; 	// if manu is checker then auto is off
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=autoMode&val=' + theVal,
 					dataType: "text",
 					success: function(data){
@@ -1674,7 +1680,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /setModeManu, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -1687,7 +1693,7 @@ function getNewData(debut,fin){
 				var theVal = $('#PPSWitch').is(":checked") ? -1 : 0;		// -1 is pp on in manual mode, 0 is off
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=PP&val=' + theVal,
 					dataType: "text",
 					success: function(data){
@@ -1697,7 +1703,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /setPP, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -1711,7 +1717,7 @@ function getNewData(debut,fin){
 				var theVal = $('#PACSWitch').is(":checked") ? -1 : 0;		// -1 is manu, 0 is off, XX is on auto
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=PAC&val=' + theVal,
 					dataType: "text",
 					success: function(data){
@@ -1721,7 +1727,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /setPAC, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -1734,7 +1740,7 @@ function getNewData(debut,fin){
 				var theVal = $('#PmpPHSWitch').is(":checked") ? -1 : 0;	// -1 is manu, 0 is off, XX is on auto
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=PH&val=' + theVal,
 					dataType: "text",
 					success: function(data){
@@ -1744,7 +1750,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /setPmpPH, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -1757,7 +1763,7 @@ function getNewData(debut,fin){
 				var theVal = $('#PmpCLSWitch').is(":checked") ? -1 : 0;			// -1 is manu, 0 is off, XX is on auto
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=CL&val=' + theVal,
 					dataType: "text",
 					success: function(data){
@@ -1767,7 +1773,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /setPmpCL, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -1780,7 +1786,7 @@ function getNewData(debut,fin){
 				var theVal = $('#PmpALGSWitch').is(":checked") ? -1 : 0;		// -1 is manu, 0 is off, XX is on auto
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=P3&val=' + theVal,
 					dataType: "text",
 					success: function(data){
@@ -1790,7 +1796,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /setPmpALG, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -1809,7 +1815,7 @@ function getNewData(debut,fin){
 			console.log('New Start Time is '+startHour);
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=strtTPP&val=' + startHour,
 					dataType: "text",
 					success: function(data){
@@ -1819,7 +1825,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /setPPStartTime, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -1835,7 +1841,7 @@ function getNewData(debut,fin){
 			console.log('New Stop Time is '+stopHour);
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=stopTPP&val=' + stopHour,
 					dataType: "text",
 					success: function(data){
@@ -1845,7 +1851,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /setPPStopTime, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -1862,7 +1868,7 @@ function getNewData(debut,fin){
 			console.log('New PAC Start Time is '+startHour);
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=strtTPAC&val=' + startHour,
 					dataType: "text",
 					success: function(data){
@@ -1872,7 +1878,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /setPACStartTime, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -1888,7 +1894,7 @@ function getNewData(debut,fin){
 			console.log('New PAC Stop Time is '+stopHour);
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=stopTPAC&val=' + stopHour,
 					dataType: "text",
 					success: function(data){
@@ -1898,7 +1904,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /setPACStopTime, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -1932,7 +1938,7 @@ function getNewData(debut,fin){
 			if (typeTempToServer){
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=typeTemp&val=' + theVal,
 					dataType: "text",
 					success: function(data){
@@ -1942,7 +1948,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /setTypeTemp, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -1956,7 +1962,7 @@ function getNewData(debut,fin){
 			if (tempFixRelToServer){
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=tempFixRel&val=' + temp,
 					dataType: "text",
 					success: function(data){
@@ -1966,7 +1972,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /setTempFixRel, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -1979,7 +1985,7 @@ function getNewData(debut,fin){
 				var theVal = $('#pacViaRouterSWitch').is(":checked") ? 1 : 0;
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=pacViaRouter&val=' + theVal,
 					dataType: "text",
 					success: function(data){
@@ -1989,7 +1995,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /setPacViaRouter, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -2002,7 +2008,7 @@ function getNewData(debut,fin){
 				var theVal = $('#localAutoLoginSWitch').is(":checked") ? 1 : 0;
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=localAutoLogin&val=' + theVal,
 					dataType: "text",
 					success: function(data){
@@ -2012,7 +2018,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /setLocalAutoLogin, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -2029,7 +2035,7 @@ function getNewData(debut,fin){
 			if (PHRefToServer){
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=phRef&val=' + phRef*10,
 					dataType: "text",
 					success: function(data){
@@ -2039,7 +2045,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /setPHRef, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -2053,7 +2059,7 @@ function getNewData(debut,fin){
 			if (redoxRefToServer){
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=redoxRef&val=' + redoxRef,
 					dataType: "text",
 					success: function(data){
@@ -2063,7 +2069,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /setredoxRef, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -2077,7 +2083,7 @@ function getNewData(debut,fin){
 				var theVal = $('#lampeAutoSWitch').is(":checked") ? 1 : 0;
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=lampeAuto&val=' + theVal,
 					dataType: "text",
 					success: function(data){
@@ -2087,7 +2093,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /setLampeAuto, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -2104,7 +2110,7 @@ function getNewData(debut,fin){
 			console.log('New Start Time is '+startHour);
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=strtLampe&val=' + startHour,
 					dataType: "text",
 					success: function(data){
@@ -2114,7 +2120,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /setLampeStartTime, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -2130,7 +2136,7 @@ function getNewData(debut,fin){
 			console.log('New Stop Time is '+stopHour);
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=stopLampe&val=' + stopHour,
 					dataType: "text",
 					success: function(data){
@@ -2140,7 +2146,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /setLampeStopTime, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -2154,7 +2160,7 @@ function getNewData(debut,fin){
 				var theVal = $('#voletAutoSWitch').is(":checked") ? 1 : 0;
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=voletAuto&val=' + theVal,
 					dataType: "text",
 					success: function(data){
@@ -2164,7 +2170,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /setVoletAuto, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -2181,7 +2187,7 @@ function getNewData(debut,fin){
 			console.log('New Ouv Time is '+ouvHour);
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=ouvVolet&val=' + ouvHour,
 					dataType: "text",
 					success: function(data){
@@ -2191,7 +2197,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /setVoletOuvTime, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -2207,7 +2213,7 @@ function getNewData(debut,fin){
 			console.log('New Ferm Time is '+fermHour);
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=fermeVolet&val=' + fermHour,
 					dataType: "text",
 					success: function(data){
@@ -2217,7 +2223,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /setVoletFermTime, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -2243,7 +2249,7 @@ function getNewData(debut,fin){
 			if (typeP3ToServer){
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=typeP3&val=' + typeP3,
 					dataType: "text",
 					success: function(data){
@@ -2253,7 +2259,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /setTypeP3, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -2269,7 +2275,7 @@ function getNewData(debut,fin){
 				if (typeP3ToServer){
 					$.ajax({
 						type: 'POST',
-						url: '/setPiscine?action=Parametres',
+						url: '/setPiscineParam',
 						data: 'sess=' + sessID + '&param=typeP3&val=0',
 						dataType: "text",
 						success: function(data){
@@ -2279,7 +2285,7 @@ function getNewData(debut,fin){
 							console.log('An error occurred while calling /setTypeP3, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 							if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 								console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-								showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+								$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 							}
 						}
 					});
@@ -2293,7 +2299,7 @@ function getNewData(debut,fin){
 				if (typeP3ToServer){
 					$.ajax({
 						type: 'POST',
-						url: '/setPiscine?action=Parametres',
+						url: '/setPiscineParam',
 						data: 'sess=' + sessID + '&param=typeP3&val=' + typeP3,
 						dataType: "text",
 						success: function(data){
@@ -2303,7 +2309,7 @@ function getNewData(debut,fin){
 							console.log('An error occurred while calling /setTypeP3, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 							if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 								console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-								showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+								$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 							}
 						}
 					});
@@ -2318,7 +2324,7 @@ function getNewData(debut,fin){
 			if (p3QtyToServer){
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=p3Qty&val=' + p3Qty,
 					dataType: "text",
 					success: function(data){
@@ -2328,7 +2334,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /setP3Qty, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -2345,7 +2351,7 @@ function getNewData(debut,fin){
 				console.log('Sending ajax with '+ p3Frq + 'from slider');
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=p3Frq&val=' + p3Frq,
 					dataType: "text",
 					success: function(data){
@@ -2355,7 +2361,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /setP3Frq, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -2378,7 +2384,7 @@ function getNewData(debut,fin){
 			}	
 			$.ajax({
 				type: 'POST',
-				url: '/setPiscine?action=Parametres',
+				url: '/setPiscineParam',
 				data: 'sess=' + sessID + '&param=p3Frq&val=' + p3Frq,
 				dataType: "text",
 				success: function(data){
@@ -2388,7 +2394,7 @@ function getNewData(debut,fin){
 					console.log('An error occurred while calling /setP3Frq, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 					if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 						console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-						showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+						$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 					}
 				}
 			});
@@ -2410,7 +2416,7 @@ function getNewData(debut,fin){
 			}	
 			$.ajax({
 				type: 'POST',
-				url: '/setPiscine?action=Parametres',
+				url: '/setPiscineParam',
 				data: 'sess=' + sessID + '&param=p3Frq&val=' + p3Frq,
 				dataType: "text",
 				success: function(data){
@@ -2420,7 +2426,7 @@ function getNewData(debut,fin){
 					console.log('An error occurred while calling /setP3Frq, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 					if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 						console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-						showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+						$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 					}
 				}
 			});
@@ -2433,7 +2439,7 @@ function getNewData(debut,fin){
 				var theVal = $('#ClearAlertSWitch').is(":checked") ? 1 : 0;
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=clearAlert&val=' + theVal,
 					dataType: "text",
 					success: function(data){
@@ -2443,7 +2449,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /clearAlert, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -2456,7 +2462,7 @@ function getNewData(debut,fin){
 				var theVal = $('#FlowAlertSWitch').is(":checked") ? 0 : 1;		// checked means OK unchecked is invalid
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=flowAlert&val=' + theVal,
 					dataType: "text",
 					success: function(data){
@@ -2466,7 +2472,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /flowAlert, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -2479,7 +2485,7 @@ function getNewData(debut,fin){
 				var theVal = $('#InnondAlertSWitch').is(":checked") ? 0 : 1;		// checked means OK unchecked is invalid
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=innondAlert&val=' + theVal,
 					dataType: "text",
 					success: function(data){
@@ -2489,7 +2495,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /innondAlert, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -2502,7 +2508,7 @@ function getNewData(debut,fin){
 				var theVal = $('#PACAlertSWitch').is(":checked") ? 0 : 1;		// checked means OK unchecked is invalid
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=pacAlert&val=' + theVal,
 					dataType: "text",
 					success: function(data){
@@ -2512,7 +2518,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /pacAlert, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -2525,7 +2531,7 @@ function getNewData(debut,fin){
 				var theVal = $('#NivPHSWitch').is(":checked") ? 0 : 1;		// checked means OK unchecked is invalid
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=nivPH&val=' + theVal,
 					dataType: "text",
 					success: function(data){
@@ -2535,7 +2541,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /nivPH, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -2548,7 +2554,7 @@ function getNewData(debut,fin){
 				var theVal = $('#NivCLSWitch').is(":checked") ? 0 : 1;		// checked means OK unchecked is invalid
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=nivCL&val=' + theVal,
 					dataType: "text",
 					success: function(data){
@@ -2558,7 +2564,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /nivCL, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -2571,7 +2577,7 @@ function getNewData(debut,fin){
 				var theVal = $('#NivPmp3SWitch').is(":checked") ? 0 : 1;		// checked means OK unchecked is invalid
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=nivALG&val=' + theVal,
 					dataType: "text",
 					success: function(data){
@@ -2581,7 +2587,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /nivALG, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -2596,7 +2602,7 @@ function getNewData(debut,fin){
 				var theVal = $('#invPmpPHSWitch').is(":checked") ? 0 : -2;				// unchecked means invalid (-2)
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=pmpPH&val=' + theVal,
 					dataType: "text",
 					success: function(data){
@@ -2606,7 +2612,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /invPmpPH, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -2619,7 +2625,7 @@ function getNewData(debut,fin){
 				var theVal = $('#invPmpCLSWitch').is(":checked") ? 0 : -2;				// unchecked means invalid (-2)
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=pmpCL&val=' + theVal,
 					dataType: "text",
 					success: function(data){
@@ -2629,7 +2635,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /invPmpCL, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -2642,7 +2648,7 @@ function getNewData(debut,fin){
 				var theVal = $('#invPmp3SWitch').is(":checked") ? 0 : -2;				// unchecked means invalid (-2)
 				$.ajax({
 					type: 'POST',
-					url: '/setPiscine?action=Parametres',
+					url: '/setPiscineParam',
 					data: 'sess=' + sessID + '&param=pmp3&val=' + theVal,
 					dataType: "text",
 					success: function(data){
@@ -2652,7 +2658,7 @@ function getNewData(debut,fin){
 						console.log('An error occurred while calling /invPmp3, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-							showSessionExpiredDialog("Action utilisateur");		// 	or $("#popupDialog").popup("open") to stay on same page
+							$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 						}
 					}
 				});
@@ -2660,7 +2666,7 @@ function getNewData(debut,fin){
 		});
 
 	// ----- server side events
-		piscineParamsEvent = $.SSE('/piscineEvents ', {	//piscineParamsEvents
+		piscineParamsEvent = $.SSE('/piscineParamsEvents', {
 			onOpen: function (e) {
 				console.log("Open SSE to /piscineParamsEvents");
 				console.log(e);
@@ -2692,7 +2698,7 @@ function getNewData(debut,fin){
 		// ------ init page ----
 			$.ajax({
 				type: 'POST',
-				url: '/setPiscine?action=InitPageParams',
+				url: '/setPiscinePageParams',
 				data: 'sess=' + sessID,
 				dataType: "text",
 				success: function(data){
@@ -2702,7 +2708,7 @@ function getNewData(debut,fin){
 					console.log('An error occurred while calling /setPiscinePageParams, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 					if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 						console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-						showSessionExpiredDialog("Invalid Session");		// 	or $("#popupDialog").popup("open") to stay on same page
+						$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 					}
 				}
 			});
@@ -2717,7 +2723,7 @@ function getNewData(debut,fin){
 			if (expirationDate < today.getTime()) {						// check that the ttl is still valid move to login if not. 
 				console.log('Session ttl expired: go to login diag');
 				console.log('expiration is ' + expirationDate + ' and now is ' + today.getTime());
-				showSessionExpiredDialog("Action utilisateur");
+				$.mobile.changePage( "#dlg-EndSessionAlert" );
 			} else {													// session is still valid so perform data!
 				timeLeft = 	(expirationDate - today.getTime())/1000;
 				console.log('Session is still valid, time left to run : ' + timeLeft + ' secs');
@@ -2908,12 +2914,12 @@ function getNewData(debut,fin){
 				}
 				if(returnedData.hasOwnProperty('pacViaRouter')){
 					if(returnedData.pacViaRouter == 0) {
-						if ($('#pacViaRouterSWitch').prop("checked")){ 
+						if ($('#pacViaRouterSWitch').is(":checked")){ 
 							pacViaRouterToServer = false;
 							$('#pacViaRouterSW').click();
 						}
 					} else if(returnedData.pacViaRouter == 1) {	
-						if (!$('#pacViaRouterSWitch').prop("checked")){ 
+						if (!$('#pacViaRouterSWitch').is(":checked")){ 
 							pacViaRouterToServer = false;
 							$('#pacViaRouterSW').click();
 						}
@@ -2921,12 +2927,12 @@ function getNewData(debut,fin){
 				}
 				if(returnedData.hasOwnProperty('localAutoLogin')){
 					if(returnedData.localAutoLogin == 0) {
-						if ($('#localAutoLoginSWitch').prop("checked")){ 
+						if ($('#localAutoLoginSWitch').is(":checked")){ 
 							localAutoLoginToServer = false;
 							$('#localAutoLoginSW').click();
 						}
 					} else if(returnedData.localAutoLogin == 1) {	
-						if (!$('#localAutoLoginSWitch').prop("checked")){ 
+						if (!$('#localAutoLoginSWitch').is(":checked")){ 
 							localAutoLoginToServer = false;
 							$('#localAutoLoginSW').click();
 						}
@@ -3210,13 +3216,13 @@ function getNewData(debut,fin){
 			endDate:dayjs(),
 			autoUpdateInput:!0
 			}
-			,(function(debut,fin,a){
-				console.log("New date range selected: "+debut.format("DD/MM/YY HH:MM")+" to "+fin.format("DD/MM/YY HH:MM")+" (predefined range: "+a+")")
-				getNewData(debut,fin);
+			,(function(e,t,a){
+				console.log("New date range selected: "+e.format("DD/MM/YY HH:MM")+" to "+t.format("DD/MM/YY HH:MM")+" (predefined range: "+a+")")
+				getNewData(e,t);
 				var s=chart.xAxisRange();
-				if(dayjs(s[0])!=debut||dayjs(s[1]!=fin)){
-					chart.updateOptions({dateWindow:[debut,fin]});
-					console.log("A new date selection from datePicker was made: "+debut.toString()+" to "+fin.toString());
+				if(dayjs(s[0])!=e||dayjs(s[1]!=t)){
+					chart.updateOptions({dateWindow:[e,t]});
+					console.log("A new date selection from datePicker was made: "+e.toString()+" to "+t.toString());
 				}
 			})
 		);
@@ -3228,10 +3234,10 @@ function getNewData(debut,fin){
 			console.log("Selected:"+e);
 			for(i=0;i<13;i++){
 				if(null!=e && j<e.length && parseInt(e[j])==i){ 
-					chart.setVisibility(i,!0);	// show
+					chart.setVisibility(i,!0);
 					j++;
 				}else {
-					chart.setVisibility(i,!1);  // hide
+					chart.setVisibility(i,!1);
 				}
 			}
 		}));
@@ -3520,7 +3526,7 @@ function getNewData(debut,fin){
 			(showDebug == 0) ? showDebug=1 : showDebug=0;
 			$.ajax({
 				type: 'POST',
-				url: '/setPiscine?action=Debug',
+				url: '/setPiscineDebug',
 				data: 'sess=' + sessID + '&showDebug=' + showDebug,
 				dataType: "text",
 				success: function(data){
@@ -3530,14 +3536,14 @@ function getNewData(debut,fin){
 					console.log('An error occurred while calling /setLampe, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 					if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 						console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-						showSessionExpiredDialog("Invalid Session");		// 	or $("#popupDialog").popup("open") to stay on same page
+						$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 					}
 				}
 			});
 		}
 	)),
 
-		piscineDebugEvent=$.SSE("/piscineEvents",{		//piscineDebugEvents
+		piscineDebugEvent=$.SSE("/piscineDebugEvents",{
 			onOpen:function(e){
 				console.log("Open SSE to /piscineDebugEvents");
 				console.log(e)
@@ -3548,33 +3554,32 @@ function getNewData(debut,fin){
 			},
 			onError:function(e){
 				console.log("Could not connect to SSE /piscineDebugEvents")
-				console.log(e)
 			},
 			onMessage:function(e){
 				console.log("Message from /piscineDebugEvents");
 				console.log(e);
-				console.log($.trim(e.data))
+				data=$.trim(e.data)
 			},
 			options:{forceAjax:!1},
 			events:{
-				piscineLCDDebug:function(evt){
-					var timeLeft,
-					today=new Date;
+				piscineLCDDebug:function(a){
+					var s,
+					i=new Date;
 					console.log("PiscineLCDDebug");
-					console.log(evt);
-					if(expirationDate<today.getTime()){
+					console.log(a);
+					if(expirationDate<i.getTime()){
 						console.log("Session ttl expired: go to login diag");
-						console.log("expiration is "+expirationDate+" and now is "+today.getTime());
-						showSessionExpiredDialog("Invalid Session");
+						console.log("expiration is "+expirationDate+" and now is "+i.getTime());
+						$.mobile.changePage("#dlg-EndSessionAlert");
 					}else{
-						timeLeft=(expirationDate-today.getTime())/1e3;
-						console.log("Session is still valid, time left to run : "+timeLeft+" secs");
-						data=$.trim(evt.data);
-						var returnedData=JSON.parse(data);
-						console.log("serverEvent json is "+JSON.stringify(returnedData));
-						if(returnedData.hasOwnProperty("lignes")){
-							lignes=returnedData.lignes;
-							$("#debugTextArea").append(lignes);
+						s=(expirationDate-i.getTime())/1e3;
+						console.log("Session is still valid, time left to run : "+s+" secs");
+						data=$.trim(a.data);
+						var n=JSON.parse(data);
+						console.log("serverEvent json is "+JSON.stringify(n));
+						if(n.hasOwnProperty("lignes")){
+							e=n.lignes;
+							$("#debugTextArea").append(e);
 							$("#debugTextArea").scrollTop($("#debugTextArea")[0].scrollHeight);
 						}	
 					}
@@ -3585,57 +3590,56 @@ function getNewData(debut,fin){
 
 	// page PiscineMaintenance create inits
 	$(document).delegate("#pagePiscineMaintenance","pagebeforecreate",function(){
-		var sonde1index,sonde2index,sonde3index,
-		sonde1Type="N/A",
-		sonde2Type="N/A",
-		sonde3Type="N/A",
-		gotSonde=false,	
-		typePHRedox="N/A";
-
+		var e,t,a,
+		s="N/A",
+		i="N/A",
+		n="N/A",
+		o=!1,
+		r="N/A",
+		l="N/A";
 		
-		function doAction(action,param,valParam,param2,valParam2){
+		function c(e,t,a,s,i){
 
-/*			doAction("scanPH","typePH",PH4,"");
-			doAction("cancelPH","");
-			doAction("validEtalon","valEtalon",$("#PHMesu").val(),"type","PH4")
-			doAction("cancelScan","type","PH")
-			doAction("validEtalon","valEtalon",$("#PHAjust").val(),"type","PH4"),
-			doAction("scanRedox","typeRedox","low","");
-			doAction("cancelRedox","");
-			doAction("validEtalon","valEtalon",$("#RedoxMesu").val(),"type","low"),
-			doAction("cancelScan","type","Redox")
-			doAction("validEtalon","valEtalon",$("#RedoxAjust").val(),"type","low"),
+/*			c("scanPH","typePH",r,"");
+			c("cancelPH","");
+			c("validEtalon","valEtalon",$("#PHMesu").val(),"type",r)
+			c("cancelScan","type","PH")
+			c("validEtalon","valEtalon",$("#PHAjust").val(),"type",r),
+			c("scanRedox","typeRedox",l,"");
+			c("cancelRedox","");
+			c("validEtalon","valEtalon",$("#RedoxMesu").val(),"type",l),
+			c("cancelScan","type","Redox")
+			c("validEtalon","valEtalon",$("#RedoxAjust").val(),"type",l),
 
-			doAction("validSondes","sondes",JSON.stringify(sondes),"")
-			doAction("scanSondes",""),
+			c("validSondes","sondes",JSON.stringify(sondes),"")
+			c("scanSondes",""),
 */
 
-			var command="sess="+sessID+"&command="+action;
-			if(""!==param){
-				command+="&"+param+"="+valParam
+			var n="sess="+sessID+"&command="+e;
+			if(""!==t){
+				n+="&"+t+"="+a
 			}
-			if(""!==param2){
-				command+="&"+param2+"="+valParam2
+			if(""!==s){
+				n+="&"+s+"="+i
 			}
-			console.log("data is :"+command),
+			console.log("data is :"+n),
 			$.ajax({
 				type:"POST",
-				url:"/setPiscine?action=Maintenance",
-				data:command,
+				url:"/setPiscineMaintenance",
+				data:n,
 				dataType:"text",
-				success:function(type){
-					console.log("Call to /setPiscineMaintenance with command="+action+" is success")
+				success:function(t){
+					console.log("Call to /setPiscineMaintenance with command="+e+" is success")
 				},
 				error: function (xhr, status, errorThrown) {
 					console.log('An error occurred while calling /setPiscinePagePrincip, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 					if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 						console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-						showSessionExpiredDialog("Invalid Session");		// 	or $("#popupDialog").popup("open") to stay on same page
+						$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 					}
 				}
 			})
 		}
-
 		$(":input[name= 'PHRadio']").click((function(){
 			$("#validRedox").addClass("ui-disabled");
 			$(":input[name= 'RedoxRadio']").attr("checked",!1);
@@ -3643,23 +3647,23 @@ function getNewData(debut,fin){
 			$("#RedoxMesu").val("---");
 			$("#RedoxAjust").val("---");
 			$(scanRedoxLed).removeClass("ledOn").addClass("ledOff");
-			typePHRedox="N/A";
+			l="N/A";
 			$("#cancelPH").removeClass("ui-disabled");
 			switch($(this).attr("id")){
 				case"PH4Radio":
 					console.log("You clicked PH4");
-					typePHRedox="PH4";
+					r="PH4";
 				break;
 				case"PH7Radio":
 					console.log("You clicked PH7");
-					typePHRedox="PH7";
+					r="PH7";
 				break;
 				case"PH9Radio":
 					console.log("You clicked PH9");
-					typePHRedox="PH9";
+					r="PH9";
 			}
-			if("N/A"!==typePHRedox){
-				doAction("scanPH","typePH",typePHRedox,"");
+			if("N/A"!==r){
+				c("scanPH","typePH",r,"");
 				$("#scanPHLed").removeClass("ledOff").addClass("ledOn");
 			}
 		})),
@@ -3668,50 +3672,50 @@ function getNewData(debut,fin){
 			$("#validPH").addClass("ui-disabled"),
 			$(":input[name= 'PHRadio']").attr("checked",!1),
 			$(":input[name= 'PHRadio']").checkboxradio("refresh"),
-			typePHRedox="N/A",
+			r="N/A",
 			$("#PHMesu").val("---"),
 			$("#PHAjust").val("---"),
 			$(scanPHLed).removeClass("ledOn").addClass("ledOff"),
-			doAction("cancelPH","");
+			c("cancelPH","");
 		}));
 
 		$("#validPH").click((function(){
-			if(isNaN($("#PHMesu").val())||"N/A"===typePHRedox)
+			if(isNaN($("#PHMesu").val())||"N/A"===r)
 				$(this).addClass("ui-disabled")
 			else {
 				$(":input[name= 'PHRadio']").attr("checked",!1),
 				$(":input[name= 'PHRadio']").checkboxradio("refresh"),
 				$(scanPHLed).removeClass("ledOn").addClass("ledOff"),
-				doAction("validEtalon","valEtalon",$("#PHMesu").val(),"type",typePHRedox),
+				c("validEtalon","valEtalon",$("#PHMesu").val(),"type",r)
 				$("#PHMesu").val("---"),
 				$("#PHAjust").val("---"),
-				typePHRedox="N/A"
+				r="N/A"
 			}
 		}));
 
 		$("#scanPHLed").click((function(){
-			if("N/A"!==typePHRedox){
+			if("N/A"!==r){
 				$("#validPH").addClass("ui-disabled"),
 				$(":input[name= 'PHRadio']").attr("checked",!1),
 				$(":input[name= 'PHRadio']").checkboxradio("refresh"),
-				typePHRedox="N/A",
+				r="N/A",
 				$("#PHMesu").val("---"),
 				$("#PHAjust").val("---"),
 				$(this).removeClass("ledOn").addClass("ledOff"),
-				doAction("cancelScan","type","PH");
+				c("cancelScan","type","PH");
 			}
 		}));
 
 		$("#PHAjust").on("keyup",(function(e){
-			if(13==e.keyCode&&"N/A"!==typePHRedox&&!isNaN($("#PHAjust").val())){
+			if(13==e.keyCode&&"N/A"!==r&&!isNaN($("#PHAjust").val())){
 				$("#validPH").addClass("ui-disabled"),
 				$(":input[name= 'PHRadio']").attr("checked",!1),
 				$(":input[name= 'PHRadio']").checkboxradio("refresh"),
-				doAction("validEtalon","valEtalon",$("#PHAjust").val(),"type",typePHRedox),
+				c("validEtalon","valEtalon",$("#PHAjust").val(),"type",r),
 				$("#PHMesu").val("---"),
 				$("#PHAjust").val("---"),
 				$(scanPHLed).removeClass("ledOn").addClass("ledOff"),
-				typePHRedox="N/A"
+				r="N/A"
 			}
 		}));
 
@@ -3722,21 +3726,21 @@ function getNewData(debut,fin){
 			$("#PHMesu").val("---"),
 			$("#PHAjust").val("---"),
 			$(scanPHLed).removeClass("ledOn").addClass("ledOff"),
-			typePHRedox="N/A",
+			r="N/A",
 			$("#cancelRedox").removeClass("ui-disabled"),
 			$("#RedoxAjust").val("---");
 			switch($(this).attr("id")){
 				case"redoxLowRadio":
 					console.log("You clicked RedoxLow"),
-					typePHRedox="Low";
+					l="Low";
 					break;
 				case"redoxHighRadio":
 					console.log("You clicked RedoxHigh"),
-					typePHRedox="High"
+					l="High"
 			}
-			if("N/A"!==typePHRedox){
+			if("N/A"!==l){
 				$("#scanRedoxLed").removeClass("ledOff").addClass("ledOn"),
-				doAction("scanRedox","typeRedox",typePHRedox,"");
+				c("scanRedox","typeRedox",l,"");
 			}
 		}));
 
@@ -3744,36 +3748,36 @@ function getNewData(debut,fin){
 			$("#validRedox").addClass("ui-disabled"),
 			$(":input[name= 'RedoxRadio']").attr("checked",!1),
 			$(":input[name= 'RedoxRadio']").checkboxradio("refresh"),
-			typePHRedox="N/A",
+			l="N/A",
 			$("#RedoxMesu").val("---"),
 			$("#RedoxAjust").val("---"),
 			$(scanRedoxLed).removeClass("ledOn").addClass("ledOff"),
-			doAction("cancelRedox","");
+			c("cancelRedox","");
 		}));
 
 		$("#validRedox").click((function(){
-			if(!isNaN($("#RedoxMesu").val())&&"N/A"!==typePHRedox){
+			if(!isNaN($("#RedoxMesu").val())&&"N/A"!==l){
 				$(this).addClass("ui-disabled"),
 				$(":input[name= 'RedoxRadio']").attr("checked",!1),
 				$(":input[name= 'RedoxRadio']").checkboxradio("refresh"),
 				$(scanRedoxLed).removeClass("ledOn").addClass("ledOff"),
-				doAction("validEtalon","valEtalon",$("#RedoxMesu").val(),"type",typePHRedox),
+				c("validEtalon","valEtalon",$("#RedoxMesu").val(),"type",l),
 				$("#RedoxMesu").val("---"),
 				$("#RedoxAjust").val("---"),
-				typePHRedox="N/A"
+				l="N/A"
 			}
 		}));
 
 		$("#scanRedoxLed").click((function(){
-			if("N/A"!==typePHRedox){
+			if("N/A"!==l){
 				$("#validRedox").addClass("ui-disabled"),
 				$(":input[name= 'RedoxRadio']").attr("checked",!1),
 				$(":input[name= 'RedoxRadio']").checkboxradio("refresh"),
-				typePHRedox="N/A",
+				l="N/A",
 				$("#RedoxMesu").val("---"),
 				$("#RedoxAjust").val("---"),
 				$(this).removeClass("ledOn").addClass("ledOff"),
-				doAction("cancelScan","type","Redox")
+				c("cancelScan","type","Redox")
 			}
 		}));
 
@@ -3782,10 +3786,10 @@ function getNewData(debut,fin){
 				$("validRedox").addClass("ui-disabled"),
 				$(":input[name= 'RedoxRadio']").attr("checked",!1),
 				$(":input[name= 'RedoxRadio']").checkboxradio("refresh"),
-				doAction("validEtalon","valEtalon",$("#RedoxAjust").val(),"type",typePHRedox),
+				c("validEtalon","valEtalon",$("#RedoxAjust").val(),"type",l),
 				$("#RedoxMesu").val("---"),
 				$("#RedoxAjust").val("---"),
-				typePHRedox="N/A",
+				l="N/A",
 				$(scanRedoxLed).removeClass("ledOn").addClass("ledOff")
 			}
 		}));
@@ -3796,62 +3800,62 @@ function getNewData(debut,fin){
 				sonde1.printable=$("#sonde1Val").val(),
 				sonde1.other=$("#sonde1Val").attr("value"),
 				sonde1.type=$("#sonde1Type").text(),
-				sonde1.index=sonde1index,
+				sonde1.index=e,
 			sondes.push(sonde1),
 			sonde2={}
 				sonde2.printable=$("#sonde2Val").val(),
 				sonde2.type=$("#sonde2Type").text(),
-				sonde2.index=sonde2index,
+				sonde2.index=t,
 			sondes.push(sonde2),
 			sonde3={}
 				sonde3.printable=$("#sonde3Val").val(),
 				sonde3.type=$("#sonde3Type").text(),
-				sonde3.index=sonde3index,
+				sonde3.index=a,
 			sondes.push(sonde3),
 			$(this).addClass("ui-disabled"),
-			gotSonde = false;
-			doAction("validSondes","sondes",JSON.stringify(sondes),"");
+			o=!1,
+			c("validSondes","sondes",JSON.stringify(sondes),"")
 		}));
 
 		$("#scanSondes").click((function(){
 			$("#sonde1Val").val(""),
 			$("#sonde2Val").val(""),
 			$("#sonde3Val").val(""),
-			doAction("scanSondes",""),
+			c("scanSondes",""),
 			$("#validSondes").removeClass("ui-disabled")
 		}));
 
 		$("#sonde1Type").click((function(){
-			if(gotSonde){
+			if(o){
 				switch($(this).text()){
 					case"N/A":
 						$(this).text("Eau"),
-						sonde1Type="eau"
-						if((("air"==sonde2Type&&(("N/A"==sonde3Type)||("pac"==sonde3Type))) || ("pac"==sonde2Type&&(("N/A"==sonde3Type)||("air"==sonde3Type))) || ("N/A"==sonde2Type && "eau"!=sonde3Type) ))
+						s="eau"
+						if((("air"==i&&(("N/A"==n)||("pac"==n))) || ("pac"==i&&(("N/A"==n)||("air"==n))) || ("N/A"==i && "eau"!=n) ))
 							$("#validSondes").removeClass("ui-disabled");
 						else 
 							$("#validSondes").addClass("ui-disabled")
 						break;
 					case"Eau":
 						$(this).text("Air"),
-						sonde1Type="air"
-						if((("eau"==sonde2Type&&(("N/A"==sonde3Type)||("pac"==sonde3Type))) || ("pac"==sonde2Type&&(("N/A"==sonde3Type)||("eau"==sonde3Type))) || ("N/A"==sonde2Type && "air"!=sonde3Type) ))
+						s="air"
+						if((("eau"==i&&(("N/A"==n)||("pac"==n))) || ("pac"==i&&(("N/A"==n)||("eau"==n))) || ("N/A"==i && "air"!=n) ))
 							$("#validSondes").removeClass("ui-disabled");
 						else 
 							$("#validSondes").addClass("ui-disabled")
 						break;
 					case"Air":
 						$(this).text("Pac"),
-						sonde1Type="pac"
-						if((("air"==sonde2Type&&(("N/A"==sonde3Type)||("eau"==sonde3Type))) || ("eau"==sonde2Type&&(("N/A"==sonde3Type)||("air"==sonde3Type))) || ("N/A"==sonde2Type && "pac"!=sonde3Type) ))
+						s="pac"
+						if((("air"==i&&(("N/A"==n)||("eau"==n))) || ("eau"==i&&(("N/A"==n)||("air"==n))) || ("N/A"==i && "pac"!=n) ))
 							$("#validSondes").removeClass("ui-disabled");
 						else 
 							$("#validSondes").addClass("ui-disabled")
 						break;
 					case"Pac":
 						$(this).text("N/A"),
-						sonde1Type="N/A"
-						if(sonde2Type!=sonde3Type) 
+						s="N/A"
+						if(i!=n) 
 							$("#validSondes").removeClass("ui-disabled")
 						else 
 							$("#validSondes").addClass("ui-disabled")
@@ -3860,36 +3864,36 @@ function getNewData(debut,fin){
 		}));
 
 		$("#sonde2Type").click((function(){
-			if(gotSonde){
+			if(o){
 				switch($(this).text()){
 					case"N/A":
 						$(this).text("Eau"),
-						sonde2Type="eau"
-						if((("air"==sonde1Type&&(("N/A"==sonde3Type)||("pac"==sonde3Type))) || ("pac"==sonde1Type&&(("N/A"==sonde3Type)||("air"==sonde3Type))) || ("N/A"==sonde1Type && "eau"!=sonde3Type) ))
+						i="eau"
+						if((("air"==s&&(("N/A"==n)||("pac"==n))) || ("pac"==s&&(("N/A"==n)||("air"==n))) || ("N/A"==s && "eau"!=n) ))
 							$("#validSondes").removeClass("ui-disabled");
 						else 
 							$("#validSondes").addClass("ui-disabled")
 						break;
 					case"Eau":
 						$(this).text("Air"),
-						sonde2Type="air"
-						if((("eau"==sonde1Type&&(("N/A"==sonde3Type)||("pac"==sonde3Type))) || ("pac"==sonde1Type&&(("N/A"==sonde3Type)||("eau"==sonde3Type))) || ("N/A"==sonde1Type && "air"!=sonde3Type) ))
+						i="air"
+						if((("eau"==s&&(("N/A"==n)||("pac"==n))) || ("pac"==s&&(("N/A"==n)||("eau"==n))) || ("N/A"==s && "air"!=n) ))
 							$("#validSondes").removeClass("ui-disabled");
 						else 
 							$("#validSondes").addClass("ui-disabled")
 						break;
 					case"Air":
 						$(this).text("Pac");
-						sonde2Type="pac";
-						if((("air"==sonde1Type&&(("N/A"==sonde3Type)||("eau"==sonde3Type))) || ("eau"==sonde1Type&&(("N/A"==sonde3Type)||("air"==sonde3Type))) || ("N/A"==sonde1Type && "pac"!=sonde3Type) ))
+						i="pac";
+						if((("air"==s&&(("N/A"==n)||("eau"==n))) || ("eau"==s&&(("N/A"==n)||("air"==n))) || ("N/A"==s && "pac"!=n) ))
 							$("#validSondes").removeClass("ui-disabled");
 						else 
 							$("#validSondes").addClass("ui-disabled")
 						break;
 					case"Pac":
 						$(this).text("N/A"),
-						sonde2Type="N/A"
-						if(sonde1Type!=sonde3Type) 
+						i="N/A"
+						if(s!=n) 
 							$("#validSondes").removeClass("ui-disabled")
 						else 
 							$("#validSondes").addClass("ui-disabled")
@@ -3898,36 +3902,36 @@ function getNewData(debut,fin){
 		}));
 
 		$("#sonde3Type").click((function(){
-			if(gotSonde){
+			if(o){
 				switch($(this).text()){
 					case"N/A":
 						$(this).text("Eau"),
-						sonde3Type="eau"
-						if((("air"==sonde2Type&&(("N/A"==sonde1Type)||("pac"==sonde1Type))) || ("pac"==sonde2Type&&(("N/A"==sonde1Type)||("air"==sonde1Type))) || ("N/A"==sonde2Type && "eau"!=sonde1Type) ))
+						n="eau"
+						if((("air"==i&&(("N/A"==s)||("pac"==s))) || ("pac"==i&&(("N/A"==s)||("air"==s))) || ("N/A"==i && "eau"!=s) ))
 							$("#validSondes").removeClass("ui-disabled");
 						else 
 							$("#validSondes").addClass("ui-disabled")
 					break;
 					case"Eau":
 						$(this).text("Air"),
-						sonde3Type="air"
-						if((("eau"==sonde2Type&&(("N/A"==sonde1Type)||("pac"==sonde1Type))) || ("pac"==sonde2Type&&(("N/A"==sonde1Type)||("eau"==sonde1Type))) || ("N/A"==sonde2Type && "air"!=sonde1Type) ))
+						n="air"
+						if((("eau"==i&&(("N/A"==s)||("pac"==s))) || ("pac"==i&&(("N/A"==s)||("eau"==s))) || ("N/A"==i && "air"!=s) ))
 							$("#validSondes").removeClass("ui-disabled");
 						else 
 							$("#validSondes").addClass("ui-disabled")
 						break;
 					case"Air":
 						$(this).text("Pac"),
-						sonde3Type="pac"
-						if((("air"==sonde2Type&&(("N/A"==sonde1Type)||("eau"==sonde1Type))) || ("eau"==sonde2Type&&(("N/A"==sonde1Type)||("air"==sonde1Type))) || ("N/A"==sonde2Type && "pac"!=sonde1Type) ))
+						n="pac"
+						if((("air"==i&&(("N/A"==s)||("eau"==s))) || ("eau"==i&&(("N/A"==s)||("air"==s))) || ("N/A"==i && "pac"!=s) ))
 							$("#validSondes").removeClass("ui-disabled");
 						else 
 							$("#validSondes").addClass("ui-disabled")
 						break;
 					case"Pac":
 						$(this).text("N/A"),
-						sonde3Type="N/A";
-						if(sonde2Type!=sonde1Type) 
+						n="N/A";
+						if(i!=s) 
 							$("#validSondes").removeClass("ui-disabled")
 						else 
 							$("#validSondes").addClass("ui-disabled")
@@ -3935,7 +3939,7 @@ function getNewData(debut,fin){
 			}
 		}));
 
-		piscineMaintenanceEvent=$.SSE("/piscineEvents",{		// piscineMaintenanceEvents
+		piscineMaintenanceEvent=$.SSE("/piscineMaintenanceEvents",{
 			onOpen:function(e){
 				console.log("Open SSE to /piscineMaintenanceEvents"),
 				console.log(e)
@@ -3954,7 +3958,7 @@ function getNewData(debut,fin){
 				if(data.includes('hello!')){
 					$.ajax({
 						type:"POST",
-						url:"/setPiscine?action=InitMaintenance",
+						url:"/setPiscineInitMaintenance",
 						data:"sess="+sessID,
 						dataType:"text",
 						success:function(e){
@@ -3964,7 +3968,7 @@ function getNewData(debut,fin){
 							console.log('An error occurred while calling /setPiscinePagePrincip, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
 							if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 								console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-								showSessionExpiredDialog("Invalid Session");		// 	or $("#popupDialog").popup("open") to stay on same page
+								$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 							}
 						}
 					})
@@ -3976,110 +3980,107 @@ function getNewData(debut,fin){
 			},
 		});
 		
-
 		function piscineDataMaintenance(evt){
-			var today=new Date;
-			var value=0;
-			var sonde;
+			var u=new Date;
+			var p=0;
 			console.log("piscineMaintenanceServer"),
-			console.log(evt)
-			if(expirationDate<today.getTime()){
+			console.log(c)
+			if(expirationDate<u.getTime()){
 				console.log("Session ttl expired: go to login diag"),
-				console.log("expiration is "+expirationDate+" and now is "+today.getTime()),
-				showSessionExpiredDialog("Invalid Session");
+				console.log("expiration is "+expirationDate+" and now is "+u.getTime()),
+				$.mobile.changePage("#dlg-EndSessionAlert");
 			} else {
-				timeLeft=(expirationDate-today.getTime())/1e3,
-				console.log("Session is still valid, time left to run : "+timeLeft+" secs"),
-				data=$.trim(evt.data);
-				var returnedData=JSON.parse(data);
-				console.log("serverEvent json is "+JSON.stringify(returnedData));
+				d=(expirationDate-u.getTime())/1e3,
+				console.log("Session is still valid, time left to run : "+d+" secs"),
+				data=$.trim(c.data);
+				var m=JSON.parse(data);
+				console.log("serverEvent json is "+JSON.stringify(m));
 
-				if(returnedData.hasOwnProperty("sondes")){
-					if(returnedData.sondes.length>=1){
-						sonde=returnedData.sondes[0]
-						if("N/A"===sonde.type){
+				if(m.hasOwnProperty("sondes")){
+					if(m.sondes.length>=1){
+						h=m.sondes[0]
+						if("N/A"===h.type){
 							$("#sonde1Val").val(""),
 							$("#sonde1Type").text("N/A"),
 							$("#sonde1Type").addClass("ui-disabled"),
-							sonde1index=-1
-							sonde1Type=sonde.type
+							e=-1
+							s=h.type
 						}else{
-							$("#sonde1Val").val(sonde.printable),
-							$("#sonde1Type").text(sonde.type)
+							$("#sonde1Val").val(h.printable),
+							$("#sonde1Type").text(h.type)
 							$("#sonde1Type").removeClass("ui-disabled"),
-							sonde1Type=sonde.type.toLowerCase(),
-							sonde1index=sonde.index
+							s=h.type.toLowerCase(),
+							e=h.index
 						}
-						gotSonde = true;
 					} 
-					if(returnedData.sondes.length>=2){
-						sonde=returnedData.sondes[1]
-						if("N/A"===sonde.type){
+					if(m.sondes.length>=2){
+						h=m.sondes[1]
+						if("N/A"===h.type){
 							$("#sonde2Val").val(""),
 							$("#sonde2Type").text("N/A"),
 							$("#sonde2Type").addClass("ui-disabled"),
-							sonde2Type=sonde.type
-							sonde2index=-1
+							i=h.type
+							t=-1
 						}else{
-							$("#sonde2Val").val(sonde.printable),
-							$("#sonde2Type").text(sonde.type),
+							$("#sonde2Val").val(h.printable),
+							$("#sonde2Type").text(h.type),
 							$("#sonde2Type").removeClass("ui-disabled"),
-							sonde2Type=sonde.type.toLowerCase(),
-							sonde2index=sonde.index
+							i=h.type.toLowerCase(),
+							t=h.index
 						}
 					}
-					if(returnedData.sondes.length>=3){
-						sonde=returnedData.sondes[2];
-						if("N/A"===sonde.type){
+					if(m.sondes.length>=3){
+						h=m.sondes[2];
+						if("N/A"===h.type){
 							$("#sonde3Val").val(""),
 							$("#sonde3Type").text("N/A"),
 							$("#sonde3Type").addClass("ui-disabled"),
-							sonde3index=-1
-							sonde3Type="N/A"
+							a=-1
+							n="N/A"
 						} else {
-							$("#sonde3Val").val(sonde.printable),
-							$("#sonde3Type").text(sonde.type),
+							$("#sonde3Val").val(h.printable),
+							$("#sonde3Type").text(h.type),
 							$("#sonde3Type").removeClass("ui-disabled"),
-							sonde3Type=sonde.type.toLowerCase(),
-							sonde3index=sonde.index
+							h.type=h.type.toLowerCase(),
+							a=h.index
 						}
 					}
-					if(gotSonde){	
-						if("N/A"===sonde1Type&&"N/A"===sonde2Type&&"N/A"===sonde3Type)
+					if(o=!0){
+						if("N/A"===s&&"N/A"===i&&"N/A"===n)
 							$("#validSondes").addClass("ui-disabled")
 						else
 							$("#validSondes").removeClass("ui-disabled")
 					}
 				} 
 				if(m.hasOwnProperty("phCalc")){
-					value=parseFloat(m.phCalc)
-					console.log("Got phClac and theVal is :"+value),
-					$("#PHCalc").val(value.toFixed(2).toString())
+					p=parseFloat(m.phCalc)
+					console.log("Got phClac and theVal is :"+p),
+					$("#PHCalc").val(p.toFixed(2).toString())
 					if("N/A"!==r){
 						if(m.hasOwnProperty("phMesu")){
-							value=parseFloat(m.phMesu),
-							$("#PHMesu").val(value.toFixed(3).toString()),
+							p=parseFloat(m.phMesu),
+							$("#PHMesu").val(p.toFixed(3).toString()),
 							$("#validPH").removeClass("ui-disabled")
 						}
 						if(m.hasOwnProperty("phAjust")){
-							value=parseFloat(m.phAjust),
-							$("#PHAjust").val(value.toFixed(3).toString())
+							p=parseFloat(m.phAjust),
+							$("#PHAjust").val(p.toFixed(3).toString())
 						}
 					}
 				}
 				if(m.hasOwnProperty("redoxCalc")){
-					value=parseFloat(m.redoxCalc),
-					console.log("Got redoxClac and theVal is :"+value),
-					$("#RedoxCalc").val(value.toFixed(1).toString())
+					p=parseFloat(m.redoxCalc),
+					console.log("Got redoxClac and theVal is :"+p),
+					$("#RedoxCalc").val(p.toFixed(1).toString())
 					if("N/A"!==l){
 						if(m.hasOwnProperty("redoxMesu")){
-							value=parseFloat(m.redoxMesu),
-							$("#RedoxMesu").val(value.toFixed(1).toString()),
+							p=parseFloat(m.redoxMesu),
+							$("#RedoxMesu").val(p.toFixed(1).toString()),
 							$("#validRedox").removeClass("ui-disabled")
 						}
 						if(m.hasOwnProperty("redoxAjust")){
-							value=parseFloat(m.redoxAjust),
-							$("#RedoxAjust").val(value.toFixed(1).toString())
+							p=parseFloat(m.redoxAjust),
+							$("#RedoxAjust").val(p.toFixed(1).toString())
 						}
 					}
 				}
@@ -4122,7 +4123,7 @@ function getNewData(debut,fin){
 	//	$.mobile.loading("show");
 		$.ajax({
 		type: 'post',
-		url: '/api/auth?action=getUsers',
+		url: '/getUsers',
 		cache: false,
 		success: function ( response ) {
 			response = $.trim(response);
@@ -4137,7 +4138,7 @@ function getNewData(debut,fin){
 			$('#usersList').listview('refresh');
 			//$('#dataView ul').listview('refresh');
 	//		$.mobile.loading("hide");
-			},
+		            },
 		error: onError
 		});		// end Ajax
 
@@ -4181,7 +4182,6 @@ function getNewData(debut,fin){
 	$(document).on('pagebeforeshow', '#pagePiscinePrincipale', function(){       
 		console.log('-- STARTING Piscine Server Events --');
 		piscineEvent.start();
-		fetch('/setPiscine?action=setActivePage&page=principale', {method: 'POST'});
 		showToast("Mise à jour temps réel activée", 'info');
 	});
 	$(document).on('pagebeforehide', '#pagePiscinePrincipale', function(){       
@@ -4192,8 +4192,6 @@ function getNewData(debut,fin){
 	$(document).on('pagebeforeshow', '#pagePiscineParametres', function(){       
 		console.log('-- STARTING Piscine Params Server Events --');
 		piscineParamsEvent.start();
-		fetch('/setPiscine?action=setActivePage&page=parametres', {method: 'POST'});
-		showToast("Mise à jour données depuis serveur", 'info');
 	});
 	$(document).on('pagebeforehide', '#pagePiscineParametres', function(){       
 		console.log('-- STOPPING Piscine Params Server Events --');
@@ -4203,44 +4201,70 @@ function getNewData(debut,fin){
 	$(document).on("pagebeforeshow", "#pagePiscineDebug", function(){
 		console.log("-- STARTING Piscine Debug Server Events --");
 		piscineDebugEvent.start();
-		fetch('/setPiscine?action=setActivePage&page=debug', {method: 'POST'});
-		fetch('/setPiscine?action=Debug&trigger=start&sess='+sessID, {method: 'POST'});
-		showToast("Mise à jour temps réel des logs activée", 'info');
+		$.ajax({
+			type:"POST",
+			url:"/setPiscinePageDebug",
+			data:"sess="+sessID+"&trigger=start",
+			dataType:"text",
+			success:function(e){
+				console.log("Call to /setPiscinePageDebug?trigger=start is success");
+			},
+			error:function(e,t,a){
+				console.log("An error occurred while calling /setPiscineMaintenance, data is: "+e.status+" and exception is : "+e.responseText);
+				if ((e.status == "400") && (e.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
+					console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
+					$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
+				}
+			}
+		})
 	});
 	$(document).on("pagebeforehide","#pagePiscineDebug",function(){
 		console.log("-- STOPPING Piscine Debug Server Events --");
 		piscineDebugEvent.stop();
-		fetch('/setPiscine?action=Debug&trigger=stop&sess='+sessID, {method: 'POST'});
+		$.ajax({
+			type:"POST",
+			url:"/setPiscinePageDebug",
+			data:"sess="+sessID+"&trigger=stop",
+			dataType:"text",
+			success:function(e){
+				console.log("Call to /setPiscinePageDebug?trigger=stop is success")
+			},
+			error:function(e,t,a){
+				console.log("An error occurred while calling /setPiscineMaintenance, data is: "+e.status+" and exception is : "+e.responseText);
+				if ((e.status == "400") && (e.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
+					console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
+					$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
+				}
+			}
+		})
 	});
 
 	$(document).on("pagebeforeshow","#pagePiscineMaintenance",function(){
 		console.log("-- STARTING Piscine Maintenance Server Events --");
 		piscineMaintenanceEvent.start();
-		fetch('/setPiscine?action=setActivePage&page=maintenance', {method: 'POST'});
-		showToast("Mise à jour temps réel des étalonnages activée", 'info');
 	});
 	$(document).on("pagebeforehide","#pagePiscineMaintenance",function(){
-		function doCmd(action,type,PHRedox){
-			var cmd="sess="+sessID+"&command="+action+"&"+type+"="+PHRedox;
+		function e(e,t,a){
+			var s="sess="+sessID+"&command="+e+"&"+t+"="+a;
 			$.ajax({
 				type:"POST",
-				url:"/setPiscine?action=Maintenance",
-				data:cmd,
+				url:"/setPiscineMaintenance",
+				data:s,
 				dataType:"text",
 				success:function(t){
-					console.log("Call to /setPiscineMaintenance with command="+action+" is success")
+					console.log("Call to /setPiscineMaintenance with command="+e+" is success")
 				},
-				error:function(xhr, status, errorThrown){
-					console.log("An error occurred while calling /setPiscineMaintenance, data is: "+xhr.status+" and exception is : "+xhr.responseText);
-					if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
+				error:function(e,t,a){
+					console.log("An error occurred while calling /setPiscineMaintenance, data is: "+e.status+" and exception is : "+e.responseText);
+					if ((e.status == "400") && (e.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
 						console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
-						showSessionExpiredDialog("Invalid Session");		// 	or $("#popupDialog").popup("open") to stay on same page
+						$.mobile.changePage( "#dlg-EndSessionAlert" );		// 	or $("#popupDialog").popup("open") to stay on same page
 					}
 				}
 			})
 		}
-		doCmd("cancelScan","type","PH");
-		doCmd("cancelScan","type","Redox");
+		e("cancelScan","type","PH");
+		e("cancelScan","type","Redox");
 		console.log("-- STOPPING Piscine Maintenance Server Events --");
 		piscineMaintenanceEvent.stop()
 	});
@@ -4267,106 +4291,4 @@ setInterval(checkSessionValidity, 60000);
 
 console.log( "ready to go !" );
 // navigate to a page : $.mobile.navigate(#pageid); (keep history) or $.mobile.changePage( "#pageID", { transition: "slideup"});
-
-
-// ========================================
-// RESPONSIVE LAYOUT DETECTION
-// ========================================
-
-var currentLayout = 'mobile-portrait';
-
-function detectLayout() {
-  var width = window.innerWidth;
-  var isLandscape = width > window.innerHeight;
-  
-  if (width >= 1024) {
-    currentLayout = 'desktop';
-  } else if (width >= 768) {
-    currentLayout = isLandscape ? 'tablet-landscape' : 'tablet-portrait';
-  } else if (isLandscape) {
-    currentLayout = 'mobile-landscape';
-  } else {
-    currentLayout = 'mobile-portrait';
-  }
-  
-  $('body').attr('data-layout', currentLayout);
-  
-  if (debug) {
-    console.log('[RESPONSIVE] Layout détecté: ' + currentLayout + ' (' + width + 'x' + window.innerHeight + ')');
-  }
-  
-  // Réorganiser grids jQuery Mobile selon le layout
-  adaptJQueryMobileGrids();
-}
-
-// Adaptation dynamique des grids jQuery Mobile
-function adaptJQueryMobileGrids() {
-  if (currentLayout === 'desktop' || currentLayout === 'tablet-landscape') {
-    // Page principale : garder LEDs en 8 colonnes (ui-grid-g)
-    // Ne rien changer pour préserver le layout portrait
-    
-    // Autres pages : convertir ui-grid-b (33-33-33) en ui-grid-a (50-50)
-    $('#pagePiscineParametres .ui-grid-b').removeClass('ui-grid-b').addClass('ui-grid-a');
-    $('#pagePiscineMaintenance .ui-grid-b').removeClass('ui-grid-b').addClass('ui-grid-a');
-    
-  } else {
-    // Mode mobile/tablette portrait : restaurer grids originales
-    $('#pagePiscineParametres .ui-grid-a').removeClass('ui-grid-a').addClass('ui-grid-b');
-    $('#pagePiscineMaintenance .ui-grid-a').removeClass('ui-grid-a').addClass('ui-grid-b');
-  }
-  
-  // Adapter les panels selon le layout
-  adaptPanels();
-}
-
-// Optimisation des panels pour desktop
-function adaptPanels() {
-  var $panels = $('[data-role="panel"]');
-  
-  if (currentLayout === 'desktop') {
-    // Desktop : panels en mode reveal persistant (non-overlay)
-    $panels.panel({
-      display: 'reveal',
-      dismissible: true,
-      swipeClose: false
-    });
-    
-    if (debug) {
-      console.log('[RESPONSIVE] Panels mode reveal (desktop)');
-    }
-  } else {
-    // Mobile/Tablette : panels en mode overlay
-    $panels.panel({
-      display: 'overlay',
-      dismissible: true,
-      swipeClose: true
-    });
-    
-    if (debug) {
-      console.log('[RESPONSIVE] Panels mode overlay (mobile/tablette)');
-    }
-  }
-  
-  // Redimensionner Dygraph si page Graphs active
-  resizeDygraphIfNeeded();
-}
-
-// Redimensionner Dygraph selon layout
-function resizeDygraphIfNeeded() {
-  if ($('#pagePiscineGraphs').hasClass('ui-page-active') && typeof chart !== 'undefined' && chart !== null) {
-    setTimeout(function() {
-      chart.resize();
-      if (debug) {
-        console.log('[RESPONSIVE] Dygraph redimensionné pour layout: ' + currentLayout);
-      }
-    }, 100);
-  }
-}
-
-// Détecter le layout au chargement et lors des changements
-$(window).on('resize orientationchange', detectLayout);
-$(document).on('pagecreate', detectLayout);
-
-// Détection initiale
-detectLayout();
 

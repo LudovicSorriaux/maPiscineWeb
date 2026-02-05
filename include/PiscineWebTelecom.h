@@ -47,10 +47,11 @@ class PiscineWebTelecomClass {
 
         void sendTimeMess();
         void sendAskSyncMess(char typeSync);
-        void sendRouteurData(bool data);
+        void sendRouteurData(bool routerData);
+        void sendRouteurPACStatus(char *routerPACStatus);
         void sendHelloMess();
         void sendTempAddMess(bool set, char *theMessage, uint8_t len);
-        void sendEtalonMode();     
+        void sendEtalonMode();  
            
     private :
       bool waitToTransmit = false;

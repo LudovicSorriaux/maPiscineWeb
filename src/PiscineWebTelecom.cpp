@@ -11,8 +11,9 @@
 
 #include "PiscineWebTelecom.h"
 #include "Logger.h"
-#include "ManagerTelecom.h"
+// #include "ManagerTelecom.h"  // DÉSACTIVÉ : Communication ESP-NOW avec manager PAC (optimisation RAM)
 #include "PiscineWeb.h"
+#include "IndexNames.h"  // Optimisation RAM #6 : Noms des paramètres en PROGMEM
 
     // static callbacks 
     
@@ -58,6 +59,8 @@
  * @brief Initialise le protocole ICSC sur Serial (station 'W') et enregistre 7 callbacks : 'V' (data), 'T' (time), 'S' (sync), 'H' (hello), 'A'/'B' (tempAdd), 'E' (etalon)
  */
     void PiscineWebTelecomClass::initTelecom(){
+          // station (C controler,K keyboard,W web)  
+          // command (V values, J jsonText, T time, S sync, H hello, A ask temp add, B set temp add, E etalons, R routeur info)
         telecom.begin(Serial, 'W');
         telecom.registerCommand('V', &recData);
         telecom.registerCommand('T', &recTime);
@@ -92,10 +95,11 @@
         writeData[maxWriteData].value = value;
         maxWriteData++;
         if (debug){
+          char nameBuf[MAX_KEY_LEN];  // Optimisation RAM #6 : Buffer pour PROGMEM
           logger.print(" maxWriteData = ");
           logger.print(maxWriteData);
           logger.print("  writeData is : ind=");
-          logger.print(indexName[index]);
+          logger.print(getIndexName(index, nameBuf));
           logger.print(" & val=");
           logger.println(value);
         }
@@ -152,7 +156,8 @@
               index = writeData[maxWriteData-1].index;
               valeur = writeData[maxWriteData-1].value;
               if(debug){
-                logger.printf("    Now sending command %s with index=%d and value=%d\n", indexName[index],index,valeur);
+                char nameBuf[MAX_KEY_LEN];  // Optimisation RAM #6 : Buffer pour PROGMEM
+                logger.printf("    Now sending command %s with index=%d and value=%d\n", getIndexName(index, nameBuf),index,valeur);
               }
               memcpy(&theMessage, &writeData[maxWriteData-1], sizeof(dataStruct));
               telecom.send('C', 'V', sizeof(theMessage), theMessage);     // ICSC::send(char station (C controler,K keyboard,W web), 
@@ -176,6 +181,8 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebTelecomClass::receiveData(unsigned char src, char command, unsigned char len, char *data){
+          // station (C controler,K keyboard,W web)  
+          // command (V values, J jsonText, T time, S sync, H hello, A ask temp add, B set temp add, E etalons, R routeur info)
         dataStruct mess;
       logger.printf("Got Data message : source is : %c, cmd is : %c, size is : %0X, sizeof datastruc is %0X message is : ", src, command, len, sizeof(dataStruct) );
       for (int i=0;i<len;i++){
@@ -183,12 +190,11 @@
       }
       logger.println();
 
-      if(command == 'V') {    // normal comms Index/Value message  
-                                                  // station (C controler,K keyboard,W web), 
-                                                  // command (V values,J jsonText, T time,S sync, H hello)
+      if(command == 'V') { 
         if (len == sizeof(dataStruct)) {
           memcpy(&mess, data, len);
-          logger.printf("    Got message from Controler : %s index=%d  value=%d\n",indexName[mess.index],mess.index,mess.value);
+          char nameBuf[MAX_KEY_LEN];  // Optimisation RAM #6 : Buffer pour PROGMEM
+          logger.printf("    Got message from Controler : %s index=%d  value=%d\n",getIndexName(mess.index, nameBuf),mess.index,mess.value);
           if( !((maxReadData != 0) && ( readData[maxReadData-1].index == (uint8_t)mess.index ) && (readData[maxReadData-1].value == (int16_t)mess.value)) ){
             readData[maxReadData].index = (uint8_t)mess.index;
             readData[maxReadData].value = (int16_t)mess.value;
@@ -205,6 +211,8 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebTelecomClass::receiveTime(unsigned char src, char command, unsigned char len, char *data){
+          // station (C controler,K keyboard,W web)  
+          // command (V values, J jsonText, T time, S sync, H hello, A ask temp add, B set temp add, E etalons, R routeur info)
         time_t newTime=0;
         tmElements_t tm;
 
@@ -218,8 +226,7 @@
         }
       }
 
-      if(command == 'T') {    // normal comms time message  // station (C controler,K keyboard,W web), 
-                                                            // command (V values,J jsonText, T time,S sync, H hello)
+      if(command == 'T') {
         if (len >= sizeof(time_t)) {
           memcpy(&newTime, data, sizeof(time_t));
           breakTime(newTime, tm);  // break time_t into elements
@@ -236,6 +243,8 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebTelecomClass::receiveSync(unsigned char src, char command, unsigned char len, char *data){
+          // station (C controler,K keyboard,W web)  
+          // command (V values, J jsonText, T time, S sync, H hello, A ask temp add, B set temp add, E etalons, R routeur info)
         char typeSync; // typeSync is 'F' full, 'C' critical Values, 'W' web page
         uint16_t maxInd = 0;
         uint8_t i=0;
@@ -251,8 +260,7 @@
         }
       }
 
-      if(command == 'S') {    // normal comms     // station (C controler,K keyboard,W web), 
-                                                  // command (V values, J jsonText, T time, S sync, H hello)
+      if(command == 'S') {
         flgWaitAckSync = false;
         flgAckSyncInd = 0;
         nbWaitACKSync = 0;
@@ -275,14 +283,16 @@
           maxInd = sizeof(piscineParams);
         }
 
+        char nameBuf[MAX_KEY_LEN];  // Optimisation RAM #6 : Buffer pour PROGMEM
         for (i=0; i<maxInd; i++){
           piscineParams[i].valeur = getint(*(data+1+(i*2)+1),*(data+1+(i*2))); // low, high
           piscineParams[i].changedControler = true;
-          logger.printf("   ==> ind:%s, valeur:%d\n",indexName[i],piscineParams[i].valeur);
+          logger.printf("   ==> ind:%s, valeur:%d\n",getIndexName(i, nameBuf),piscineParams[i].valeur);
         }
-        if(managerPresent){
-          managerTelecom.sendSyncMess(typeSync);
-        }  
+        // DÉSACTIVÉ : ESP-NOW manager (optimisation RAM)
+        // if(managerPresent){
+        //   managerTelecom.sendSyncMess(typeSync);
+        // }  
       }  
     }
 
@@ -293,7 +303,9 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebTelecomClass::receiveTempAdd(unsigned char src, char command, unsigned char len, char *data){
-//      char typeSync; // typeSync is 'F' full, 'K' critical Values
+          // station (C controler,K keyboard,W web)  
+          // command (V values, J jsonText, T time, S sync, H hello, A ask temp add, B set temp add, E etalons, R routeur info)
+          //      char typeSync; // typeSync is 'F' full, 'K' critical Values
 
       if(debug){
         logger.printf("    Got tempAdd message from Controler : source is : %c, cmd is : %c, size is : %d, message is : ", src, command, len);
@@ -302,8 +314,7 @@
         }
         logger.println();
       }
-      if(command == 'A') {    // ask for temp add // station (C controler,K keyboard,W web), 
-                              // command (V values, J jsonText, T time, S sync, H hello, A ask temp add, B set temp add)
+      if(command == 'A') {   // ask for temp add
           maPiscineWeb.sendTempAdd(len, data);    // set temp add values
       }
 
@@ -316,6 +327,8 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebTelecomClass::receiveEtalonData(unsigned char src, char command, unsigned char len, char *data){
+          // station (C controler,K keyboard,W web)  
+          // command (V values, J jsonText, T time, S sync, H hello, A ask temp add, B set temp add, E etalons, R routeur info)
 
       if(debug){
         logger.printf("    Got EtalonData message from Controler : source is : %c, cmd is : %c, size is : %d, message is : ", src, command, len);
@@ -324,9 +337,7 @@
         }
         logger.println();
       }
-      if(command == 'E') {    // ask for temp add // station (C controler,K keyboard,W web), 
-                              // command (V values, J jsonText, T time, S sync, H hello, A ask temp add, B set temp add, E etalonMode)
-
+      if(command == 'E') { 
         memcpy(&etalon_Data, data, len);     
         maPiscineWeb.setEtalonData();    
       }
@@ -340,6 +351,8 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebTelecomClass::receiveHello(unsigned char src, char command, unsigned char len, char *data){
+          // station (C controler,K keyboard,W web)  
+          // command (V values, J jsonText, T time, S sync, H hello, A ask temp add, B set temp add, E etalons, R routeur info)
 
       logger.printf("Got Hello message : source is : %c, cmd is : %c, size is : %0X, sizeof datastruc is %0X message is : ", src, command, len, sizeof(dataStruct) );
       for (int i=0;i<len;i++){
@@ -350,8 +363,7 @@
         }
       }
 
-      if(command == 'H') {    // normal comms     // station (C controler,K keyboard,W web), 
-                                                  // command (V values,J jsonText, T time,S sync, H hello, R routeurHello, D routeurData)
+      if(command == 'H') {
         if(!flgInSetup){
           controleurPresent = true;         // controleur is present (rebooted) reset comms
           waitToTransmit = false;
@@ -369,6 +381,8 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebTelecomClass::sendTimeMess(){
+          // station (C controler,K keyboard,W web)  
+          // command (V values, J jsonText, T time, S sync, H hello, A ask temp add, B set temp add, E etalons, R routeur info)
           char theMessage[sizeof(time_t)];
           time_t maintenant;
 
@@ -379,9 +393,7 @@
             logger.printf(" Time message is : %lld\n",maintenant);
             logger.println(F(" Sending Time message "));
 
-            telecom.send('C', 'T', sizeof(time_t), theMessage);          // ICSC::send(char station (C controler,K keyboard,W web), 
-                                                                        //            char // command (V values,J jsonText, T time,S sync, H hello, R routeurHello, D routeurData)
-                                                                        //            unsigned char len=0, char *data=NULL);                                                  
+            telecom.send('C', 'T', sizeof(time_t), theMessage);                                    
           }
         }
 
@@ -391,14 +403,15 @@
    * Entrées : voir la signature de la fonction (paramètres)
    * Sortie : valeur de retour ou effet sur l'état interne
    */
-    void PiscineWebTelecomClass::sendAskSyncMess(char typeSync){  
-      // typeSync is 'F' full, 'C' critical Values, 'W' web page
-      char theMessage[1] = {typeSync};
+    void PiscineWebTelecomClass::sendAskSyncMess(char typeSync){  // typeSync is 'F' full, 'C' critical Values, 'W' web page
+          // station (C controler,K keyboard,W web)  
+          // command (V values, J jsonText, T time, S sync, H hello, A ask temp add, B set temp add, E etalons, R routeur info)
+            char theMessage[1] = {typeSync};
 
       if(debug){
         logger.println(F("    Now sending ask synch message to controleur !"));
       }
-      telecom.send('C', 'S', sizeof(theMessage), theMessage);   // ICSC::send(char station (C controler,K keyboard,W web), command (V values,J jsonText, T time,S sync, H hello)
+      telecom.send('C', 'S', sizeof(theMessage), theMessage);   
       flgWaitAckSync = true;
       flgAckSyncInd = typeSync;
     }
@@ -409,22 +422,37 @@
    * Entrées : voir la signature de la fonction (paramètres)
    * Sortie : valeur de retour ou effet sur l'état interne
    */
-    void PiscineWebTelecomClass::sendRouteurData(bool data=true){  // !data = hello
-      // command (V values,J jsonText, T time,S sync, H hello, R routeurHello, D routeurData)
+     void PiscineWebTelecomClass::sendRouteurData(bool data){  // !data = hello  // called from espnow
+          // station (C controler,K keyboard,W web)  
+          // command (V values, J jsonText, T time, S sync, H hello, A ask temp add, B set temp add, E etalons, R routeur info on|off, C routeurHello, D routeurData)
           char theMessage[sizeof(routeurData)];
       if(data) { // do data stuff
         memcpy(&theMessage, &routeurData, sizeof(routeurData));
         if(debug){
           logger.println(F("    Now sending routeur data message to controleur !"));
         }
-        telecom.send('C', 'D', sizeof(theMessage), theMessage);   // ICSC::send(char station (C controler,K keyboard,W web), command (V values,J jsonText, T time,S sync, H hello)
+        telecom.send('C', 'D', sizeof(theMessage), theMessage);                                   // send full routeur data
       } else {    // do hello stuff
         if(debug){
           logger.println(F("    Now sending routeur hello message to controleur !"));
         }
-        telecom.send('C', 'R', sizeof(routeurData.routeurPresent), routeurData.routeurPresent);   // ICSC::send(char station (C controler,K keyboard,W web), command (V values,J jsonText, T time,S sync, H hello)
+        telecom.send('C', 'C', sizeof(routeurData.routeurPresent), routeurData.routeurPresent);   // send heelo routeur presence boolean
       }
     }
+ 
+  /*
+   * void PiscineWebTelecomClass::sendRouteurData
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
+    void PiscineWebTelecomClass::sendRouteurPACStatus(char *routerPACStatus){  // "ON | OFF"  // called from web rest api
+          // station (C controler,K keyboard,W web)  
+          // command (V values, J jsonText, T time, S sync, H hello, A ask temp add, B set temp add, E etalons, R routerPACStatus on|off)
+      if(debug)  logger.printf("    Now sending routeur Status: %s message to controleur !\n", routerPACStatus);
+      telecom.send('C', 'R', sizeof(routerPACStatus), routerPACStatus);   
+    }
+ 
  
   /*
    * void PiscineWebTelecomClass::sendTempAddMess
@@ -433,13 +461,15 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebTelecomClass::sendTempAddMess(bool set, char *theMessage, uint8_t len){
+          // station (C controler,K keyboard,W web)  
+          // command (V values, J jsonText, T time, S sync, H hello, A ask temp add, B set temp add, E etalons, R routeur info)
 
       if(set) {     // setting new adreses
         logger.printf("    Now sending tempAdd message to Controleur with type 'B' (set) size is %d!\n",len);
-        telecom.send('C', 'B', len, theMessage);   // ICSC::send(char station (C controler,K keyboard,W web), command (V values,J jsonText, T time,S sync, H hello, A ask temp add, B set temp add)
+        telecom.send('C', 'B', len, theMessage);   
       } else {      // no set so asking for adresses
         if(debug) logger.println(F("    Now sending ask tempAdd message to controleur !"));      
-        telecom.send('C', 'A', len, theMessage);   // ICSC::send(char station (C controler,K keyboard,W web), command (V values,J jsonText, T time,S sync, H hello, A ask temp add, B set temp add)
+        telecom.send('C', 'A', len, theMessage);   
       }
     }
 
@@ -450,12 +480,13 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebTelecomClass::sendEtalonMode(){
+          // station (C controler,K keyboard,W web)  
+          // command (V values, J jsonText, T time, S sync, H hello, A ask temp add, B set temp add, E etalons, R routeur info)
 
       char message[sizeof(etalon_Data)]; 
 
       memcpy(message, &etalon_Data, sizeof(etalon_Data)); 
       logger.printf("    Now sending etalon Mode message to Controleur with type 'E'\n");
-      // ICSC::send(char station (C controler,K keyboard,W web), command (V values,J jsonText, T time,S sync, H hello, A ask temp add, B set temp add, E etalonMode)
       telecom.send('C', 'E', sizeof(etalon_Data), message); 
     }
 
@@ -466,11 +497,13 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebTelecomClass::sendHelloMess(){
+          // station (C controler,K keyboard,W web)  
+          // command (V values, J jsonText, T time, S sync, H hello, A ask temp add, B set temp add, E etalons, R routeur info)
       char theMessage[1] = {0};
 
       if(debug){
         logger.println(F("    Now sending hello message to controleur !"));
       }
-      telecom.send('C', 'H', sizeof(theMessage), theMessage);   // ICSC::send(char station (C controler,K keyboard,W web), command (V values,J jsonText, T time,S sync, H hello)
+      telecom.send('C', 'H', sizeof(theMessage), theMessage);   
     }
 

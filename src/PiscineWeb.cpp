@@ -12,6 +12,11 @@
 #include "PiscineWeb.h"
 #include "Logger.h"
 #include "PiscineWebTelecom.h"
+#include "PiscineWebStrings.h"
+#include "IndexNames.h"  // Optimisation RAM #6 : Noms des paramètres en PROGMEM
+
+// Optimisation RAM #5 : Définition de piscineFolder en PROGMEM
+const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
 
     PiscineWebClass::~PiscineWebClass(void)
       {};
@@ -29,11 +34,14 @@
  * @brief Démarrage complet du serveur web : Appelle startServer() (routes AsyncWebServer) et startMDNS() (mDNS responder piscine.local)
  */
     void PiscineWebClass::startup(){
-      logger.println("maPiscineWeb Startup ... ");
+      logger.println("[WEB] maPiscineWeb Startup ... ");
       startServer();               // Start a HTTP server with a file read handler and an upload handler
       startMDNS();                 // Start the mDNS responder
+      
+      // RAM monitoring : État après démarrage serveur web (AsyncWebServer + mDNS)
+      logger.printf("[RAM] Serveur web démarré - Free heap: %d bytes\n", ESP.getFreeHeap());
 //      prepareNewParamsPiscine();
-//      File root = SDFS.open("/","r");
+//      File root = SD.open("/", FILE_READ);
 //      logger.println("SDCard Contents : ");
 //      printDirectory(root, 1);
     }
@@ -43,11 +51,19 @@
  * @brief Mise à jour périodique : Appelle MDNS.update(), sendNewParamsPiscine() (SSE push), et manageDebugLCD() si debug actif
  */
     void PiscineWebClass::OnUpdate(){
+
         MDNS.update();
+        if(--MDNSAppels == 0){
+            MDNSAppels = 120;          // every minute
+        }
     //    sendNewParams();              // for debuging
-        sendNewParamsPiscine();
-        if(logger.getDebugMessage()){
-            manageDebugLCD();
+        if(currentPage == PAGE_PRICIPALE || currentPage == PAGE_PARAMETRES) {          // in page principal or in page param
+            sendNewParamsPiscine();
+        }
+        if( currentPage == PAGE_DEBUG ) {          // in page debug 
+            if(logger.hasDebugMessage()){ // if debug message available
+                manageDebugLCD();
+            }
         }
     }
 
@@ -174,44 +190,44 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebClass::sendNewParamsPiscine(){
-            String jsonBuff;
-            String jsonBuffParams;
-            JsonDocument piscineParamsEventsJson;
-            JsonDocument piscineEventsJson;
+            char jsonBuff[768];  // Optimisation RAM : char[] au lieu de String
+            char jsonBuffParams[768];
+            StaticJsonDocument<512> piscineParamsEventsJson;  // Optimisation RAM : StaticJsonDocument
+            StaticJsonDocument<512> piscineEventsJson;
             bool newValPP = false, newValPParams = false;  
             bool doItFull = false;
 
-        if(nbAppels-- == 0) {
+        if(nbAppels <= 0) {
             doItFull = true;
-            nbAppels = 10;                  // 10 sec env
+            nbAppels = 20;                  // 10 sec env
         }
 
         for(int i=0;i<IND_ClearAlert;i++){           // +1 for IND_ClearAlert
             if( (doItFull) || (piscineParams[i].changedControler)) {
-                if (piscineEvents.count() != 0 ) {          // in page principal
+                if (currentPage == PAGE_PRICIPALE) {          // in page principal
                     if(piscinePPSet.find(i) != piscinePPSet.end()){
-                        piscineEventsJson[indexName[i]] = piscineParams[i].valeur;
+                        piscineEventsJson[getIndexNameF(i)] = piscineParams[i].valeur;  // Optimisation RAM #6 : PROGMEM
                         if (!newValPP) newValPP = true;
                     }
-                }
-                if (piscineParamsEvents.count() != 0 ) {          // in page param
+                    piscineParams[i].changedControler = false;
+                } else if(currentPage == PAGE_PARAMETRES) {          // in page param
                     if(piscineParamsSet.find(i) != piscineParamsSet.end()){
-                        piscineParamsEventsJson[indexName[i]] = piscineParams[i].valeur;
+                        piscineParamsEventsJson[getIndexNameF(i)] = piscineParams[i].valeur;  // Optimisation RAM #6 : PROGMEM
                         if (!newValPParams) newValPParams = true;
                     }
+                    piscineParams[i].changedControler = false;
                 }
             }
-            piscineParams[i].changedControler = false;
         }
-        if (newValPP){
-            serializeJson(piscineEventsJson, jsonBuff);
+        nbAppels--;
+        if(newValPP){
+            serializeJson(piscineEventsJson, jsonBuff, sizeof(jsonBuff));
             logger.println(jsonBuff);
-            piscineEvents.send(jsonBuff.c_str(), "piscineData", millis());  
-        }
-        if (newValPParams){
-            serializeJson(piscineParamsEventsJson, jsonBuffParams);
+            piscineEvents.send(jsonBuff, "piscineData", millis());  
+        } else if (newValPParams){
+            serializeJson(piscineParamsEventsJson, jsonBuffParams, sizeof(jsonBuffParams));
             logger.println(jsonBuffParams);
-            piscineParamsEvents.send(jsonBuffParams.c_str(), "piscineParamsData", millis());  
+            piscineEvents.send(jsonBuffParams, "piscineParamsData", millis());  
         }
     }
 
@@ -223,53 +239,57 @@
    */
     void PiscineWebClass::managePiscineLCD(){
             char strTempo[30];
-            String strTempo1,strTempo2,strTempo3;
-            String jsonBuff;
-            JsonDocument  jsonRoot;
+            char strTempo1[64], strTempo2[96], strTempo3[128];
+            char jsonBuff[384];  // Optimisation RAM : char[] au lieu de String
+            StaticJsonDocument<256> jsonRoot;  // Optimisation RAM
 
-        if (piscineEvents.count() != 0 ) {          // in page principal
+        if (currentPage == PAGE_PRICIPALE) {          // in page principal
 
             //  jsonRoot["Alerte"] = 1;                 // Mode Alertes
 
             if(piscineParams[IND_Auto].valeur == 1){    // mode auto
-                strTempo1 = String("Mode Automatique");
-                jsonRoot["ligne1"] = strTempo1.c_str();
+                strcpy_P(strTempo1, STR_MODE_AUTO);
+                jsonRoot["ligne1"] = strTempo1;
                 getDateFormated(strTempo,20,1);   // medium date
-                strTempo2 = String(strTempo) + String(", ") + hour() + String(" h "); 
-                if (minute() <10 ) {
-                    strTempo2 += String("0") + minute();
-                } else {
-                    strTempo2 += String(minute()); 
-                }
-                jsonRoot["ligne2"] = strTempo2.c_str();
+                snprintf(strTempo2, sizeof(strTempo2), "%s, %d h %02d", strTempo, hour(), minute()); 
+                jsonRoot["ligne2"] = strTempo2;
                 if (piscineParams[IND_PP].valeur != 0) {
-                    strTempo3 = String(" PP for ") + minuteToHeureMinute(piscineParams[IND_PP].valeur); //  "PP:10h20";
+                    char heureMinPP[16];
+                    minuteToHeureMinute(piscineParams[IND_PP].valeur, heureMinPP, sizeof(heureMinPP));
+                    snprintf(strTempo3, sizeof(strTempo3), "%s%s", FPSTR(STR_PP_FOR), heureMinPP);
                     if(piscineParams[IND_PompePH].valeur != 0) {
-                        strTempo3 += String(", PH- for ") + secondsToMinuteSeconds(piscineParams[IND_PompePH].valeur);  // 5h3mn5sec
+                        char minSecPH[24];
+                        secondsToMinuteSeconds(piscineParams[IND_PompePH].valeur, minSecPH, sizeof(minSecPH));
+                        char temp[64];
+                        snprintf(temp, sizeof(temp), "%s%s", FPSTR(STR_PH_MINUS_FOR), minSecPH);
+                        strcat(strTempo3, temp);
                     }
                     if( (piscineParams[IND_TypePompe3].valeur == PHp) && (piscineParams[IND_PompeALG].valeur != 0) ){
-                        strTempo3 += String(", PH+ for ") + secondsToMinuteSeconds(piscineParams[IND_PompeALG].valeur);
+                        char minSecALG[24];
+                        secondsToMinuteSeconds(piscineParams[IND_PompeALG].valeur, minSecALG, sizeof(minSecALG));
+                        char temp[64];
+                        snprintf(temp, sizeof(temp), "%s%s", FPSTR(STR_PH_PLUS_FOR), minSecALG);
+                        strcat(strTempo3, temp);
                     }
                     if (piscineParams[IND_PompeCL].valeur != 0) {
-                        strTempo3 += String(", CL for ") + secondsToMinuteSeconds(piscineParams[IND_PompeCL].valeur);
+                        char minSecCL[24];
+                        secondsToMinuteSeconds(piscineParams[IND_PompeCL].valeur, minSecCL, sizeof(minSecCL));
+                        char temp[64];
+                        snprintf(temp, sizeof(temp), "%s%s", FPSTR(STR_CL_FOR), minSecCL);
+                        strcat(strTempo3, temp);
                     }
-                    jsonRoot["ligne3"] = strTempo3.c_str();
+                    jsonRoot["ligne3"] = strTempo3;
                 }
             } else {                                            // mode manu
-                strTempo1 = String("Mode Manuel");
-                jsonRoot["ligne1"] = strTempo1.c_str();
+                strcpy_P(strTempo1, STR_MODE_MANUEL);
+                jsonRoot["ligne1"] = strTempo1;
                 getDateFormated(strTempo,30,0);                 // full date
-                strTempo2 = String(strTempo) + String(",   ") + hour() + String(" h "); 
-                if (minute() <10 ) {
-                    strTempo2 += String("0") + minute();
-                } else {
-                    strTempo2 += String( minute() ); 
-                }
-                jsonRoot["ligne2"] = strTempo2.c_str();
+                snprintf(strTempo2, sizeof(strTempo2), "%s,   %d h %02d", strTempo, hour(), minute()); 
+                jsonRoot["ligne2"] = strTempo2;
             }
-            serializeJson(jsonRoot, jsonBuff);
+            serializeJson(jsonRoot, jsonBuff, sizeof(jsonBuff));
 //            logger.println(jsonBuff);
-            piscineEvents.send(jsonBuff.c_str(), "piscineLCDData", millis());  
+            piscineEvents.send(jsonBuff, "piscineLCDData", millis());  
         }
     }
 
@@ -280,17 +300,16 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebClass::manageDebugLCD(){
-            String strTempo1;
-            String jsonBuff;
-            JsonDocument  jsonRoot;
+            char strTempo1[256];
+            char jsonBuff[512];  // Optimisation RAM : char[] au lieu de String
+            StaticJsonDocument<384> jsonRoot;  // Optimisation RAM
 
-        if (piscineDebugEvents.count() != 0 ) {          // in page debug
-            if(logger.getDebugMessage()){
-                strTempo1 = logger.getDebugMessage();
-                jsonRoot["lignes"] = strTempo1.c_str();
-
-                serializeJson(jsonRoot, jsonBuff);
-                piscineDebugEvents.send(jsonBuff.c_str(), "piscineLCDDebug", millis());  
+        if (currentPage == PAGE_DEBUG) {          // in page debug
+            logger.getDebugMessage(strTempo1, sizeof(strTempo1));
+            if(strcmp(strTempo1, "") != 0 ){ // if debug message available
+                jsonRoot["lignes"] = strTempo1;
+                serializeJson(jsonRoot, jsonBuff, sizeof(jsonBuff));
+                piscineEvents.send(jsonBuff, "piscineLCDDebug", millis());  
             }
         }
     }
@@ -302,8 +321,8 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebClass::setEtalonData(){
-        String jsonBuff;
-        JsonDocument piscineEtalonJson;  
+        char jsonBuff[256];  // Optimisation RAM
+        StaticJsonDocument<128> piscineEtalonJson;  // Optimisation RAM
 
         if(strcmp(etalon_Data.PHRedox,"PH")==0){
             piscineEtalonJson["phCalc"] = etalon_Data.calculated;
@@ -315,9 +334,9 @@
             piscineEtalonJson["redoxAjust"] = etalon_Data.ajust;
         }
         piscineEtalonJson.shrinkToFit();  // optional
-        serializeJson(piscineEtalonJson, jsonBuff);
+        serializeJson(piscineEtalonJson, jsonBuff, sizeof(jsonBuff));
         logger.println(jsonBuff);
-        piscineMaintenanceEvents.send(jsonBuff.c_str(), "piscineMaintenance", millis());  
+        piscineEvents.send(jsonBuff, "piscineMaintenance", millis());  
     }
 
   /*
@@ -327,8 +346,8 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebClass::sendTempAdd(unsigned char len, char *data){
-        String jsonBuff;
-        JsonDocument piscineTempAddJson;         
+        char jsonBuff[512];  // Optimisation RAM
+        StaticJsonDocument<384> piscineTempAddJson;  // Optimisation RAM        
         JsonArray sondes;
         unsigned int ind=0;   // start after code command
         unsigned int i,j,maxAdd;
@@ -371,9 +390,9 @@
             }
         }
 
-        serializeJson(piscineTempAddJson, jsonBuff);
+        serializeJson(piscineTempAddJson, jsonBuff, sizeof(jsonBuff));
         logger.println(jsonBuff);
-        piscineMaintenanceEvents.send(jsonBuff.c_str(), "piscineMaintenance", millis());  
+        piscineEvents.send(jsonBuff, "piscineMaintenance", millis());  
 
     }
 
@@ -384,7 +403,7 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebClass::setTempAdd(char *jsonSondes){
-        JsonDocument sondes;
+        StaticJsonDocument<192> sondes;  // Optimisation RAM #7 : 3 sondes max
  
         byte address[8];
         byte addresses[3][8];
@@ -397,7 +416,7 @@
         DeserializationError error = deserializeJson(sondes, jsonSondes);
 
         if (error) {
-            logger.print("deserializeJson() failed: ");
+            logger.print("[WEB] ❌ ERREUR : deserializeJson() failed: ");
             logger.println(error.c_str());
         return;
         }
@@ -410,7 +429,7 @@
 
         for (JsonObject sonde : sondes.as<JsonArray>()){
             printableAdd = sonde["printable"]; 
-            Serial1.printf("Processing sonde : %s\n",printableAdd);
+            Serial1.printf_P(PSTR("Processing sonde : %s\n"), printableAdd);
             sondeType = sonde["type"]; 
 
             addToHex(address,printableAdd);
@@ -452,15 +471,16 @@
    * Entrées : voir la signature de la fonction (paramètres)
    * Sortie : valeur de retour ou effet sur l'état interne
    */
-    void PiscineWebClass::startMDNS() { // Start the mDNS responder
-      if (!MDNS.begin(mdnsName,WiFi.localIP())) {
-        logger.println("Error setting up MDNS responder!");
-      } else {
-        logger.println("mDNS responder started");
-        // Add service to MDNS-SD
-        MDNS.addService("http", "tcp", 80);
-        logger.printf("mDNS responder started: http://%s.local\n",mdnsName);
-      }
+    void PiscineWebClass::startMDNS() { // Start the mDNS responder     
+
+        if (WiFi.status() != WL_CONNECTED) return; // Sécurité
+        if (!MDNS.begin(mdnsName)) { // Sur ESP8266, inutile de passer l'IP en paramètre
+            logger.println(F("[MDNS] ❌ ERREUR : Setup failed!"));
+        } else {
+            MDNS.addService(PSTR("http"), PSTR("tcp"), 80);
+            MDNS.addServiceTxt(PSTR("http"), PSTR("tcp"), PSTR("path"), PSTR("/"));     // Ajoute quelques propriétés pour être mieux détecté
+            logger.printf("[MDNS] Responder started: http://%s.local\n",mdnsName);
+        }
     }
 
   /*
@@ -471,81 +491,132 @@
    */
     void PiscineWebClass::startServer() { // Start a HTTP server with a file read handler and an upload handler
 
-        logger.println("Starting Piscine Web Server");
+        logger.println("[WEB] Starting Piscine Web Server");
 //        server.reset();
+
+    // --- 1. ROUTES API
         server.on("/", HTTP_ANY, std::bind(&PiscineWebClass::handleRoot, this, std::placeholders::_1));                         // Call the 'handleRoot' function when a client requests URI "/"                         // Call the 'handleRoot' function when a client requests URI "/"
 
                     // -------- call backs for debug ------------
         server.on("/jsonConfig", HTTP_ANY, std::bind(&PiscineWebClass::showJsonConfig, this, std::placeholders::_1));
         
                     // -------- call backs from javascripts ------------
-        server.on("/logon", HTTP_POST, std::bind(&PiscineWebClass::handleLogin, this, std::placeholders::_1)); 			  
+        server.on("/checkLocalAuth", HTTP_GET, std::bind(&PiscineWebClass::handleCheckLocalAuth, this, std::placeholders::_1));  // Nouveau : check auto-login local
+        // On utilise "/api/auth" pour regrouper tout ce qui touche aux utilisateurs
+        server.on("/api/auth", HTTP_POST, [this](AsyncWebServerRequest *request) {
+            if (request->hasParam("action")) {
+                char action[32];
+                request->getParam("action")->value().toCharArray(action, 32);
+
+                if (strcmp(action, "logon") == 0)           handleLogin(request);      
+                else if (strcmp(action, "register") == 0)    handleRegister(request);    
+                else if (strcmp(action, "changeAdmin") == 0) handleChangAdminPW(request);  
+                else if (strcmp(action, "userProfile") == 0) handleUserProfile(request);       
+                else if (strcmp(action, "getUsers") == 0)    handleGetUsers(request);
+                else if (strcmp(action, "deleteUsers") == 0) handleDeleteUsers(request);  
+               else request->send(404, "text/plain", F("Action inconnue"));
+            } else {
+                request->send(400, "text/plain", F("Action manquante"));
+            }
+        });
+/*        server.on("/logon", HTTP_POST, std::bind(&PiscineWebClass::handleLogin, this, std::placeholders::_1)); 			  
         server.on("/register", HTTP_POST, std::bind(&PiscineWebClass::handleRegister, this, std::placeholders::_1)); 	
         server.on("/changeAdmin", HTTP_POST, std::bind(&PiscineWebClass::handleChangAdminPW, this, std::placeholders::_1)); 	
         server.on("/userProfile", HTTP_POST, std::bind(&PiscineWebClass::handleUserProfile, this, std::placeholders::_1));  
         server.on("/getUsers", HTTP_POST, std::bind(&PiscineWebClass::handleGetUsers, this, std::placeholders::_1));  
         server.on("/deleteUsers", HTTP_POST, std::bind(&PiscineWebClass::handleDeleteUsers, this, std::placeholders::_1));  
-        
-                    // -------- call backs from restapi ------------
-        // server.on("/isInSession", HTTP_POST, handleInSession); 
+*/
+
+            // -------- call backs from restapi ------------
+//             server.on("/isInSession", HTTP_POST, handleInSession); 
 
             // ---------- Piscine ------
+        server.on("/setPiscine", HTTP_POST, [this](AsyncWebServerRequest *request) {
+            if (request->hasParam("action")) {
+                char action[32];
+                request->getParam("action")->value().toCharArray(action, 32);
+                
+                if (strcmp(action, "InitPagePrincipale") == 0)         handleInitPiscinePP(request);
+                else if (strcmp(action, "InitPageParams") == 0)     handleInitPiscinePParams(request);
+                else if (strcmp(action, "Parametres") == 0)          handlePiscineParams(request);
+                else if (strcmp(action, "Debug") == 0)          handlePiscinePageDebug(request);
+                else if (strcmp(action, "Maintenance") == 0)    handlePiscinePageMaintenance(request);
+                else if (strcmp(action, "InitMaintenance") == 0)      handleInitPiscinePageMaintenance(request);
+                else if (strcmp(action, "getGraphDatas") == 0)      handlePiscineGraphDatas(request);
+                else if (strcmp(action, "setActivePage") == 0) {
+                                                char p[16];
+                                                request->getParam("page")->value().toCharArray(p, 16);      //principale parametres debug maintenance
+                                                if (strcmp(p, "principale") == 0) currentPage = PAGE_PRICIPALE;
+                                                else if (strcmp(p, "parametres") == 0) currentPage = PAGE_PARAMETRES;
+                                                else if (strcmp(p, "debug") == 0) currentPage = PAGE_DEBUG;
+                                                else if (strcmp(p, "maintenance") == 0) currentPage = PAGE_MAINTENANCE;
+                                                request->send(200); 
+                                            }    
+                else request->send(404, "text/plain", F("Action inconnue"));
+            } else {
+                request->send(400, "text/plain", F("Action manquante"));
+            }
+        });
+
+/*
         server.on("/setPiscinePagePrincip", HTTP_POST, std::bind(&PiscineWebClass::handleInitPiscinePP, this, std::placeholders::_1)); 
         server.on("/setPiscinePageParams", HTTP_POST, std::bind(&PiscineWebClass::handleInitPiscinePParams, this, std::placeholders::_1)); 
         server.on("/setPiscineParam", HTTP_POST, std::bind(&PiscineWebClass::handlePiscineParams, this, std::placeholders::_1)); 
-        server.on("/getGraphDatas", HTTP_POST, std::bind(&PiscineWebClass::handlePiscineGraphDatas, this, std::placeholders::_1)); 
         server.on("/setPiscineDebug", HTTP_POST, std::bind(&PiscineWebClass::handlePiscinePageDebug, this, std::placeholders::_1)); 
         server.on("/setPiscineMaintenance", HTTP_POST, std::bind(&PiscineWebClass::handlePiscinePageMaintenance, this, std::placeholders::_1)); 
         server.on("/setPiscineInitMaintenance", HTTP_POST, std::bind(&PiscineWebClass::handleInitPiscinePageMaintenance, this, std::placeholders::_1)); 
-
-                // -------- call statics files not html ------------
-        server.serveStatic("/", SDFS, "/");
-/*        String path = piscineFolder + "/css/";        
-        server.serveStatic("/", SDFS,  path.c_str());
-        path = piscineFolder + "/js/";        
-        server.serveStatic("/js", SDFS, path.c_str());
-        path = piscineFolder + "/img/";        
-        server.serveStatic("/img", SDFS, path.c_str());
-        path = piscineFolder + "/";        
-        server.serveStatic("/ico", SDFS, path.c_str());
 */
-                    // -------- call html files need checkin auth ------------
-        server.onNotFound(std::bind(&PiscineWebClass::handleOtherFiles, this, std::placeholders::_1));           			  // When a client requests an unknown URI (i.e. something other than "/"), call function handleNotFound"
+            // ---------- Routeur ------
+        server.on("/setRouteurInfo", HTTP_POST, std::bind(&PiscineWebClass::handleRouteurInfo, this, std::placeholders::_1)); 
 
+    // --- 2. GESTION DU SSE UNIQUE ---
         piscineEvents.onConnect([](AsyncEventSourceClient *client){
             if(client->lastId()){
-            logger.printf("Client reconnected! Last message ID that it got is: %u\n", client->lastId());
+            logger.printf("[WEB] Client reconnected! Last message ID: %u\n", client->lastId());
             }
             client->send("hello! PiscineEvents Ready", NULL, millis(), 10000);  // send message "hello!", id current millis and set reconnect delay to 1 second
         });
-        piscineParamsEvents.onConnect([](AsyncEventSourceClient *client){
+        server.addHandler(&piscineEvents);
+
+/*      piscineParamsEvents.onConnect([](AsyncEventSourceClient *client){
             if(client->lastId()){
-            logger.printf("Client reconnected! Last message ID that it got is: %u\n", client->lastId());
+            logger.printf("[WEB] Client reconnected! Last message ID: %u\n", client->lastId());
             }
             client->send("hello! PiscineParamsEvents Ready", NULL, millis(), 10000);
         });
         piscineDebugEvents.onConnect([](AsyncEventSourceClient *client){
             if(client->lastId()){
-                logger.printf("Client reconnected! Last message ID that it got is: %u\n", client->lastId());
+                logger.printf("[WEB] Client reconnected! Last message ID: %u\n", client->lastId());
             }
             logger.setDebugMessage(true);
             client->send("hello! piscineDebugEvents Ready", NULL, millis(), 10000);
         });
         piscineMaintenanceEvents.onConnect([](AsyncEventSourceClient *client){
             if(client->lastId()){
-                logger.printf("Client reconnected! Last message ID that it got is: %u\n", client->lastId());
+                logger.printf("[WEB] Client reconnected! Last message ID: %u\n", client->lastId());
             }
             client->send("hello! piscineMaintenanceEvents Ready", NULL, millis(), 10000);
         });
 
-
-        server.addHandler(&piscineEvents);
         server.addHandler(&piscineParamsEvents);
         server.addHandler(&piscineDebugEvents);
         server.addHandler(&piscineMaintenanceEvents);
+*/
 
+    // --- 3. FICHIERS STATIQUES (L'ordre est important !) ---
+        char pathBuf[32];
+        strcpy_P(pathBuf, piscineFolder);
+        strcat(pathBuf, "/images/");
+        server.serveStatic("/images", SDFS, pathBuf);      // On sert les images en premier si elles sont dans un dossier spécifique
+        strcpy_P(pathBuf, piscineFolder);
+        server.serveStatic("/", SDFS, pathBuf);   // serve static files (js,css,html,etc..) from SD card piscine folder
+
+    // --- 4. NOT FOUND ---
+        server.onNotFound(std::bind(&PiscineWebClass::handleOtherFiles, this, std::placeholders::_1));           			  // When a client requests an unknown URI (i.e. something other than "/"), call function handleNotFound"
+    
+    // --- 5. DÉMARRAGE ---
         server.begin();                             			  // start the HTTP server
-        logger.print("HTTP server started, IP address: ");
+        logger.print("[WEB] HTTP server started, IP address: ");
         logger.println(WiFi.localIP());
 
     }
@@ -563,8 +634,8 @@
         bool flgVerified = false;
         char newusername[11], newuserpassword[11];
         uint8_t indUser = 0;
-        String jsonBuff;
-        JsonDocument  jsonRoot;
+        char jsonBuff[768];  // Optimisation RAM
+        StaticJsonDocument<512> jsonRoot;  // Optimisation RAM
         char sessionID[16];                       // calculated at each login set in the cookie maPiscine (15 chars)
         long ttl = 1*60*60;                       // 1 hours by default in sec
         //  long ttl = 2*60;                          // 2 min by default in sec for debug
@@ -572,7 +643,7 @@
 
     if( ! request->hasParam("username",true) || ! request->hasParam("password",true) 
         || request->getParam("username",true)->value() == NULL || request->getParam("password",true)->value() == NULL) { // If the POST request doesn't have username and password data
-        request->send(400, "text/plain", "400: Invalid Request");         // The request is invalid, so send HTTP status 400
+        request->send(400, FPSTR(STR_CONTENT_PLAIN), FPSTR(STR_INVALID_REQUEST));         // The request is invalid, so send HTTP status 400
     } else {  // check the credentials
         request->getParam("username",true)->value().toCharArray(newusername,11);
         request->getParam("password",true)->value().toCharArray(newuserpassword,11);
@@ -589,24 +660,46 @@
         }
 
         if(flgVerified) {                     // If both the username and the password are correct
-            if(keepAlive) ttl=ttl*24;           // one day if keepAlive one hour else
+            // RAM monitoring : Charge mémoire lors d'un login (pic d'utilisation)
+            logger.printf("[RAM] Login %s - Free heap: %d bytes\n", newusername, ESP.getFreeHeap());
+            
+            bool isLocal = isLocalClient(request);  // Nouveau : détection client local
+            
+            // Adapter le TTL selon le contexte
+            if (isLocal && config.enableLocalAutoLogin) {
+                ttl = 365 * 24 * 60 * 60;  // 1 an pour client local avec auto-login activé
+                logger.printf("[AUTH] Client local détecté : TTL = 1 an (IP: %s)\n", 
+                             request->client()->remoteIP().toString().c_str());
+            } else if (isLocal) {
+                ttl = 30 * 24 * 60 * 60;  // 30 jours pour client local sans auto-login
+                logger.println("[AUTH] Client local : TTL = 30 jours");
+            } else if(keepAlive) {
+                ttl = ttl * 24;  // 1 jour si keepAlive pour client distant
+                logger.println("[AUTH] Client distant avec keepAlive : TTL = 1 jour");
+            } else {
+                logger.println("[AUTH] Client distant : TTL = 1 heure");
+            }
+            
             generateKey(sessionID, ttl);
-            jsonRoot["status"] = "Log in Successful";
-            jsonRoot["username"] = String(newusername);
-            jsonRoot["password"] = String(newuserpassword);
-            jsonRoot["sessionID"] = sessionID;   
-            jsonRoot["ttl"] = ttl;   
-            jsonRoot["message"] = String("Welcome, ") + newusername + "!";
-            logger.println("Log in Successful");
+            jsonRoot[FPSTR(STR_JSON_STATUS)] = FPSTR(STR_LOG_IN_SUCCESS);
+            jsonRoot[FPSTR(STR_JSON_USERNAME)] = newusername;
+            jsonRoot[FPSTR(STR_JSON_PASSWORD)] = newuserpassword;
+            jsonRoot[FPSTR(STR_JSON_SESSIONID)] = sessionID;   
+            jsonRoot[FPSTR(STR_JSON_TTL)] = ttl;
+            jsonRoot[FPSTR(STR_JSON_ISLOCAL)] = isLocal;  // Informe le frontend
+            char welcomeMsg[64];
+            snprintf(welcomeMsg, sizeof(welcomeMsg), "%s%s!", FPSTR(STR_WELCOME), newusername);
+            jsonRoot[FPSTR(STR_JSON_MESSAGE)] = welcomeMsg;
+            logger.println(FPSTR(STR_LOG_SUCCESS));
         } else {              // bad password or user not found
-            jsonRoot["status"] = "Log in Failed";
-            jsonRoot["message"] = "Wrong username/password! try again.";
-            logger.println("Log in Failed"); 
+            jsonRoot[FPSTR(STR_JSON_STATUS)] = FPSTR(STR_LOG_IN_FAILED);
+            jsonRoot[FPSTR(STR_JSON_MESSAGE)] = FPSTR(STR_WRONG_CREDENTIALS);
+            logger.println(FPSTR(STR_LOG_FAILED)); 
         }
-        serializeJson(jsonRoot, jsonBuff);
-        AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", jsonBuff);
-        response->addHeader("Cache-Control","no-cache");
-        response->addHeader("Access-Control-Allow-Origin","*");
+        serializeJson(jsonRoot, jsonBuff, sizeof(jsonBuff));
+        AsyncWebServerResponse *response = request->beginResponse(200, FPSTR(STR_CONTENT_PLAIN), jsonBuff);
+        response->addHeader(FPSTR(STR_HEADER_CACHE), FPSTR(STR_HEADER_NOCACHE));
+        response->addHeader(FPSTR(STR_HEADER_CORS), FPSTR(STR_HEADER_CORS_ALL));
         request->send(response);
         logger.print("Json is : ");
         logger.println(jsonBuff);
@@ -624,11 +717,11 @@
     int8_t flgFoundEmpty = -1;
     char newusername[11], newuserpassword[11], theadminpassword[11];
     uint8_t indUser = 0;
-    String jsonBuff;
-    JsonDocument  jsonRoot;
+    char jsonBuff[768];  // Optimisation RAM
+    StaticJsonDocument<512> jsonRoot;  // Optimisation RAM #7
     char sessionID[16];                       // calculated at each login set in the cookie maPiscine (15 chars)
     long ttl = 12*60*60*1000;                 // 12 hours by default
-    String flgLogin;
+    char flgLogin[8];
 
     if( ! request->hasParam("username",true) || ! request->hasParam("password",true) || ! request->hasParam("adminpassword",true) 
         || request->getParam("username",true)->value() == NULL || request->getParam("password",true)->value() == NULL || request->getParam("adminpassword",true)->value() == NULL) { // If the POST request doesn't have username and password data
@@ -640,7 +733,7 @@
     if(strcmp(theadminpassword, config.adminPassword) == 0){                                       // good admin password register new user or update it
         request->getParam("username",true)->value().toCharArray(newusername,11);
         request->getParam("password",true)->value().toCharArray(newuserpassword,11);
-        logger.printf("the new user is : %s, passwd is : %s\n",newusername,newuserpassword);
+        logger.printf("[AUTH] New user: %s, passwd: %s\n",newusername,newuserpassword);
 
         for(indUser=0;indUser<MAX_USERS;indUser++){   // find user in config
             if(strcmp(config.users[indUser].user, newusername) == 0){       // found existing user check password
@@ -658,7 +751,7 @@
             jsonRoot["message"] = "User already exist,updated with new password.";
             strncpy(config.users[flgFoundUser].user_passwd, newuserpassword,11); 
             saveNewConfiguration(nullptr,newusername,newuserpassword,nullptr,nullptr);      // save the config to file
-            logger.println("User already Exist,updated with new password");
+            logger.println("[AUTH] User already exists, updated with new password");
         } else {                        // not found so new user
           if(flgFoundEmpty != -1 ){     // flgFoundEmpty is the index breaked so still have room for a new user create a new entry
             strncpy(config.users[flgFoundEmpty].user, newusername,11); 
@@ -671,40 +764,86 @@
             jsonRoot["sessionID"] = sessionID;   
             jsonRoot["ttl"] = ttl;
             if (request->hasParam("flgLogin",true)) {
-            logger.println("request has flgLogin");
-            flgLogin = request->getParam("flgLogin",true)->value();
-            logger.printf("FlagLogin is %s\n",flgLogin.c_str());
-            if(flgLogin == "true"){
+            logger.println("[AUTH] Request has flgLogin");
+            request->getParam("flgLogin",true)->value().toCharArray(flgLogin, 8);
+            logger.printf("[AUTH] FlagLogin is %s\n",flgLogin);
+            if(strcmp(flgLogin, "true") == 0){
                 jsonRoot["message"] = String("Welcome, ") + newusername + "!";
             } else {
                 jsonRoot["message"] = String("Welcome to ") + newusername + " in the app !";
             }
             jsonRoot["flgLogin"] = flgLogin;      
             } else {      // case where flgLogin not there no auto log then
-                logger.println("request has not flgLogin : return false");
+                logger.println("[AUTH] Request has not flgLogin : return false");
                 jsonRoot["flgLogin"] = "false";
                 jsonRoot["message"] = String("User ") + newusername + " created successfully";
             }  
-            logger.println("New User Created Succesfully"); 
+            logger.println("[AUTH] New user created successfully"); 
           } else {  // no room for new user
             jsonRoot["status"] = "No room for new user";
             jsonRoot["username"] = String(newusername);
             jsonRoot["message"] = "There is no room for a new user, use an existing one !";
-            logger.println("No room for new user"); 
+            logger.println("[AUTH] ⚠️ No room for new user"); 
           } 
         }
     } else {  // bad adminPassword
         jsonRoot["status"] = "Bad AdminPassword";
         jsonRoot["message"] = "You entered an invalid admin password, please try again !";
-        logger.println("Bad AdminPassword"); 
+        logger.println("[AUTH] ❌ Bad AdminPassword"); 
     }
-    serializeJson(jsonRoot, jsonBuff);
+    serializeJson(jsonRoot, jsonBuff, sizeof(jsonBuff));  // Optimisation RAM
     AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", jsonBuff);
     response->addHeader("Cache-Control","no-cache");
     response->addHeader("Access-Control-Allow-Origin","*");
     request->send(response);
     logger.print("Json is : ");
     logger.println(jsonBuff);
+  }
+
+  /**
+   * @brief Vérifie si le client est sur le réseau local (même sous-réseau que l'ESP8266)
+   * @param request Requête HTTP AsyncWebServer
+   * @return true si client local, false sinon
+   */
+  void PiscineWebClass::handleCheckLocalAuth(AsyncWebServerRequest *request) {
+    char jsonBuff[512];  // Optimisation RAM
+    StaticJsonDocument<256> jsonRoot;  // Optimisation RAM
+    char sessionID[16];
+    long ttl = 365 * 24 * 60 * 60;  // 1 an pour clients locaux
+    
+    bool isLocal = isLocalClient(request);
+    
+    if (isLocal && config.enableLocalAutoLogin) {
+        // Générer une session automatique pour client local
+        generateKey(sessionID, ttl);
+        
+        jsonRoot["status"] = "Auto Login Local";
+        jsonRoot["isLocal"] = true;
+        jsonRoot["autoLogin"] = true;
+        jsonRoot["sessionID"] = sessionID;
+        jsonRoot["ttl"] = ttl;
+        jsonRoot["username"] = "local_user";
+        jsonRoot["message"] = "Bienvenue (connexion locale automatique)";
+        
+        logger.printf("[AUTH] Auto-login local : IP=%s, TTL=1 an\n", 
+                     request->client()->remoteIP().toString().c_str());
+    } else {
+        jsonRoot["status"] = "Authentication Required";
+        jsonRoot["isLocal"] = isLocal;
+        jsonRoot["autoLogin"] = false;
+        jsonRoot["message"] = "Authentification requise";
+        
+        logger.printf("[AUTH] Authentification requise : IP=%s, Local=%s, Config=%s\n",
+                     request->client()->remoteIP().toString().c_str(),
+                     isLocal ? "true" : "false",
+                     config.enableLocalAutoLogin ? "enabled" : "disabled");
+    }
+    
+    serializeJson(jsonRoot, jsonBuff, sizeof(jsonBuff));
+    AsyncWebServerResponse *response = request->beginResponse(200, FPSTR(STR_CONTENT_JSON), jsonBuff);
+    response->addHeader(FPSTR(STR_HEADER_CACHE), FPSTR(STR_HEADER_NOCACHE));
+    response->addHeader(FPSTR(STR_HEADER_CORS), FPSTR(STR_HEADER_CORS_ALL));
+    request->send(response);
   }
 
   /*
@@ -716,12 +855,12 @@
   void PiscineWebClass::handleChangAdminPW(AsyncWebServerRequest *request){
     char theadminpassword[11];
     char newadminpassword[11];
-    String jsonBuff;
-    JsonDocument  jsonRoot;
+    char jsonBuff[512];  // Optimisation RAM
+    StaticJsonDocument<256> jsonRoot;  // Optimisation RAM
 
     if( ! request->hasParam("password",true) || ! request->hasParam("adminpassword",true) 
         || request->getParam("password",true)->value() == NULL || request->getParam("adminpassword",true)->value() == NULL) {       // If the POST request doesn't have username and password data
-        request->send(400, "text/plain", "400: Invalid Request");         // The request is invalid, so send HTTP status 400
+        request->send(400, FPSTR(STR_CONTENT_PLAIN), FPSTR(STR_INVALID_REQUEST));         // The request is invalid, so send HTTP status 400
         return;
     }
 
@@ -730,18 +869,18 @@
         request->getParam("password",true)->value().toCharArray(newadminpassword,11);
         strncpy( config.adminPassword, newadminpassword, 11);                                        // set the new password
         saveNewConfiguration(newadminpassword,nullptr,nullptr,nullptr,nullptr);                                                                  // save changes to the config file
-        jsonRoot["status"] = "Admin Password Updated";
-        jsonRoot["message"] = "Succesfully updated the admin passord !";
-        logger.println("Admin Password Updated"); 
+        jsonRoot[FPSTR(STR_JSON_STATUS)] = FPSTR(STR_ADMIN_PW_UPDATED);
+        jsonRoot[FPSTR(STR_JSON_MESSAGE)] = FPSTR(STR_ADMIN_PW_SUCCESS_MSG);
+        logger.println(FPSTR(STR_LOG_ADMIN_UPDATED)); 
     } else {  // bad adminPassword
-        jsonRoot["status"] = "Bad Admin Password";
-        jsonRoot["message"] = "You entered an invalid admin password, please try again !";
-        logger.println("Bad AdminPassword"); 
+        jsonRoot[FPSTR(STR_JSON_STATUS)] = FPSTR(STR_BAD_ADMIN_PW);
+        jsonRoot[FPSTR(STR_JSON_MESSAGE)] = FPSTR(STR_BAD_ADMIN_MSG);
+        logger.println(FPSTR(STR_LOG_BAD_ADMIN)); 
     }
-    serializeJson(jsonRoot, jsonBuff);
-    AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", jsonBuff);
-    response->addHeader("Cache-Control","no-cache");
-    response->addHeader("Access-Control-Allow-Origin","*");
+    serializeJson(jsonRoot, jsonBuff, sizeof(jsonBuff));
+    AsyncWebServerResponse *response = request->beginResponse(200, FPSTR(STR_CONTENT_PLAIN), jsonBuff);
+    response->addHeader(FPSTR(STR_HEADER_CACHE), FPSTR(STR_HEADER_NOCACHE));
+    response->addHeader(FPSTR(STR_HEADER_CORS), FPSTR(STR_HEADER_CORS_ALL));
     request->send(response);
     logger.print("Json is : ");
     logger.println(jsonBuff);
@@ -757,19 +896,19 @@
     bool flgfound = false;
     char newusername[11], newuserpassword[11], oldusername[11];
     uint8_t indUser = 0;
-    String jsonBuff;
-    JsonDocument  jsonRoot;
+    char jsonBuff[512];  // Optimisation RAM
+    StaticJsonDocument<256> jsonRoot;  // Optimisation RAM
 
     if( ! request->hasParam("username",true) || ! request->hasParam("nameuserprofile",true) 
         || request->getParam("username",true)->value() == NULL || request->getParam("nameuserprofile",true)->value() == NULL ) { // If the POST request doesn't have username and password data
-        request->send(400, "text/plain", "400: Invalid Request");         // The request is invalid, so send HTTP status 400
+        request->send(400, FPSTR(STR_CONTENT_PLAIN), FPSTR(STR_INVALID_REQUEST));         // The request is invalid, so send HTTP status 400
         return;
     }
 
     request->getParam("username",true)->value().toCharArray(oldusername,15); 
     request->getParam("nameuserprofile",true)->value().toCharArray(newusername,15); 
     if( request->hasParam("password",true)) request->getParam("password",true)->value().toCharArray(newuserpassword,10);
-    logger.printf("the new user is : %s, passwd is : %s\n",newusername,newuserpassword);
+    logger.printf("[AUTH] Update user: %s, passwd: %s\n",newusername,newuserpassword);
 
         for(indUser=0;indUser<MAX_USERS;indUser++){   // check to see if user already exist
             if(strcmp(config.users[indUser].user, oldusername) == 0){       // found existing user only update the password
@@ -783,20 +922,20 @@
         }
     }  
     if(flgfound) {            // Found username and updated 
-        jsonRoot["status"] = "User Profile Updated";
-        jsonRoot["username"] = String(newusername);
-        jsonRoot["password"] = String(newuserpassword);
-        jsonRoot["message"] = "User profile updated";
-        logger.println("User profile updated");
+        jsonRoot[FPSTR(STR_JSON_STATUS)] = FPSTR(STR_USER_PROFILE_UPDATED);
+        jsonRoot[FPSTR(STR_JSON_USERNAME)] = newusername;
+        jsonRoot[FPSTR(STR_JSON_PASSWORD)] = newuserpassword;
+        jsonRoot[FPSTR(STR_JSON_MESSAGE)] = FPSTR(STR_USER_PROFILE_MSG);
+        logger.println(FPSTR(STR_LOG_USER_UPDATED));
     } else {                  // not found so can't update
-        jsonRoot["status"] = "User Profile not Updated";
-        jsonRoot["message"] = "Can not find existing user, logoff and try again !";
-        logger.println("User not found so can't update"); 
+        jsonRoot[FPSTR(STR_JSON_STATUS)] = FPSTR(STR_USER_PROFILE_NOT_UPDATED);
+        jsonRoot[FPSTR(STR_JSON_MESSAGE)] = FPSTR(STR_USER_NOT_FOUND_MSG);
+        logger.println(FPSTR(STR_LOG_USER_NOT_FOUND)); 
     } 
-    serializeJson(jsonRoot, jsonBuff);
-    AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", jsonBuff);
-    response->addHeader("Cache-Control","no-cache");
-    response->addHeader("Access-Control-Allow-Origin","*");
+    serializeJson(jsonRoot, jsonBuff, sizeof(jsonBuff));
+    AsyncWebServerResponse *response = request->beginResponse(200, FPSTR(STR_CONTENT_PLAIN), jsonBuff);
+    response->addHeader(FPSTR(STR_HEADER_CACHE), FPSTR(STR_HEADER_NOCACHE));
+    response->addHeader(FPSTR(STR_HEADER_CORS), FPSTR(STR_HEADER_CORS_ALL));
     request->send(response);
     logger.print("Json is : ");
     logger.println(jsonBuff);
@@ -809,21 +948,21 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
   void PiscineWebClass::handleGetUsers(AsyncWebServerRequest *request){
-    String jsonBuff;
-    JsonDocument  jsonRoot;
+    char jsonBuff[768];  // Optimisation RAM
+    StaticJsonDocument<512> jsonRoot;  // Optimisation RAM
     uint8_t indU=0, indUser=0;
 
-        jsonRoot["status"] = "User List";
+        jsonRoot[FPSTR(STR_JSON_STATUS)] = FPSTR(STR_USER_LIST);
         JsonArray rtnUsers = jsonRoot["users"].to<JsonArray>();
 
         for(indUser=0;indUser<MAX_USERS;indUser++){   // find user in config
             rtnUsers[indU]["username"] = config.users[indUser].user;
             indU++;  
         }
-        serializeJson(jsonRoot, jsonBuff);
-        AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", jsonBuff);
-        response->addHeader("Cache-Control","no-cache");
-        response->addHeader("Access-Control-Allow-Origin","*");
+        serializeJson(jsonRoot, jsonBuff, sizeof(jsonBuff));
+        AsyncWebServerResponse *response = request->beginResponse(200, FPSTR(STR_CONTENT_PLAIN), jsonBuff);
+        response->addHeader(FPSTR(STR_HEADER_CACHE), FPSTR(STR_HEADER_NOCACHE));
+        response->addHeader(FPSTR(STR_HEADER_CORS), FPSTR(STR_HEADER_CORS_ALL));
         request->send(response);
         logger.print("Json is : ");
         logger.println(jsonBuff);
@@ -841,8 +980,8 @@
     char theadminpassword[11];
     char currentUser[11];
     char username[11];
-    String jsonBuff;
-    JsonDocument  jsonRoot;
+    char jsonBuff[512];  // Optimisation RAM
+    StaticJsonDocument<256> jsonRoot;  // Optimisation RAM
 
 
     if(request->hasParam("adminpassword",true)){
@@ -850,16 +989,16 @@
         if(strcmp(theadminpassword, config.adminPassword) == 0 ){                                    // good admin password allowed to process
         for (int i=0; i<MAX_USERS;i++){
             sprintf(currentUser, "user%d",i);
-            logger.printf("currentuser is %s\n",currentUser);
+            logger.printf("[AUTH] Current user is %s\n",currentUser);
             if(request->hasParam(currentUser,true)){     // checkbox is checked => delete the user (value of checkbox)
                 request->getParam(currentUser,true)->value().toCharArray(username,11);
-                logger.printf("User to delete is %s\n",username);
+                logger.printf("[AUTH] User to delete: %s\n",username);
                 for (int j=0; j<MAX_USERS; j++) {
                     if(strcmp(config.users[j].user, username) == 0){            // found existing user 
                         flgfound = true;
                         strcpy(config.users[j].user,"");
                         strcpy(config.users[j].user_passwd,"");
-                        logger.println("user deleted");
+                        logger.println("[AUTH] User deleted");
                         break;
                     }
                 }
@@ -869,21 +1008,21 @@
             saveConfiguration();      // save the config to file
             jsonRoot["status"] = "User(s) Deleted";
             jsonRoot["message"] = "User(s) Deleted in the config file";
-            logger.println("User(s) deleted");
+            logger.println("[AUTH] User(s) deleted");
         } else {
             jsonRoot["status"] = "No User(s) to Delete";
             jsonRoot["message"] = "Can not find existing user to delete !";
-            logger.println("Can not find existing user to delete !"); 
+            logger.println("[AUTH] ❌ Can not find existing user to delete!"); 
         }
         } else {  // bad adminPassword
         jsonRoot["status"] = "Bad Admin Password";
         jsonRoot["message"] = "You entered an invalid admin password, please try again !";
-        logger.println("Bad AdminPassword"); 
+        logger.println("[AUTH] ❌ Bad AdminPassword"); 
         }
     } else {  // no admin passord so => bad adminPassword
         jsonRoot["status"] = "Bad Admin Password";
         jsonRoot["message"] = "You entered an invalid admin password, please try again !";
-        logger.println("Bad AdminPassword"); 
+        logger.println("[AUTH] ❌ Bad AdminPassword"); 
     }
     serializeJson(jsonRoot, jsonBuff);
     AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", jsonBuff);
@@ -903,7 +1042,7 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebClass::handleRoot(AsyncWebServerRequest *request) {                         // When URI / is requested, send a login web page
-        logger.println("Enter handleRoot");
+        logger.println("[WEB] Enter handleRoot");
         if(!handleFileRead("/main.html",request)){
             handleFileError("/main.html",request);                 // file not found
         } 
@@ -916,8 +1055,8 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebClass::handleOtherFiles(AsyncWebServerRequest *request){ 	// if the requested file or page doesn't exist, return a 404 not found error
-        logger.println("Enter handleOtherFiles");
-        logger.printf(" http://%s %s\n", request->host().c_str(), request->url().c_str());
+        logger.println("[WEB] Enter handleOtherFiles");
+        logger.printf("[WEB] http://%s%s\n", request->host().c_str(), request->url().c_str());
         if(!handleFileRead(request->url(),request)){
             handleFileError(request->url(),request);                 // file not found
         } 
@@ -930,10 +1069,10 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebClass::handleNotFound(AsyncWebServerRequest *request){ 	// if the requested file or page doesn't exist, return a 404 not found error
-        logger.println("Enter handleNotFound");
+        logger.println("[WEB] Enter handleNotFound");
 
         request->send(400, "text/plain", "400: Invalid Request");         // The request is invalid, so send HTTP status 400
-        logger.print("NOT_FOUND: ");
+        logger.print("[WEB] NOT_FOUND: ");
         switch (request->method()) { 
             case HTTP_GET: logger.print("GET");
             break;    
@@ -999,17 +1138,17 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebClass::handleInitPiscinePP(AsyncWebServerRequest *request){
-        String jsonBuff;
-        JsonDocument piscineEventsJson;
+        char jsonBuff[768];  // Optimisation RAM
+        StaticJsonDocument<512> piscineEventsJson;  // Optimisation RAM
 
         for(uint8_t x:piscinePPSet){
-            piscineEventsJson[indexName[x]] = piscineParams[x].valeur;
+            piscineEventsJson[getIndexNameF(x)] = piscineParams[x].valeur;  // Optimisation RAM #6 : PROGMEM
 	    }
-        serializeJson(piscineEventsJson, jsonBuff);
+        serializeJson(piscineEventsJson, jsonBuff, sizeof(jsonBuff));
         logger.println(jsonBuff);
-        piscineEvents.send(jsonBuff.c_str(), "piscineData", millis());  
-        request->send(200, "text/plain","OK initPiscinePPParams done");
-        logger.println("OK initPiscinePPParams done");
+        piscineEvents.send(jsonBuff, "piscineData", millis());  
+        request->send(200, FPSTR(STR_CONTENT_PLAIN), FPSTR(STR_OK_INIT_PP));
+        logger.println(FPSTR(STR_OK_INIT_PP));
     }    
 
   /*
@@ -1019,17 +1158,18 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebClass::handleInitPiscinePParams(AsyncWebServerRequest *request){
-        String jsonBuffParams;
-        JsonDocument piscineParamsEventsJson;
+        char jsonBuffParams[768];  // Optimisation RAM
+        StaticJsonDocument<512> piscineParamsEventsJson;  // Optimisation RAM
 
         for(uint8_t x:piscineParamsSet){
-            piscineParamsEventsJson[indexName[x]] = piscineParams[x].valeur;
+            piscineParamsEventsJson[getIndexNameF(x)] = piscineParams[x].valeur;  // Optimisation RAM #6 : PROGMEM
         }
-        serializeJson(piscineParamsEventsJson, jsonBuffParams);
+        piscineParamsEventsJson["localAutoLogin"] = config.enableLocalAutoLogin ? 1 : 0;
+        serializeJson(piscineParamsEventsJson, jsonBuffParams, sizeof(jsonBuffParams));
         logger.println(jsonBuffParams);
-        piscineParamsEvents.send(jsonBuffParams.c_str(), "piscineParamsData", millis());  
-        request->send(200, "text/plain","OK initPiscinePParamParams done");
-        logger.println("OK initPiscinePParamParams done");
+        piscineEvents.send(jsonBuffParams, "piscineParamsData", millis());  
+        request->send(200, FPSTR(STR_CONTENT_PLAIN), FPSTR(STR_OK_INIT_PARAMS));
+        logger.println(FPSTR(STR_OK_INIT_PARAMS));
     }    
 
   /*
@@ -1043,15 +1183,15 @@
         int16_t valParam;
         bool changed = false;
 
-        logger.println("Enter handlePiscineParams");
+        logger.println("[WEB] Enter handlePiscineParams");
         if(!checkSessionParam(request)){                                       // check session
-            logger.println("Error : Invalid Session");
+            logger.println("[WEB] ❌ ERREUR : Invalid Session");
             request->send(400, "text/plain", "400: Invalid Session");        
         } else {                                                              // good sessid, then do things
             if( (request->hasParam("param",true)) && (request->hasParam("val",true)) ){                                
                 request->getParam("param",true)->value().toCharArray(param,sizeof(param));      
                 valParam = request->getParam("val",true)->value().toInt();  
-                logger.printf("Param : %s, Vaue : %d\n",param,valParam);    
+                logger.printf("[WEB] Param: %s, Value: %d\n",param,valParam);    
                 if(strcmp(param, "lampe") == 0){
                     if (piscineParams[IND_Lampe].valeur != valParam){
                         piscineParams[IND_Lampe].valeur = valParam;
@@ -1130,8 +1270,13 @@
                         piscineParams[IND_pacViaRouter].changedWeb = true;
                         changed = true;
                     }
+                } else if (strcmp(param, "localAutoLogin") == 0){
+                    if (config.enableLocalAutoLogin != (valParam != 0)){
+                        config.enableLocalAutoLogin = (valParam != 0);
+                        saveConfiguration();      // save the config to file
+                    }
                 } else if (strcmp(param, "typeTemp") == 0){
-                    logger.printf("TypeTemp changed to %s, type is %d\n",(valParam==0)?"Fixe":"Rel",valParam);
+                    logger.printf("[WEB] TypeTemp changed to %s, type is %d\n",(valParam==0)?"Fixe":"Rel",valParam);
                     if (piscineParams[IND_TypeTemp].valeur != valParam){
                         piscineParams[IND_TypeTemp].valeur = valParam;
                         piscineParams[IND_TypeTemp].changedWeb = true;
@@ -1139,14 +1284,14 @@
                     }
                 } else if (strcmp(param, "tempFixRel") == 0){
                     if(piscineParams[IND_TypeTemp].valeur == 0) {                        // typeTemp = 0 then type is fix
-                        logger.printf("tempfixrel is fix as typeTemp is 0\n");
+                        logger.printf("[WEB] tempfixrel is fix as typeTemp is 0\n");
                         if (piscineParams[IND_tFixe].valeur != valParam){
                             piscineParams[IND_tFixe].valeur = valParam;
                             piscineParams[IND_tFixe].changedWeb = true;
                             changed = true;
                         }
                     } else {                                                            // typeTemp = 1 then type is rel
-                        logger.printf("tempfixrel is rel as typeTemp isnt 0:%d\n",piscineParams[IND_TypeTemp].valeur);
+                        logger.printf("[WEB] tempfixrel is rel as typeTemp isnt 0:%d\n",piscineParams[IND_TypeTemp].valeur);
                         if (piscineParams[IND_tVar].valeur != valParam){
                             piscineParams[IND_tVar].valeur = valParam;
                             piscineParams[IND_tVar].changedWeb = true;
@@ -1281,7 +1426,7 @@
                     }
                 }
                 request->send(200, "text/plain","OK setPiscineParams done");
-                logger.printf("OK setPiscineParams done, changed is:%s\n",(changed)?"true":"false");
+                logger.printf("[WEB] OK setPiscineParams done, changed is:%s\n",(changed)?"true":"false");
             } else {                                                            // bad parameter
                 logger.println("Eror : Invalid Parameter");
                 request->send(400, "text/plain", "400: Invalid Parameter");        
@@ -1295,10 +1440,10 @@
    * Entrées : voir la signature de la fonction (paramètres)
    * Sortie : valeur de retour ou effet sur l'état interne
    */
-    void PiscineWebClass::handlePiscineGraphDatas(AsyncWebServerRequest *request) {   // /setLampe?sess=x&state=ON|OFF
+    void PiscineWebClass::handlePiscineGraphDatas(AsyncWebServerRequest *request) {   // /getPiscineGraphs?sess=x&start=yyyy-mm-dd&end=yyyy-mm-dd
         char start[11], end[11];
-        String jsonBuff;
-        JsonDocument jsonRoot;
+        char jsonBuff[256];  // Optimisation RAM
+        StaticJsonDocument<128> jsonRoot;  // Optimisation RAM #7
 
         logger.println("Enter handlePiscineGraphs");
         if(!checkSessionParam(request)){                                       // check session
@@ -1308,12 +1453,12 @@
             if( (request->hasParam("start",true)) && (request->hasParam("end",true)) ){                                
                 request->getParam("start",true)->value().toCharArray(start,sizeof(start));      
                 request->getParam("end",true)->value().toCharArray(end,sizeof(end));      
-                logger.printf("Start : %s, End : %s\n",start,end);
+                logger.printf("Get Graph datas Start : %s, End : %s\n",start,end);
                 if(!logger.setStartEnd(start,end)){     // problems with dates
                     jsonRoot["status"] = "Error";
                     jsonRoot["message"] = "Probleme sur les dates debut et fin";
                     jsonRoot["correction"] = (String)"Vérifier les dates de début: " + start + " et de fin: " +end+" demandées";
-                    serializeJson(jsonRoot, jsonBuff);
+                    serializeJson(jsonRoot, jsonBuff, sizeof(jsonBuff));  // Optimisation RAM
                     AsyncWebServerResponse *response = request->beginResponse(200, "application/json", jsonBuff);
                     response->addHeader("Cache-Control","no-cache");
                     response->addHeader("Access-Control-Allow-Origin","*");
@@ -1326,12 +1471,12 @@
                                     //You will be asked for more data until 0 is returned
                                     //Keep in mind that you can not delay or yield waiting for more data!
                             size_t len = 0;
-                            Serial1.printf("Chunk callback: maxLen %d index %d\n", maxLen, index );
+                            Serial1.printf_P(PSTR("Chunk callback: maxLen %d index %d\n"), maxLen, index );
                             len = logger.fetchDatas((char *)buffer, maxLen);
                             if (len == 0) {
-                                Serial1.printf("ReadLog complete, bytesread %d of %d\n", len, maxLen);
+                                Serial1.printf_P(PSTR("ReadLog complete, bytesread %d of %d\n"), len, maxLen);
                             }
-                            Serial1.printf("Chunk read complete, read /return %d of %d\n", len, maxLen);
+                            Serial1.printf_P(PSTR("Chunk read complete, read /return %d of %d\n"), len, maxLen);
                             return len;
                         });
                     response->addHeader("Server","Web Server Piscine");
@@ -1353,22 +1498,26 @@
    */
     void PiscineWebClass::handlePiscinePageDebug(AsyncWebServerRequest *request){
         int showDebug = 0;
+        char param[10];
+        bool trigger = false;
 
         logger.println("Enter handlePiscinePageDebug");
-        if(!checkSessionParam(request)){                                       // check session
-            logger.println("Error : Invalid Session");
-            request->send(400, "text/plain", "400: Invalid Session");        
-        } else {                                                              // good sessid, then do things
-            if(request->hasParam("showDebug",true)){                                
-                showDebug = request->getParam("showDebug",true)->value().toInt();
-                logger.printf("showDebug is: %s\n",(showDebug==1)?"true":"false");
-                logger.setDebugMessage((showDebug==1)?true:false);
-                request->send(200, "text/plain","OK setPiscineDebug done");
-                logger.println("OK setPiscineDebug done");
-            } else {                                                            // bad parameter
-                logger.println("Eror : Invalid Parameter");
-                request->send(400, "text/plain", "400: Invalid Parameter");        
-            }
+        if(request->hasParam("showDebug",true)){                                
+            showDebug = request->getParam("showDebug",true)->value().toInt();
+            logger.printf("showDebug is: %s\n",(showDebug==1)?"true":"false");
+            logger.setDebugMessage((showDebug==1)?true:false);
+            request->send(200, "text/plain","OK setPiscineDebug done");
+            logger.println("OK setPiscineDebug done");
+        } else if(request->hasParam("trigger",true)){                 // first call trigger the logs on                          
+            request->getParam("trigger",true)->value().toCharArray(param,sizeof(param));
+            logger.printf("trigger is: %s\n",param);
+            trigger = (strcmp(param, "start") == 0) ? true : false; 
+            logger.setDebugMessage(trigger);
+            request->send(200, "text/plain","OK trigger Logs done");
+            logger.println("OK trigger Logs done");
+        } else {                                                            // bad parameter
+            logger.println("Eror : Invalid Parameter");
+            request->send(400, "text/plain", "400: Invalid Parameter");        
         }
     }
 
@@ -1380,13 +1529,13 @@
    */
     void PiscineWebClass::handleInitPiscinePageMaintenance(AsyncWebServerRequest *request){
 
-        String jsonBuff;
-        JsonDocument piscineMaintenanceInitJson;         
+        char jsonBuff[128];  // Optimisation RAM
+        StaticJsonDocument<64> piscineMaintenanceInitJson;  // Optimisation RAM #7
 
 
-        serializeJson(piscineMaintenanceInitJson, jsonBuff);
+        serializeJson(piscineMaintenanceInitJson, jsonBuff, sizeof(jsonBuff));  // Optimisation RAM
         logger.println(jsonBuff);
-        piscineMaintenanceEvents.send(jsonBuff.c_str(), "piscineMaintenance", millis());  
+        piscineEvents.send(jsonBuff, "piscineMaintenance", millis());  
         request->send(200, "text/plain","OK InitPiscinePageMaintenance done");
         logger.println("OK InitPiscinePageMaintenance done");
 
@@ -1492,6 +1641,31 @@
         }
     }
 
+                    // --- Routeur ----
+  /*
+   * void PiscineWebClass::handleRouteurInfo
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
+    void PiscineWebClass::handleRouteurInfo(AsyncWebServerRequest *request){
+        char pacViaRouter[5];
+                // url = "http:// + config.maPiscineServer + "/setRouteurInfo?pacViaRouter=" + "ON | OFF";
+
+        logger.println("Enter handleRouteurInfo");
+        if(request->hasParam("pacViaRouter",true)){    
+            request->getParam("pacViaRouter",true)->value().toCharArray(pacViaRouter,sizeof(pacViaRouter));      
+            logger.printf("pacViaRouter is: %s\n",pacViaRouter);
+            webTelecom.sendRouteurData(pacViaRouter);
+            request->send(200, "text/plain","OK setRouteurInfo done");
+            logger.println("OK handleRouteurInfo done");
+        } else {                                                            // bad parameter
+            logger.println("Error : Invalid Parameter ");
+            request->send(400, "text/plain", "400: Invalid Parameter");        
+        }
+    }    
+
+
 /*__________________________________________________________SDFS_HANDLERS__________________________________________________________*/
 
   /*
@@ -1507,24 +1681,31 @@
         bool gzip = false;
 
         logger.printf(" Asking for file : %s\n", path.c_str());
-        path = piscineFolder + path;
+        char folderBuf[16];
+        strcpy_P(folderBuf, piscineFolder);
+        path = String(folderBuf) + path;
 
         contentType = getContentType(path);              // Get the MIME type
         pathWithGz = path + ".lgz";
 
-        if (SDFS.exists(pathWithGz)){
+        if (SD.exists(pathWithGz)){
             path += ".lgz";         // If there's a compressed version available use it
             gzip = true;
             logger.printf(" Found gziped file : %s\n", path.c_str());
         } 
-        if (SDFS.exists(path)) {      
-            file = SDFS.open(path,"r");  
+        if (SD.exists(path)) {      
+            file = SD.open(path, FILE_READ);  
             if (file) logger.println("Okay file is open !! ");  
             AsyncWebServerResponse *response = request->beginResponse(file, path,contentType);
-            if(gzip)   response->addHeader("Content-Encoding", "gzip");
-            response->addHeader("Access-Control-Allow-Origin","*");
-            response->setCode(200);
-            request->send(response);
+            if(gzip){
+                response->addHeader("Content-Encoding", "gzip");
+//              response->addHeader("Access-Control-Allow-Origin","*");
+                response->setCode(200);
+                request->send(response);
+            } else {
+                request->send(file, path,contentType);
+            }   
+            logger.println(String("\tSent file to client: ") + path);   
             rtn = true;
         } else {
             logger.println(String("\tFile Not Found: ") + path);   // If the file doesn't exist, return false
@@ -1622,7 +1803,7 @@
    */
     void PiscineWebClass::handleFileList( AsyncWebServerRequest *request) {
       String output = "";
-      File root = SDFS.open("/","r");
+      File root = SD.open("/", FILE_READ);
 
       printDirectory(root, 0, &output);
       request->send(200, "text/json", output);
@@ -1668,8 +1849,8 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebClass::showJsonConfig(AsyncWebServerRequest *request){
-        String jsonBuff;
-        JsonDocument jsonConfig;         // config file
+        char jsonBuff[1536];  // Optimisation RAM
+        StaticJsonDocument<1024> jsonConfig;  // Optimisation RAM #7 : Admin + users array + wifi array
         uint8_t i = 0;
 
         logger.println("Asked for print current config");
@@ -1693,7 +1874,7 @@
           }
         }
 
-        serializeJson(jsonConfig, jsonBuff);
+        serializeJson(jsonConfig, jsonBuff, sizeof(jsonBuff));  // Optimisation RAM
         AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", jsonBuff);
         response->addHeader("Cache-Control","no-cache");
         response->addHeader("Access-Control-Allow-Origin","*");
@@ -1862,42 +2043,32 @@
     }
 
   /*
-   * String PiscineWebClass::minuteToHeureMinute
+   * void PiscineWebClass::minuteToHeureMinute
    * But : (description automatique) — expliquer brièvement l'objectif de la fonction
    * Entrées : voir la signature de la fonction (paramètres)
    * Sortie : valeur de retour ou effet sur l'état interne
    */
-    String PiscineWebClass::minuteToHeureMinute(int16_t mn){
-        String output = String("");
+    void PiscineWebClass::minuteToHeureMinute(int16_t mn, char* output, size_t outputSize){
         uint8_t heures = 0;
         uint8_t minutes = 0;
 
         heures = mn / 60;
         minutes = mn % 60;
-        if(heures < 10)
-            output += String("0") + heures;
-        else
-            output += String(heures);
-        if(minutes < 10)
-            output += String("h0") + minutes;
-        else  
-            output += String("h") + minutes;
-        return output;
+        snprintf(output, outputSize, "%02dh%02d", heures, minutes);
     }
 
   /*
-   * String PiscineWebClass::secondsToMinuteSeconds
+   * void PiscineWebClass::secondsToMinuteSeconds
    * But : (description automatique) — expliquer brièvement l'objectif de la fonction
    * Entrées : voir la signature de la fonction (paramètres)
    * Sortie : valeur de retour ou effet sur l'état interne
    */
-    String PiscineWebClass::secondsToMinuteSeconds(int16_t sec){
-        String output = String("");
+    void PiscineWebClass::secondsToMinuteSeconds(int16_t sec, char* output, size_t outputSize){
         float mn;
         uint8_t heures = 0;
         uint8_t minutes = 0;
         uint8_t secondes = 0;
-
+        char temp[32];
 
         mn = (float)sec/60;
         if(mn>=60.0f){
@@ -1907,24 +2078,17 @@
         minutes = (uint8_t)mn;
         secondes = (mn - minutes) * 60;
 
+        output[0] = '\0';  // Initialiser buffer vide
         if(heures != 0){
-            if(heures < 10)
-                output += String("0") + heures+ "h";
-            else
-                output += String(heures) + "h";
+            snprintf(temp, 32, "%02dh", heures);
+            strncat(output, temp, outputSize - strlen(output) - 1);
         }
         if((heures != 0) || (minutes !=0)){
-            if(minutes < 10)
-                output += String("0") + minutes + "mn";
-            else  
-                output += String(minutes) + "mn";
+            snprintf(temp, 32, "%02dmn", minutes);
+            strncat(output, temp, outputSize - strlen(output) - 1);
         }
-        if(secondes < 10)
-            output += String("0") + secondes + "sec";
-        else  
-            output += String(secondes) + "sec";
-
-        return output;
+        snprintf(temp, 32, "%02dsec", secondes);
+        strncat(output, temp, outputSize - strlen(output) - 1);
     }
 
   /*
@@ -1988,11 +2152,11 @@
         for ( i = 0; i < 16; i+=2) {
             // -'0' for digits 0..9 and -('A'-10) for digits `A`..`F`
             hex = toupper(printableAdd[i]) - ((printableAdd[i] >= 'A') ? ('A' - 10) : '0');
-            Serial1.printf("i is %d, hex is : %x, ",i,hex);
+            Serial1.printf_P(PSTR("i is %d, hex is : %x, "),i,hex);
             hex *= 0x10; // shift for one hexadecimal digit
-            Serial1.printf("hex is now : %x, ",hex);
+            Serial1.printf_P(PSTR("hex is now : %x, "),hex);
             hex += toupper(printableAdd[i+1]) - ((printableAdd[i+1] >= 'A') ? ('A' - 10) : '0');
-            Serial1.printf("hex is finnally: %x\n",hex);
+            Serial1.printf_P(PSTR("hex is finnally: %x\n"),hex);
             add[j++]=hex;
         }
 
@@ -2019,5 +2183,35 @@
         strcpy(etalon_Data.PHRedox,"");
         strcpy(etalon_Data.type,""); 
       }
+
+  /**
+   * @brief Vérifie si le client est sur le réseau local (même sous-réseau que l'ESP8266)
+   * @param request Requête HTTP AsyncWebServer
+   * @return true si client local (même sous-réseau), false sinon
+   */
+    bool PiscineWebClass::isLocalClient(AsyncWebServerRequest *request) {
+        IPAddress clientIP = request->client()->remoteIP();
+        IPAddress serverIP = WiFi.localIP();
+        IPAddress subnet = WiFi.subnetMask();
+        
+        // Vérifier si client et serveur sont dans le même sous-réseau
+        for (int i = 0; i < 4; i++) {
+            if ((clientIP[i] & subnet[i]) != (serverIP[i] & subnet[i])) {
+                logger.printf("Client distant détecté : %s (serveur: %s, masque: %s)\n", 
+                             clientIP.toString().c_str(), 
+                             serverIP.toString().c_str(),
+                             subnet.toString().c_str());
+                return false;  // Pas dans le même sous-réseau
+            }
+        }
+        
+        logger.printf("Client local détecté : %s (serveur: %s, masque: %s)\n", 
+                     clientIP.toString().c_str(), 
+                     serverIP.toString().c_str(),
+                     subnet.toString().c_str());
+        return true;
+    }
   
+
+
 

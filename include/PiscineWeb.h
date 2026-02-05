@@ -47,7 +47,11 @@ class PiscineWebClass {
                     
            
     private :
-            uint8_t nbAppels=10;         // toutes les 10s env
+            enum PageActive { PAGE_PRICIPALE, PAGE_PARAMETRES, PAGE_MAINTENANCE, PAGE_DEBUG, PAGE_NONE };  
+            PageActive currentPage = PAGE_NONE;
+
+            int8_t nbAppels=20;           // refresh full des params piscines toutes les 10s env
+            int8_t MDNSAppels=120;        // refresh full des params piscines toutes les mn env
             char addr[6][8];
             time_t tStart, tEnd;
 
@@ -55,16 +59,15 @@ class PiscineWebClass {
             bool flgScanPH = false;
 
             AsyncWebServer server = AsyncWebServer(80); 
-            String piscineFolder = "/html"; 
+            static const char piscineFolder[] PROGMEM;  // Optimisation RAM : PROGMEM au lieu de String 
 
             AsyncEventSource piscineEvents = AsyncEventSource("/piscineEvents");
-            AsyncEventSource piscineParamsEvents = AsyncEventSource("/piscineParamsEvents");
-            AsyncEventSource piscineDebugEvents = AsyncEventSource("/piscineDebugEvents");
-            AsyncEventSource piscineMaintenanceEvents = AsyncEventSource("/piscineMaintenanceEvents");
+//            AsyncEventSource piscineParamsEvents = AsyncEventSource("/piscineParamsEvents");
+//            AsyncEventSource piscineDebugEvents = AsyncEventSource("/piscineDebugEvents");
+//            AsyncEventSource piscineMaintenanceEvents = AsyncEventSource("/piscineMaintenanceEvents");
             
 
-            const char* mdnsName = "mapiscine"; 			// Domain name for the mDNS responder
-
+ 
             std::set<uint8_t> piscinePPSet {IND_PHVal,IND_RedoxVal,IND_CLVal, IND_TempAir, IND_TempEau, IND_TempInt, IND_TempPAC, 
                                             IND_PP, IND_PAC, IND_PompePH, IND_PompeCL, IND_PompeALG, IND_Lampe, IND_Volet, IND_Auto};
             std::set<int> piscineParamsSet {IND_PP, IND_PAC, IND_PompePH, IND_PompeCL, IND_PompeALG, IND_Lampe, IND_Volet, IND_Auto, 
@@ -80,7 +83,7 @@ class PiscineWebClass {
                 time_t ttl;
                 time_t timecreated;
             } actSessions;
-            actSessions activeSessions[10];
+            actSessions activeSessions[5];  // Optimisation RAM : réduit de 10 à 5 sessions
 
             // debug
         void prepareNewParamsPiscine();
@@ -118,6 +121,9 @@ class PiscineWebClass {
         void handlePiscinePageDebug(AsyncWebServerRequest *request);
         void handleInitPiscinePageMaintenance(AsyncWebServerRequest *request);
         void handlePiscinePageMaintenance(AsyncWebServerRequest *request);        
+        void handleCheckLocalAuth(AsyncWebServerRequest *request);  // Vérifie si client local + retourne session auto
+                // --- Routeur ----
+        void handleRouteurInfo(AsyncWebServerRequest *request);
 
         // --- SPIFFS_FUNCTIONS ---
         bool handleFileRead(String path, AsyncWebServerRequest *request);          // send the right file to the client (if it exists)
@@ -127,6 +133,7 @@ class PiscineWebClass {
             
         // --- Authetified_FUNCTIONS ---
         bool isSessionValid(char *sessID);
+        bool isLocalClient(AsyncWebServerRequest *request);  // Détecte si IP client dans même sous-réseau
 
         // --- HELPER_FUNCTIONS ---
         void printDirectory(File dir, int numTabs, String *output);
@@ -135,8 +142,8 @@ class PiscineWebClass {
         String getContentType(String filename);
         bool generateKey(char *sessID,long ttl);
         void getDateFormated(char *datestr, uint8_t len, uint8_t mode);
-        String minuteToHeureMinute(int16_t mn);
-        String secondsToMinuteSeconds(int16_t sec);
+        void minuteToHeureMinute(int16_t mn, char* output, size_t outputSize);
+        void secondsToMinuteSeconds(int16_t sec, char* output, size_t outputSize);
         void addInText(byte *addresse, char *printableAdd);
         void addToHex(byte *add,const char *printableAdd);
         void resetEtalonData(bool all);

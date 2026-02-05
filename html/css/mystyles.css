@@ -1,4 +1,4 @@
-.ui-mobile .ui-page{background-image:url(../img/texture1.png) !important;}
+.ui-mobile .ui-page{background-image:url(../images/texture1.png) !important;}
 
 form .error {
 	color: #f96868;
@@ -191,4 +191,285 @@ background-color: #333;
     color:#009eff !important;
 }
 
+/* ========================================
+   RESPONSIVE ADAPTATIONS
+   Portrait mobile (0-479px) : INCHANGÉ
+   ======================================== */
+
+/* Paysage smartphone (480px-767px landscape) */
+@media (min-width: 480px) and (orientation: landscape) {
+  .ui-content { 
+    padding-top: 5px !important; 
+    padding-bottom: 5px !important; 
+  }
+  .ledpanel, .gauge-container, fieldset { 
+    margin-top: 8px !important; 
+    margin-bottom: 8px !important; 
+  }
+  .ui-header, .ui-footer { 
+    min-height: 38px !important; 
+  }
+  .ui-footer { 
+    position: relative !important; 
+  }
+  .led { 
+    width: 18px !important; 
+    height: 18px !important; 
+  }
+  .smallLabel { 
+    font-size: 9px !important; 
+  }
+  .smallTextInput { 
+    font-size: 1.2em !important; 
+    padding: 2px 0 2px 5px !important; 
+  }
+  .container_12 .grid_3 { 
+    margin-left: 0.5% !important; 
+    margin-right: 0.5% !important; 
+  }
+  .container_12 .grid_4 { 
+    margin-left: 0.5% !important; 
+    margin-right: 0.5% !important; 
+  }
+}
+
+/* Tablette portrait (768px-1023px portrait) */
+@media (min-width: 768px) and (max-width: 1023px) and (orientation: portrait) {
+  .ui-page { 
+    max-width: 700px !important; 
+    margin: 0 auto !important; 
+  }
+  .ui-content { 
+    padding-left: 20px !important; 
+    padding-right: 20px !important; 
+  }
+  .gauge-container { 
+    transform: scale(1.1); 
+  }
+  .led { 
+    width: 22px !important; 
+    height: 22px !important; 
+  }
+  .smallLabel { 
+    font-size: 11px !important; 
+  }
+  .smallTextInput { 
+    font-size: 1.5em !important; 
+  }
+  .ui-footer { 
+    position: relative !important; 
+  }
+  .container_12 { 
+    padding-left: 10px !important; 
+    padding-right: 10px !important; 
+  }
+  
+  /* Dialogs centrés tablette */
+  .ui-dialog .ui-content {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 30px;
+  }
+  
+  /* === FORMULAIRES 2 COLONNES (TABLETTE PORTRAIT) === */
+  /* Pages Paramètres, Maintenance, Alertes */
+  #pagePiscineParametres .ui-field-contain,
+  #pagePiscineMaintenance .ui-field-contain,
+  #pagePiscineAlertes .ui-field-contain {
+    display: grid !important;
+    grid-template-columns: 1fr 1.5fr !important;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+  
+  #pagePiscineParametres .ui-field-contain .smallLabel,
+  #pagePiscineMaintenance .ui-field-contain .smallLabel,
+  #pagePiscineAlertes .ui-field-contain .smallLabel {
+    text-align: right !important;
+    padding-right: 10px !important;
+  }
+  
+  #pagePiscineParametres .ui-field-contain .switch,
+  #pagePiscineParametres .ui-field-contain input,
+  #pagePiscineMaintenance .ui-field-contain input,
+  #pagePiscineAlertes .ui-field-contain input {
+    width: 100% !important;
+  }
+  
+  /* === PAGE GRAPHS TABLETTE PORTRAIT === */
+  #pagePiscineGraphs #graph1 {
+    height: 400px !important; /* Augmenter hauteur en tablette */
+  }
+  
+  #pagePiscineGraphs .ui-field-contain {
+    margin-bottom: 15px !important;
+  }
+  
+  #pagePiscineGraphs #legend {
+    font-size: 13px !important;
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+  }
+}
+
+/* Tablette paysage / Desktop (1024px+ landscape) */
+@media (min-width: 1024px) and (orientation: landscape) {
+  .ui-page { 
+    max-width: 1200px !important; 
+    margin: 0 auto !important; 
+  }
+  .ui-content { 
+    padding-left: 40px !important; 
+    padding-right: 40px !important; 
+  }
+  .gauge-container { 
+    transform: scale(1.15); 
+  }
+  .led { 
+    width: 24px !important; 
+    height: 24px !important; 
+  }
+  .smallLabel { 
+    font-size: 12px !important; 
+  }
+  .smallTextInput { 
+    font-size: 1.6em !important; 
+    padding: 4px 0 4px 8px !important; 
+  }
+  .switch { 
+    margin: 0 10px !important; 
+  }
+  .ui-footer { 
+    position: relative !important; 
+  }
+  .container_12 { 
+    margin-top: 12px !important; 
+    margin-bottom: 12px !important; 
+  }
+  .container_12 .grid_3 { 
+    margin-left: 1% !important; 
+    margin-right: 1% !important; 
+  }
+  .container_12 .grid_4 { 
+    margin-left: 1.2% !important; 
+    margin-right: 1.2% !important; 
+  }
+  
+  /* Dialogs centrés desktop */
+  .ui-dialog .ui-content {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 30px;
+  }
+  
+  /* === GRIDS FLUID 960 RESPONSIVE === */
+  /* Réorganisation colonnes pour pages autres que principale */
+  
+  /* Page Maintenance : 3 colonnes (PH Mesu, PH Ref, PH Calc) */
+  #pagePiscineMaintenance .container_12 .grid_4 {
+    width: 31.33% !important;
+    margin-left: 1% !important;
+    margin-right: 1% !important;
+  }
+  
+  /* Page Paramètres : formulaires 2 colonnes */
+  #pagePiscineParametres .container_12 .grid_2,
+  #pagePiscineParametres .container_12 .grid_4 {
+    width: 48% !important;
+    margin-left: 1% !important;
+    margin-right: 1% !important;
+  }
+  
+  #pagePiscineParametres .container_12 .grid_5 {
+    width: 48% !important;
+    margin-left: 1% !important;
+    margin-right: 1% !important;
+  }
+  
+  #pagePiscineParametres .container_12 .grid_3 {
+    width: 48% !important;
+    margin-left: 1% !important;
+    margin-right: 1% !important;
+  }
+  
+  #pagePiscineParametres .container_12 .grid_8 {
+    width: 98% !important;
+  }
+  
+  #pagePiscineParametres .container_12 .grid_10 {
+    width: 98% !important;
+  }
+  
+  /* Formulaires 2 colonnes : labels à gauche, inputs à droite */
+  #pagePiscineParametres .ui-field-contain {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+  
+  #pagePiscineParametres .ui-field-contain .smallLabel {
+    flex: 0 0 40% !important;
+    text-align: right !important;
+    padding-right: 15px !important;
+  }
+  
+  #pagePiscineParametres .ui-field-contain .switch,
+  #pagePiscineParametres .ui-field-contain input[type="text"] {
+    flex: 1 1 55% !important;
+  }
+  
+  /* === PANELS OPTIMISÉS DESKTOP === */
+  /* Panel menu latéral (leftpanel) : mode reveal persistant */
+  #leftpanel.ui-panel {
+    width: 280px !important;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.3) !important;
+  }
+  
+  /* Panel options (optionsPiscineManager) : centré comme dialog */
+  #optionsPiscineManager.ui-panel {
+    max-width: 400px !important;
+    right: 50% !important;
+    transform: translateX(50%) !important;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5) !important;
+  }
+  
+  /* Contenu des pages : marge si panel reveal ouvert */
+  body[data-layout="desktop"] .ui-page-active {
+    margin-left: 0 !important; /* Panel en overlay, pas de marge */
+  }
+  
+  /* === PAGE GRAPHS DESKTOP === */
+  #pagePiscineGraphs #graph1 {
+    height: 600px !important; /* Grande hauteur desktop */
+  }
+  
+  #pagePiscineGraphs #graphMainPage {
+    max-width: 1400px !important;
+    margin: 0 auto !important;
+  }
+  
+  /* Contrôles en 2 colonnes */
+  #pagePiscineGraphs .ui-field-contain:nth-child(1),
+  #pagePiscineGraphs .ui-field-contain:nth-child(2) {
+    display: inline-block !important;
+    width: 48% !important;
+    margin-right: 2% !important;
+    vertical-align: top !important;
+  }
+  
+  #pagePiscineGraphs .ui-field-contain:nth-child(2) {
+    margin-right: 0 !important;
+  }
+  
+  #pagePiscineGraphs #selectItems {
+    width: 100% !important;
+    max-width: none !important;
+  }
+  
+  #pagePiscineGraphs #legend {
+    font-size: 14px !important;
+    justify-content: flex-start !important;
+    gap: 15px !important;
+  }
+}
 

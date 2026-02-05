@@ -59,7 +59,7 @@
 // Classes
    class LoggerClass;
    class PiscineWebClass;
-   class ManagerTelecomClass; 
+   // class ManagerTelecomClass;  // DÉSACTIVÉ : ESP-NOW manager (optimisation RAM)
    class PiscineWebActionControlerClass;
    class PiscineWebTelecomClass;
 
@@ -68,7 +68,7 @@
    extern PiscineWebClass maPiscineWeb;
    extern PiscineWebActionControlerClass webAction;                    
    extern PiscineWebTelecomClass webTelecom;
-   extern ManagerTelecomClass managerTelecom;
+   // extern ManagerTelecomClass managerTelecom;  // DÉSACTIVÉ : ESP-NOW manager (optimisation RAM)
 
 
     // global structures definitions 
@@ -95,6 +95,7 @@
     char adminPassword[MAX_USERNAME_SIZE];
     users_t users[MAX_USERS];
     wifi_t wifi[MAX_WIFI];
+    bool enableLocalAutoLogin = true;
   } struct_configuration;
 
   typedef struct data_t {
@@ -105,8 +106,9 @@
   
 
 
-#define ESP_NOW_ETH_ALEN 6              /* Length of ESPNOW peer MAC address */
-#define ESP_NOW_MAX_DATA_LEN 250        /* Maximum length of ESPNOW data which is sent very time */
+// DÉSACTIVÉ : ESP-NOW manager (optimisation RAM)
+// #define ESP_NOW_ETH_ALEN 6              /* Length of ESPNOW peer MAC address */
+// #define ESP_NOW_MAX_DATA_LEN 250        /* Maximum length of ESPNOW data which is sent very time */
 
     //Messages structures
     typedef struct etalon_Data_t{
@@ -132,6 +134,8 @@
    extern bool debug;
    extern bool managerPresent;
    extern bool flgInSetup;
+   extern const char* mdnsName;   // Domain name for the mDNS responder
+
 
    extern routeur_Data routeurData;
 
@@ -142,7 +146,7 @@
 
                
    extern piscineParametres piscineParams[IND_MAX_PISCINE+1];   
-   extern char indexName[IND_TOTAL+1][MAX_KEY_LEN];
+   // extern char indexName[IND_TOTAL+1][MAX_KEY_LEN];  // OBSOLETE : remplacé par IndexNames.h (PROGMEM, -1260 octets RAM)
    extern struct_configuration config;
    extern struct_Etalon_Data etalon_Data;
 

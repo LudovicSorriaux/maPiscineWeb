@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ma Piscine - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(180deg, #e0f2fe 0%, #f8fafc 100%);
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 24px;
+        }
+    </style>
+</head>
+<body class="p-4 flex justify-center">
+
+    <div class="w-full max-w-md bg-white/40 shadow-2xl rounded-[3rem] overflow-hidden border-[8px] border-white relative min-h-[800px] flex flex-col">
+        
+        <header class="pt-10 pb-6 text-center">
+            <h1 class="text-2xl font-bold text-slate-800">Ma Piscine</h1>
+            <p class="text-slate-500 text-sm">Samedi 31 Janvier 2026</p>
+        </header>
+
+        <main class="px-6 flex-1 space-y-6">
+            
+            <div class="glass-card p-6 shadow-sm text-center">
+                <p class="text-slate-600 font-medium mb-3">Niveau de l'eau</p>
+                <div class="w-full h-12 bg-blue-100 rounded-xl overflow-hidden relative">
+                    <div class="absolute inset-0 bg-blue-500 opacity-60 flex items-center justify-center">
+                        <svg viewBox="0 0 400 20" class="w-full h-full fill-blue-400">
+                            <path d="M0 10 Q 100 0 200 10 T 400 10 V 20 H 0 Z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-blue-600 font-bold mt-2">Idéal</p>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3">
+                <div class="glass-card p-3 text-center flex flex-col items-center justify-center">
+                    <i class="fa-solid fa-thermometer-half text-blue-500 mb-2"></i>
+                    <p class="text-[10px] text-slate-500 uppercase font-bold">Temp.</p>
+                    <p class="text-xl font-bold text-slate-800">28°C</p>
+                    <p class="text-[9px] text-slate-400">Cible: 27°</p>
+                </div>
+                <div class="glass-card p-3 text-center flex flex-col items-center justify-center border-t-4 border-t-blue-400">
+                    <i class="fa-solid fa-flask text-blue-500 mb-2"></i>
+                    <p class="text-[10px] text-slate-500 uppercase font-bold">pH</p>
+                    <p class="text-xl font-bold text-slate-800">7.2</p>
+                    <p class="text-[9px] text-slate-400">Idéal: 7.0-7.4</p>
+                </div>
+                <div class="glass-card p-3 text-center flex flex-col items-center justify-center">
+                    <i class="fa-solid fa-droplet text-blue-500 mb-2"></i>
+                    <p class="text-[10px] text-slate-500 uppercase font-bold">Chlore</p>
+                    <p class="text-lg font-bold text-slate-800 text-nowrap">1.5 ppm</p>
+                    <p class="text-[9px] text-slate-400 text-nowrap">Idéal: 1.0-2.0</p>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <h3 class="text-slate-800 font-bold px-1">Prochaines actions</h3>
+                
+                <div class="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                            <i class="fa-solid fa-check text-green-600 text-xs"></i>
+                        </div>
+                        <span class="text-slate-700 text-sm font-medium">Nettoyer le filtre</span>
+                    </div>
+                    <span class="text-slate-400 text-xs text-nowrap">Lundi</span>
+                </div>
+
+                <div class="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border-l-4 border-yellow-400">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600">
+                            <i class="fa-solid fa-triangle-exclamation text-xs"></i>
+                        </div>
+                        <span class="text-slate-700 text-sm font-medium text-nowrap">Ajouter du chlore</span>
+                    </div>
+                    <span class="text-slate-400 text-xs text-nowrap">Mardi</span>
+                </div>
+            </div>
+        </main>
+
+        <nav class="bg-white/90 border-t border-slate-100 py-4 px-8 flex justify-between items-center mt-auto">
+            <div class="flex flex-col items-center text-blue-600">
+                <i class="fa-solid fa-house text-lg"></i>
+                <span class="text-[10px] mt-1">Accueil</span>
+            </div>
+            <div class="flex flex-col items-center text-slate-400">
+                <i class="fa-solid fa-calendar-days text-lg"></i>
+                <span class="text-[10px] mt-1">Historique</span>
+            </div>
+            <div class="flex flex-col items-center text-slate-400">
+                <i class="fa-solid fa-wrench text-lg"></i>
+                <span class="text-[10px] mt-1">Équipements</span>
+            </div>
+            <div class="flex flex-col items-center text-slate-400">
+                <i class="fa-solid fa-gear text-lg"></i>
+                <span class="text-[10px] mt-1">Réglages</span>
+            </div>
+        </nav>
+    </div>
+
+</body>
+</html>

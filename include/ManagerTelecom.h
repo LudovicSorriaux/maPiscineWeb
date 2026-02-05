@@ -13,6 +13,12 @@
  * @date    2024
  *******************************************************************************/
 
+// DÉSACTIVÉ : Module ESP-NOW désactivé pour optimisation RAM
+// Tout le contenu de ce fichier est mis en commentaire
+// Pour réactiver : décommenter le bloc ci-dessous et restaurer les appels dans le code
+
+#if 0  // <-- METTRE À 1 POUR RÉACTIVER ESP-NOW
+
 #include "globalPiscine.h"
 
 #include <ArduinoJson.h>
@@ -171,3 +177,5 @@ class ManagerTelecomClass {
     String toHeureFormat(int16_t mn);
 
 };
+
+#endif  // #if 0 - Fin bloc ESP-NOW désactivé

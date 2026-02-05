@@ -1,0 +1,188 @@
+/**
+ * @file    localAuth.js
+ * @brief   Gestion auto-login pour clients réseau local
+ * @details Vérifie au chargement si le client est sur le réseau local.
+ *          Si oui + config activée, bypass la page login et génère session automatique.
+ *          Compatible jQuery Mobile (pages virtuelles).
+ * 
+ * @author  Ludovic Sorriaux
+ * @date    Janvier 2026
+ * 
+ * Usage dans main.html :
+ *   <script src="js/localAuth.js"></script>
+ *   Appeler checkLocalAuthOnStartup() au $(document).ready()
+ */
+
+/**
+ * @brief Vérifie si l'auto-login local est possible et configure la session
+ * @details Appelle /checkLocalAuth (GET) au démarrage de l'application.
+ *          Si autoLogin=true, utilise le système piscineScripts.js existant.
+ *          Sinon, affiche page login normale.
+ */
+function checkLocalAuthOnStartup() {
+    console.log("[LocalAuth] Vérification auto-login local...");
+    
+    // Vérifier d'abord si piscineScripts.js a déjà une session valide
+    if (typeof checkExistingSessionOrAutoLogin === 'function') {
+        var hasValidSession = checkExistingSessionOrAutoLogin();
+        if (hasValidSession) {
+            console.log("[LocalAuth] Session existante valide détectée par piscineScripts.js");
+            // Rediriger vers page principale (utiliser mainPage si défini)
+            var targetPage = (typeof mainPage !== 'undefined' && mainPage) ? mainPage : "#pagePiscinePrincipale";
+            setTimeout(function() {
+                $.mobile.changePage(targetPage, {transition: "slide"});
+            }, 100);
+            return;
+        }
+    }
+    
+    // Pas de session existante, vérifier auto-login local
+    $.ajax({
+        url: '/checkLocalAuth',
+        type: 'GET',
+        dataType: 'json',
+        timeout: 5000,
+        success: function(response) {
+            console.log("[LocalAuth] Réponse serveur:", response);
+            
+            if (response.autoLogin === true) {
+                // Auto-login activé pour client local
+                console.log("[LocalAuth] Auto-login local activé, traitement via piscineScripts.js");
+                
+                // Utiliser le système existant de piscineScripts.js
+                if (typeof onSuccess === 'function') {
+                    // Adapter la réponse pour onSuccess existant
+                    var loginData = {
+                        status: "Auto Login Local",
+                        username: response.username,
+                        password: "",  // Pas de password pour auto-login
+                        sessionID: response.sessionID,
+                        ttl: response.ttl,
+                        roles: [],
+                        isLocal: true,
+                        message: response.message
+                    };
+                    
+                    // Appeler le handler onSuccess existant
+                    onSuccess(JSON.stringify(loginData), 'success');
+                } else {
+                    console.error("[LocalAuth] Fonction onSuccess non trouvée dans piscineScripts.js");
+                }
+                
+            } else {
+                // Authentification normale requise
+                console.log("[LocalAuth] Authentification requise:", response.message);
+                
+                // Afficher page login (jQuery Mobile)
+                $.mobile.changePage("#pageLogin", {transition: "fade"});
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error("[LocalAuth] Erreur vérification:", status, error);
+            
+            // En cas d'erreur, afficher page login par défaut
+            $.mobile.changePage("#pageLogin", {transition: "fade"});
+        }
+    });
+}
+
+/**
+ * @brief Affiche un toast notification (compatible jQuery Mobile)
+ * @param message Texte à afficher
+ * @param type Type de message ('success', 'error', 'info')
+ */
+function showToast(message, type) {
+    var toastClass = 'toast-' + type;
+    var $toast = $('<div class="toast ' + toastClass + '">' + message + '</div>');
+    
+    $('body').append($toast);
+    
+    setTimeout(function() {
+        $toast.addClass('show');
+    }, 100);
+    
+    setTimeout(function() {
+        $toast.removeClass('show');
+        setTimeout(function() {
+            $toast.remove();
+        }, 300);
+    }, 3000);
+}
+
+/**
+ * @brief Hook pour modifier le comportement du login standard
+ * @details Appeler cette fonction dans le handler du formulaire login existant
+ *          pour bénéficier du TTL adaptatif selon contexte local/distant
+ */
+function enhanceLoginWithLocalCheck() {
+    // Cette fonction peut être appelée dans votre code login existant
+    // Elle n'a pas besoin de faire plus : le backend gère déjà le TTL adaptatif
+    console.log("[LocalAuth] Login amélioré avec détection locale activé");
+}
+
+/**
+ * @brief Vérifie périodiquement la validité de la session
+ * @details À appeler toutes les 60 secondes pour vérifier expiration
+ *          Utilise le système maPiscine.Session de piscineScripts.js
+ */
+function checkSessionValidity() {
+    // Utiliser le système maPiscine.Session existant
+    if (typeof maPiscine !== 'undefined' && maPiscine.Session) {
+        var sessionData = maPiscine.Session.getInstance().get();
+        
+        if (!sessionData || !sessionData.sessionId) {
+            console.log("[LocalAuth] Pas de session, redirection login");
+            $.mobile.changePage("#pageLogin", {transition: "fade"});
+            return false;
+        }
+        
+        var now = new Date().getTime();
+        if (now >= sessionData.theExpirationDate) {
+            console.log("[LocalAuth] Session expirée, redirection login");
+            
+            // Nettoyer via système existant
+            window.localStorage.removeItem("maPiscine-session");
+            setCookie("maPiscine", "", 0);
+            
+            showToast("Session expirée, veuillez vous reconnecter", 'info');
+            $.mobile.changePage("#pageLogin", {transition: "fade"});
+            return false;
+        }
+        
+        return true;
+    }
+    
+    // Fallback ancien système (si piscineScripts.js pas chargé)
+    var sessionExpiry = localStorage.getItem('maPiscineExpiry');
+    
+    if (!sessionExpiry) {
+        console.log("[LocalAuth] Pas de session, redirection login");
+        $.mobile.changePage("#pageLogin", {transition: "fade"});
+        return false;
+    }
+    
+    var now = Math.floor(Date.now() / 1000);
+    if (now >= parseInt(sessionExpiry)) {
+        console.log("[LocalAuth] Session expirée, redirection login");
+        localStorage.removeItem('maPiscine');
+        localStorage.removeItem('maPiscineExpiry');
+        localStorage.removeItem('maPiscineUsername');
+        
+        showToast("Session expirée, veuillez vous reconnecter", 'info');
+        $.mobile.changePage("#pageLogin", {transition: "fade"});
+        return false;
+    }
+    
+    return true;
+}
+
+// Auto-start au chargement de la page
+$(document).ready(function() {
+    console.log("[LocalAuth] Module chargé");
+    
+    // Appeler la vérification au démarrage
+    checkLocalAuthOnStartup();
+    
+    // Vérifier périodiquement la session (toutes les 60 secondes)
+    setInterval(checkSessionValidity, 60000);
+});

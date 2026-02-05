@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ma Piscine - Exemple intégration auto-login</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- jQuery Mobile CSS -->
+    <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css">
+    
+    <!-- Auto-login local CSS -->
+    <link rel="stylesheet" href="css/localAuth.css">
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    
+    <!-- jQuery Mobile JS -->
+    <script src="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    
+    <!-- Auto-login local JS (DOIT être après jQuery Mobile) -->
+    <script src="js/localAuth.js"></script>
+</head>
+<body>
+
+<!-- ========================================
+     PAGE LOGIN (virtuelle - jQuery Mobile)
+     ======================================== -->
+<div data-role="page" id="pageLogin">
+    <div data-role="header" data-position="fixed">
+        <h1>🏊 Ma Piscine</h1>
+    </div>
+    
+    <div data-role="content" style="padding: 20px;">
+        <h2 style="text-align: center;">Connexion</h2>
+        
+        <form id="loginForm">
+            <div data-role="fieldcontain">
+                <label for="username">Nom d'utilisateur :</label>
+                <input type="text" name="username" id="username" placeholder="Entrez votre nom" required>
+            </div>
+            
+            <div data-role="fieldcontain">
+                <label for="password">Mot de passe :</label>
+                <input type="password" name="password" id="password" placeholder="Entrez votre mot de passe" required>
+            </div>
+            
+            <div data-role="fieldcontain">
+                <label for="keepAlive">
+                    <input type="checkbox" name="keepAlive" id="keepAlive">
+                    Se souvenir de moi (24h)
+                </label>
+            </div>
+            
+            <button type="submit" data-theme="b">Se connecter</button>
+        </form>
+        
+        <p style="text-align: center; margin-top: 20px; font-size: 12px; color: #666;">
+            💡 <strong>Astuce</strong> : Sur le réseau local, la connexion est automatique !
+        </p>
+    </div>
+</div>
+
+<!-- ========================================
+     PAGE PRINCIPALE (virtuelle - jQuery Mobile)
+     ======================================== -->
+<div data-role="page" id="pagePrincipale">
+    <div data-role="header" data-position="fixed">
+        <h1>🏊 Ma Piscine</h1>
+        <a href="#" id="btnLogout" class="ui-btn-right" data-icon="delete">Déconnexion</a>
+    </div>
+    
+    <div data-role="content">
+        <h2>Tableau de bord</h2>
+        
+        <div class="ui-grid-a">
+            <div class="ui-block-a">
+                <div class="ui-bar ui-bar-a" style="padding: 15px; text-align: center;">
+                    <h3>Température eau</h3>
+                    <p style="font-size: 32px; font-weight: bold; color: #0066cc;">25.3°C</p>
+                </div>
+            </div>
+            <div class="ui-block-b">
+                <div class="ui-bar ui-bar-a" style="padding: 15px; text-align: center;">
+                    <h3>pH</h3>
+                    <p style="font-size: 32px; font-weight: bold; color: #00cc66;">7.2</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="ui-grid-a" style="margin-top: 10px;">
+            <div class="ui-block-a">
+                <div class="ui-bar ui-bar-a" style="padding: 15px; text-align: center;">
+                    <h3>Redox</h3>
+                    <p style="font-size: 32px; font-weight: bold; color: #cc6600;">685 mV</p>
+                </div>
+            </div>
+            <div class="ui-block-b">
+                <div class="ui-bar ui-bar-a" style="padding: 15px; text-align: center;">
+                    <h3>Chlore</h3>
+                    <p style="font-size: 32px; font-weight: bold; color: #00cccc;">1.2 ppm</p>
+                </div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <h3>Contrôles</h3>
+            <div data-role="controlgroup" data-type="horizontal">
+                <a href="#" class="ui-btn ui-icon-power ui-btn-icon-left">Pompe principale</a>
+                <a href="#" class="ui-btn ui-icon-thermometer ui-btn-icon-left">PAC</a>
+            </div>
+            <div data-role="controlgroup" data-type="horizontal" style="margin-top: 10px;">
+                <a href="#" class="ui-btn ui-icon-plus ui-btn-icon-left">pH+</a>
+                <a href="#" class="ui-btn ui-icon-drop ui-btn-icon-left">Chlore</a>
+            </div>
+        </div>
+        
+        <div id="userInfo" style="margin-top: 30px; padding: 10px; background: #f0f0f0; border-radius: 5px;">
+            <p><strong>Utilisateur :</strong> <span id="displayUsername">-</span></p>
+            <p><strong>Type connexion :</strong> <span id="displayConnectionType">-</span></p>
+            <p><strong>Session expire :</strong> <span id="displaySessionExpiry">-</span></p>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================
+     SCRIPTS CUSTOM
+     ======================================== -->
+<script>
+$(document).ready(function() {
+    console.log("[Main] Application démarrée");
+    
+    // ========================================
+    // HANDLER FORMULAIRE LOGIN
+    // ========================================
+    $('#loginForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        var username = $('#username').val();
+        var password = $('#password').val();
+        var keepAlive = $('#keepAlive').is(':checked');
+        
+        console.log("[Login] Tentative connexion:", username);
+        
+        $.ajax({
+            url: '/logon',
+            type: 'POST',
+            data: {
+                username: username,
+                password: password,
+                keepAlive: keepAlive
+            },
+            dataType: 'json',
+            success: function(response) {
+                console.log("[Login] Réponse:", response);
+                
+                if (response.status === "Log in Successful") {
+                    // Stocker session
+                    localStorage.setItem('maPiscine', response.sessionID);
+                    localStorage.setItem('maPiscineUsername', response.username);
+                    
+                    var expiryTimestamp = Math.floor(Date.now() / 1000) + response.ttl;
+                    localStorage.setItem('maPiscineExpiry', expiryTimestamp);
+                    
+                    // Afficher message
+                    showToast("Connexion réussie ! Bienvenue " + response.username, 'success');
+                    
+                    // Rediriger vers page principale
+                    setTimeout(function() {
+                        updateUserInfo();  // Mettre à jour affichage
+                        $.mobile.changePage("#pagePrincipale", {transition: "slide"});
+                    }, 500);
+                    
+                } else {
+                    showToast("Erreur : " + response.message, 'error');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("[Login] Erreur:", status, error);
+                showToast("Erreur de connexion au serveur", 'error');
+            }
+        });
+    });
+    
+    // ========================================
+    // HANDLER DÉCONNEXION
+    // ========================================
+    $('#btnLogout').on('click', function(e) {
+        e.preventDefault();
+        
+        console.log("[Logout] Déconnexion");
+        
+        // Supprimer session
+        localStorage.removeItem('maPiscine');
+        localStorage.removeItem('maPiscineExpiry');
+        localStorage.removeItem('maPiscineUsername');
+        
+        showToast("Déconnexion réussie", 'info');
+        
+        // Rediriger vers login
+        setTimeout(function() {
+            $.mobile.changePage("#pageLogin", {transition: "fade"});
+        }, 500);
+    });
+    
+    // ========================================
+    // MISE À JOUR INFOS UTILISATEUR
+    // ========================================
+    function updateUserInfo() {
+        var username = localStorage.getItem('maPiscineUsername') || '-';
+        var sessionExpiry = localStorage.getItem('maPiscineExpiry');
+        
+        $('#displayUsername').text(username);
+        
+        // Déterminer type connexion
+        if (username === 'local_user') {
+            $('#displayConnectionType').text('🏠 Réseau local (auto-login)').css('color', '#00cc66');
+        } else {
+            $('#displayConnectionType').text('🔐 Authentification manuelle').css('color', '#0066cc');
+        }
+        
+        // Afficher expiration
+        if (sessionExpiry) {
+            var expiryDate = new Date(parseInt(sessionExpiry) * 1000);
+            var now = new Date();
+            var diffMs = expiryDate - now;
+            
+            if (diffMs > 365 * 24 * 60 * 60 * 1000) {
+                $('#displaySessionExpiry').text('♾️ Illimitée (1 an)').css('color', '#00cc66');
+            } else if (diffMs > 24 * 60 * 60 * 1000) {
+                var days = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+                $('#displaySessionExpiry').text(days + ' jours').css('color', '#cc6600');
+            } else if (diffMs > 60 * 60 * 1000) {
+                var hours = Math.floor(diffMs / (60 * 60 * 1000));
+                $('#displaySessionExpiry').text(hours + ' heures').css('color', '#cc0000');
+            } else {
+                var minutes = Math.floor(diffMs / (60 * 1000));
+                $('#displaySessionExpiry').text(minutes + ' minutes').css('color', '#cc0000');
+            }
+        } else {
+            $('#displaySessionExpiry').text('-');
+        }
+    }
+    
+    // ========================================
+    // ÉVÉNEMENT CHANGEMENT PAGE
+    // ========================================
+    $(document).on('pagebeforeshow', '#pagePrincipale', function() {
+        console.log("[Main] Affichage page principale");
+        updateUserInfo();
+    });
+    
+    // NOTE : checkLocalAuthOnStartup() est appelé automatiquement par localAuth.js
+    //        au $(document).ready() - Pas besoin de l'appeler ici !
+});
+</script>
+
+</body>
+</html>

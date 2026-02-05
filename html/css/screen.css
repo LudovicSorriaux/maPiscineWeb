@@ -39,6 +39,12 @@
     font-size: 1.4em;
     font-weight: bold;
     margin-block-start: auto;
+    margin-block-end: auto;
+}
+
+.screenTextStatus{
+  text-align: left;
+  margin-block-start: auto;
 }
 
 .screenTextZone{

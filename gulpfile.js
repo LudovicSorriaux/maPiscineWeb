@@ -46,9 +46,26 @@ gulp.task('clean', function() {
 });
 
 /* Copy static files */
-gulp.task('files', function() {
+gulp.task('files_old', function() {
     return gulp.src('html/**/*.{jpg,jpeg,png,ico,gif,cfg,json}')
         .pipe(gulp.dest('data/'));
+});
+
+gulp.task('files', function() {
+
+    // Flux pour les fichiers à la racine et images 
+    const root = gulp.src('html/*.{json,jpeg,png,ico,gif,svg}')
+        .pipe(gulp.dest('data/html'));
+        
+    // Flux pour les images dans html/images
+    const images = gulp.src('html/images/**/*.{jpg,jpeg,png,ico,gif,svg}')
+        .pipe(gulp.dest('data/html/images'));
+
+    // Flux pour les fichiers de config
+    const configs = gulp.src('cfg/**/*.cfg')
+        .pipe(gulp.dest('data/cfg'));
+
+    return Promise.all([root, images, configs]); // On s'assure que Gulp attend la fin des trois
 });
 
 /* Process HTML, CSS, JS  --- INLINE --- */
@@ -89,7 +106,7 @@ gulp.task('html', function() {
         .pipe(rename(function (path) {
             // Updates the object in-place
             path.extname = ".lgz";}))
-        .pipe(gulp.dest('data'));
+        .pipe(gulp.dest('data/html'));
 });
 
 gulp.task("uglify", function () {

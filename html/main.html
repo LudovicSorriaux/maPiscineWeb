@@ -5,17 +5,21 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
     <meta name="author" content="Ludovic Sorriaux">
+	<!-- <link rel="icon" type="image/svg+xml" href="favicon.svg"> -->
+	<link rel="icon" type="image/x-icon" href="favicon.ico">
+	<meta name="description" content="maPiscine Web Manager application">
+	<meta name="keywords" content="Piscine, Pool, Manager, Web, Application, PISCINE MANAGER, maPiscine, Ludovic Sorriaux">
 
     <meta name="HandheldFriendly" content="True" />
     <meta name="MobileOptimized" content="320" />
 	<meta name="mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-capable" content="yes" />
 	<meta name="apple-mobile-web-app-status-bar-style" content="black" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes" />
     <meta name="theme-color" content="#2f434e" />
     <meta http-equiv="cleartype" content="on" />
 	<!-- web app icon on ios -->
-	<link rel="apple-touch-icon" href="img/005-smartphone.png">
+	<link rel="apple-touch-icon" href="images/maPiscine-apl.png">
 	<!-- manifest pour la web app -->
 	<link rel="manifest" href="/manifest.json" />	
 	
@@ -24,15 +28,15 @@
 	<link rel = "stylesheet" href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" /> <!-- version4 --
 	-->
 <!-- font-awesome version 5 -->
-	!-- kit -->
+	<!-- kit -->
 		<script src="https://kit.fontawesome.com/e8b296d778.js" crossorigin="anonymous"></script>
 	<!-- solid --
 		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.13.0/css/solid.css" integrity="sha384-fZFUEa75TqnWs6kJuLABg1hDDArGv1sOKyoqc7RubztZ1lvSU7BS+rc5mwf1Is5a" crossorigin="anonymous"> 
-	<!-- regular --
+	!-- regular --
 		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.13.0/css/regular.css" integrity="sha384-rbtXN6sVGIr49U/9DEVUaY55JgfUhjDiDo3EC0wYxfjknaJamv0+cF3XvyaovFbC" crossorigin="anonymous">
-	<!-- brands --
+	!-- brands --
 		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.13.0/css/brands.css" integrity="sha384-yZSrIKdp94pouX5Mo4J2MnZUIAuHlZhe3H2c4FRXeUcHvI2k0zNtPrBu8p3bjun5" crossorigin="anonymous">
-	<!-- all --
+	!-- all --
 		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.13.0/css/fontawesome.css" integrity="sha384-syoT0d9IcMjfxtHzbJUlNIuL19vD9XQAdOzftC+llPALVSZdxUpVXE0niLOiw/mn" crossorigin="anonymous">
 	-->
 
@@ -69,6 +73,7 @@
 	<link rel="stylesheet" href="/css/gauge.css" />	
 	<link rel="stylesheet" href="/css/404.css" />	
 	<link rel="stylesheet" href="/css/daterangepicker.css" />
+	<link rel="stylesheet" href="css/localAuth.css">
 
 <!-- endbuild -->
 
@@ -609,9 +614,40 @@
 			</fieldset> 
 
 			<div data-role="collapsibleset" >			
+				<!-- Parametes Divers -->
+				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
+					<h4>Parametres divers</h4>
+					<fieldset class="container_12 mypanel"> 
+						<div class="grid_5 suffix_2">
+							<div class="ui-field-contain smallFillContent">
+								<label for="pacViaRouterSW" class="smallLabel" style="padding: 0 0 0 0.7em">PAC via Router</label>
+								<div class="switch" id="pacViaRouterSW">
+									<input type="checkbox" name="pacViaRouter" id="pacViaRouterSWitch" checked="false">
+									<label for="pacViaRouter" class="switchLabel switchUnchecked">
+										<i class="switchUnchecked"></i>
+									</label>
+									<span class="switchUnchecked"></span>
+								</div>				
+							</div>
+						</div>
+						<div class="grid_5">
+							<div class="ui-field-contain smallFillContent">
+								<label for="localAutoLoginSW" class="smallLabel" style="padding: 0 0 0 0.7em">Local Auto Login</label>
+								<div class="switch" id="localAutoLoginSW">
+									<input type="checkbox" name="localAutoLogin" id="localAutoLoginSWitch" checked="false">
+									<label for="localAutoLogin" class="switchLabel switchUnchecked">
+										<i class="switchUnchecked"></i>
+									</label>
+									<span class="switchUnchecked"></span>
+								</div>				
+							</div>
+						</div>
+ 					</fieldset>
+				</div>
+
 				<!-- Mode manu -->
 				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
-				    <h4>Mode Manuel</h4>
+					<h4>Mode Manuel</h4>
 					<fieldset class="container_12 mypanel"> 
 						<div class="grid_4">						<!-- 12/4 = 1/3:pour trois switchs -->
 							<div class="ui-field-contain smallFillContent">
@@ -690,7 +726,7 @@
 			
 				<!-- Pompe Principale -->
 				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
-				    <h4>Pompe Principale</h4>
+					<h4>Pompe Principale</h4>
 					<fieldset class="container_12 mypanel"> 
 						<div class="grid_4 suffix_2">
 							<br>
@@ -724,7 +760,7 @@
 
 				<!--  PAC -->
 				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
-				    <h4>Horaire PAC</h4>
+					<h4>Horaire PAC</h4>
 					<fieldset class="container_12 mypanel"> 
 						<div class="prefix_2 grid_4">
 							<label for="PACstart" class="smallLabel" style="padding: 1em 0 0 0.8em">StartTime</label>
@@ -738,8 +774,10 @@
 								<input type="text" class="form-control" id="PACstop" value="20:00">
 							</div>
 						</div>	
-					</fieldset> 
-				    <h4>Temperature PAC</h4>
+					</fieldset>
+				</div>
+				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel"> 
+					<h4>Temperature PAC</h4>
 					<fieldset class="container_12 mypanel"> 
 						<div class="grid_3 suffix_1">
 							<div class="ui-field-contain smallFillContent">
@@ -760,26 +798,10 @@
 							</div>
 						</div>	
 					</fieldset>
-					<fieldset class="container_12 mypanel"> 
-					    <h4>Controle PAC via Routeur</h4>
-						<div class="grid_4 suffix_2">
-							<div class="ui-field-contain smallFillContent">
-								<label for="pacViaRouterSW" class="smallLabel" style="padding: 0 0 0 0.4em">Off<span STYLE="padding:0 0 0 1.8em;"></span>Auto</label>
-								<div class="switch" id="pacViaRouterSW">
-									<input type="checkbox" name="pacViaRouter" id="pacViaRouterSWitch" checked="false">
-									<label for="pacViaRouter" class="switchLabel switchUnchecked">
-										<i class="switchUnchecked"></i>
-									</label>
-									<span class="switchUnchecked"></span>
-								</div>				
-							</div>
-						</div>
- 					</fieldset>
 				</div>
-
 				<!-- Lampe Auto -->
 				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
-				    <h4>Lampe Automatique</h4>
+					<h4>Lampe Automatique</h4>
 					<fieldset class="container_12 mypanel"> 
 						<div class="grid_4 suffix_2">
 							<div class="ui-field-contain smallFillContent">
@@ -807,10 +829,9 @@
 						</div>	
 					</fieldset> 
 				</div>
-	
-				<!-- Volet Auto -->
+					<!-- Volet Auto -->
 				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
-				    <h4>Volet Automatique</h4>
+					<h4>Volet Automatique</h4>
 					<fieldset class="container_12 mypanel"> 
 						<div class="grid_4 suffix_2">
 							<div class="ui-field-contain smallFillContent">
@@ -838,10 +859,9 @@
 						</div>	
 					</fieldset> 
 				</div>
-	
-						<!-- PH et CL Reference -->
+					<!-- PH et CL Reference -->
 				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
-				    <h4>PH ref & CL ref</h4>
+				<h4>PH ref & CL ref</h4>
 					<fieldset class="container_12 mypanel"> 
 						<div class="prefix_1 grid_10 suffix_1">
 							<div id="PHRefSlider">
@@ -857,10 +877,9 @@
 						</div>	
 					</fieldset> 
 				</div>
-		
-				<!-- Pompe 3 -->
+					<!-- Pompe 3 -->
 				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
-				    <h4>Pompe 3</h4>
+					<h4>Pompe 3</h4>
 					<fieldset class="container_12 mypanel"> 
 						<div class="grid_4 suffix_1">
 							<div class="ui-field-contain smallFillContent">
@@ -907,10 +926,9 @@
 						</div>
 					</fieldset> 
 				</div>
-
-				<!-- Alertes -->
+					<!-- Alertes -->
 				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
-				    <h4>Alertes</h4>
+					<h4>Alertes</h4>
 					<fieldset class="container_12 mypanel"> 
 						<div class="grid_4">						<!-- 12/4 = 1/3:pour trois blocks -->
 							<div class="ui-field-contain smallFillContent">
@@ -990,10 +1008,9 @@
 						</div>
 					</fieldset> 
 				</div>
-
-				<!-- Pompes -->
+					<!-- Pompes -->
 				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
-				    <h4>Pompes</h4>
+					<h4>Pompes</h4>
 					<fieldset class="container_12 mypanel"> 
 						<div class="grid_4">						<!-- 12/4 = 1/3:pour trois blocks -->
 							<div class="ui-field-contain smallFillContent">
@@ -1377,7 +1394,8 @@
 			<div class="userinfo">
 				<div class="row">
 				<div class="small-4 columns">
-					<div class="photo"><img src="http://api.randomuser.me/portraits/men/15.jpg" alt="user photo" /></div>
+					<!-- <div class="photo"><img src="http://api.randomuser.me/portraits/men/15.jpg" alt="user photo" /></div> -->
+					<div class="photo"><img src="images/men.jpg" alt="user photo" /></div>
 				</div>
 				<div class="small-8 columns info">
 					<h4>Ludovic Sorriaux</h4>

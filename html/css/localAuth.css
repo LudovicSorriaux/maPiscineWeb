@@ -1,0 +1,76 @@
+/**
+ * @file    localAuth.css
+ * @brief   Styles pour notifications toast (auto-login local)
+ * @author  Ludovic Sorriaux
+ * @date    Janvier 2026
+ */
+
+/* Toast notifications */
+.toast {
+    position: fixed;
+    bottom: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 250px;
+    max-width: 90%;
+    padding: 15px 20px;
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+    z-index: 10000;
+    opacity: 0;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.toast.show {
+    bottom: 30px;
+    opacity: 1;
+}
+
+/* Types de toast */
+.toast-success {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.toast-error {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.toast-info {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.toast-warning {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+/* Animation pulse pour succès */
+.toast-success::before {
+    content: "✓ ";
+    font-size: 18px;
+    margin-right: 8px;
+}
+
+.toast-error::before {
+    content: "✗ ";
+    font-size: 18px;
+    margin-right: 8px;
+}
+
+.toast-info::before {
+    content: "ℹ ";
+    font-size: 18px;
+    margin-right: 8px;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .toast {
+        min-width: 200px;
+        font-size: 13px;
+        padding: 12px 16px;
+    }
+}

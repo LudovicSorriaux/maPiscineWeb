@@ -29,32 +29,27 @@
  */
     bool LoggerClass::initDirs() {
       char directory[50];
-      String dir;
       bool rtn = false;
 
         if( cardPresent){
-          if (!SDFS.exists("/Log")) {
-            SDFS.mkdir("/Log");
+          if (!SD.exists("/log")) {
+            SD.mkdir("/log");
           }
-          dir = String("/Log/") + (year()+1970);
-          dir.toCharArray(directory, 50);
-          if (!SDFS.exists(directory)) {
-            SDFS.mkdir(directory);
+          snprintf(directory, 50, "/log/%d", year());
+          if (!SD.exists(directory)) {
+            SD.mkdir(directory);
           }
-          dir = String("/Log/") + (year()+1970) + "/Alerts";
-          dir.toCharArray(directory, 50);
-          if (!SDFS.exists(directory)) {
-            SDFS.mkdir(directory);
+          snprintf(directory, 50, "/log/%d/alerts", year());
+          if (!SD.exists(directory)) {
+            SD.mkdir(directory);
           }
-          dir = String("/Log/") + (year()+1970) + "/Logs";
-          dir.toCharArray(directory, 50);
-          if (!SDFS.exists(directory)) {
-            SDFS.mkdir(directory);
+          snprintf(directory, 50, "/log/%d/logs", year());
+          if (!SD.exists(directory)) {
+            SD.mkdir(directory);
           }
-          dir = String("/Log/") + (year()+1970) + "/Logs/" + monthStr(month());
-          dir.toCharArray(directory, 50);
-          if (!SDFS.exists(directory)) {
-            SDFS.mkdir(directory);
+          snprintf(directory, 50, "/log/%d/logs/%s", year(), monthStr(month()));
+          if (!SD.exists(directory)) {
+            SD.mkdir(directory);
           }
           rtn = true;
         }
@@ -65,38 +60,52 @@
  * @brief Mise à jour périodique : Vérifie changement mois/jour, crée nouveaux fichiers log (alerts, logs CSV), écrit les valeurs piscineParams[] sur SD
  */
     void LoggerClass::OnUpdate(){
-      String dir;
       String message;
       char theDate[20];
+      static uint8_t ramCheckCounter = 0;  // Compteur pour log RAM toutes les 10 minutes
 
-        if (SDFS.exists("/cfg/piscine.cfg")) {      
-          File configFile = SDFS.open("/cfg/piscine.cfg","r");  
+        // RAM monitoring : Surveillance périodique (toutes les 10 min = 600 appels de 1s)
+        if(++ramCheckCounter >= 600) {
+          ramCheckCounter = 0;
+          uint32_t freeHeap = ESP.getFreeHeap();
+          printf("[RAM] Surveillance périodique - Free heap: %d bytes (%.1f%%)\n", 
+                 freeHeap, (freeHeap * 100.0) / 81920);
+          if(freeHeap < 15000) {
+            printf("[RAM] ⚠️ ALERTE : RAM faible (< 15 KB) - Risque instabilité !\n");
+          }
+        }
+
+        if (SD.exists("/cfg/piscine.cfg")) {      
+          File configFile = SD.open("/cfg/piscine.cfg",FILE_READ);  
         }
 
         if(month() != lastMonth){
           initDirs();                     // change year and month if needed
 
-          alertFileName = String("/Log/") + (year()+1970) + "/Alerts" + "Alerts-" + monthStr(month()) + ".log";;
-          alertFile = SDFS.open(alertFileName.c_str(),"w");
+          alertFileName = String("/log/") + year() + "/alerts" + "/Alerts-" + monthStr(month()) + ".log";;
+          alertFile = SD.open(alertFileName.c_str(),FILE_WRITE);
           if(alertFile){
             alertFile.close();
           }
           lastMonth = month();
-          printf("New AlertFileName : %s\n",alertFileName.c_str());
+          printf("[LOGGER] New AlertFileName : %s\n",alertFileName.c_str());
         }
 
         if(dayOfWeek(now()) != today){
-          logFileName = String("/Log/") + (year()+1970) + "/Logs/" + monthStr(month()) + "/" + dayShortStr(day()) + "-" + day() + ".log";;
-          printf("New LogFileName : %s\n",logFileName.c_str());
-          logFile = SDFS.open(logFileName.c_str(),"w");
+          // RAM monitoring : Nouveau jour (création fichiers log - opération mémoire intensive)
+          printf("[RAM] Nouveau jour détecté - Free heap avant création logs: %d bytes\n", ESP.getFreeHeap());
+          
+          logFileName = String("/log/") + year() + "/logs/" + monthStr(month()) + "/" + dayShortStr(day()) + "-" + day() + ".log";;
+          printf("[LOGGER] New LogFileName : %s\n",logFileName.c_str());
+          logFile = SD.open(logFileName.c_str(),FILE_WRITE);
           if(logFile){
             logFile.print("date;TempEau;TempAir;TempPAC;TempInt;PHVal;RedoxVal;CLVal;PompePH;PompeCL;PompeALG;PP;PAC;Auto");
             logFile.flush();
             logFile.close();
           }
-          logMoyFileName = String("/Log/") + (year()+1970) + "/Logs/" + monthStr(month()) + "/" + dayShortStr(day()) + "-" + day() + "-Moy.log";
-          printf("New logMoyFileName : %s\n",logMoyFileName.c_str());
-          logMoyFile = SDFS.open(logMoyFileName.c_str(),"w");
+          logMoyFileName = String("/log/") + year() + "/logs/" + monthStr(month()) + "/" + dayShortStr(day()) + "-" + day() + "-Moy.log";
+          printf("[LOGGER] New logMoyFileName : %s\n",logMoyFileName.c_str());
+          logMoyFile = SD.open(logMoyFileName.c_str(), FILE_WRITE);
           if(logMoyFile){
             logMoyFile.print("date;TempEau;TempAir;TempPAC;TempInt;PHVal;RedoxVal;CLVal;PompePH;PompeCL;PompeALG;PP;PAC;Auto");
             logMoyFile.flush();
@@ -106,7 +115,7 @@
         }
 
         if(hour() != lasthour){                                   // calcul des moyennes
-          logMoyFile = SDFS.open(logMoyFileName.c_str(),"w");
+          logMoyFile = SD.open(logMoyFileName.c_str(), FILE_WRITE);
           if(logMoyFile){
             printDate(theDate,sizeof(theDate));
             message = String(theDate) + ";"; 
@@ -139,35 +148,31 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void LoggerClass::logData(){                         // // TempEau,TempAir,TempPAC,TempInt,PHVal,RedoxVal,CLVal,PompePH,PompeCL,PompeALG,PP,PAC,Auto
-        String message; 
-        float valFloat;
+        char message[256];  // Optimisation RAM #10 : String → char[]
         char theDate[20];
 
-      logFile = SDFS.open(logFileName.c_str(),"w");
+      logFile = SD.open(logFileName.c_str(), FILE_WRITE);
       if(logFile){
         printDate(theDate,sizeof(theDate));
-        message = String(theDate) + ";"; 
-        valFloat = piscineParams[IND_TempEau].valeur / 100;
-//        sprintf(array, "%f", 3.123);
-        message += String(valFloat) + ";";
-        valFloat = piscineParams[IND_TempAir].valeur / 100;
-        message += String(valFloat) + ";";
-        valFloat = piscineParams[IND_TempPAC].valeur / 100;
-        message += String(valFloat) + ";";
-        valFloat += piscineParams[IND_TempInt].valeur / 100;
-        message += String(valFloat) + ";";
-        valFloat += piscineParams[IND_PHVal].valeur / 100;
-        message += String(valFloat) + ";";
-        message += piscineParams[IND_RedoxVal].valeur + ";";
-        valFloat += piscineParams[IND_CLVal].valeur / 100;
-        message += String(valFloat) + ";";
-        message += String(piscineParams[IND_PompePH].valeur) + ";";
-        message += String(piscineParams[IND_PompeCL].valeur) + ";";
-        message += String(piscineParams[IND_PompeALG].valeur) + ";";
-        message += String(piscineParams[IND_PP].valeur) + ";";
-        message += String(piscineParams[IND_PAC].valeur) + ";";
-        message += String(piscineParams[IND_Auto].valeur);
-        logFile.println(message.c_str()); 
+        // Optimisation RAM #10 : Utilisation de snprintf au lieu de concaténations String
+        snprintf(message, sizeof(message),
+            "%s;%.2f;%.2f;%.2f;%.2f;%.2f;%d;%.2f;%d;%d;%d;%d;%d;%d",
+            theDate,
+            piscineParams[IND_TempEau].valeur / 100.0,
+            piscineParams[IND_TempAir].valeur / 100.0,
+            piscineParams[IND_TempPAC].valeur / 100.0,
+            piscineParams[IND_TempInt].valeur / 100.0,
+            piscineParams[IND_PHVal].valeur / 100.0,
+            piscineParams[IND_RedoxVal].valeur,
+            piscineParams[IND_CLVal].valeur / 100.0,
+            piscineParams[IND_PompePH].valeur,
+            piscineParams[IND_PompeCL].valeur,
+            piscineParams[IND_PompeALG].valeur,
+            piscineParams[IND_PP].valeur,
+            piscineParams[IND_PAC].valeur,
+            piscineParams[IND_Auto].valeur
+        );
+        logFile.println(message); 
         logFile.flush();
         logFile.close();
       }
@@ -219,7 +224,7 @@
    */
     size_t LoggerClass::fetchDatas(char *buffer, size_t maxLen){
 
-        String fileName;
+        char fileName[80];
         File logFile;
         size_t currLen = 0;
         bool nextFile = false;    // process next file. 
@@ -228,9 +233,10 @@
       currLen = 0;
       while (maxLen-currLen > 0){
         nextFile = false;
-        fileName = String("/Log/") + (year(tCurr)+1970) + "/Logs/" + monthStr(month(tCurr)) + "/" + dayShortStr(tCurr) + "-" + day(tCurr) + "-Moy.log";
-        if(SDFS.exists(fileName)){
-          logFile = SDFS.open(fileName.c_str(),"r");
+        snprintf(fileName, 80, "/Log/%d/Logs/%s/%s-%d-Moy.log", 
+                 (year(tCurr)+1970), monthStr(month(tCurr)), dayShortStr(tCurr), day(tCurr));
+        if(SD.exists(fileName)){
+          logFile = SD.open(fileName, FILE_READ);
           if(logFile){
             if(filePointer != 0){   // file processed patialy start a the end. 
               logFile.seek(filePointer+1);
@@ -275,14 +281,28 @@
       return currLen;
     }
     
-  /*
-   * String LoggerClass::getDebugMessage
+ /*
+   * String LoggerClass::hasDebugMessage
    * But : (description automatique) — expliquer brièvement l'objectif de la fonction
    * Entrées : voir la signature de la fonction (paramètres)
    * Sortie : valeur de retour ou effet sur l'état interne
    */
-    String LoggerClass::getDebugMessage(){
-      return debugMessage;
+    bool LoggerClass::hasDebugMessage(){
+      bool rtn;
+        rtn = (strcmp(debugMessage.c_str(), "") != 0) ? true : false;  // if debugMessage not empty
+        return rtn;
+    }
+    
+  /*
+   * void LoggerClass::getDebugMessage
+   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
+   * Entrées : voir la signature de la fonction (paramètres)
+   * Sortie : valeur de retour ou effet sur l'état interne
+   */
+    void LoggerClass::getDebugMessage(char* output, size_t outputSize){
+        strncpy(output, debugMessage.c_str(), outputSize - 1);
+        output[outputSize - 1] = '\0';
+        debugMessage = "";
     }
     
   /*
@@ -436,24 +456,28 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void LoggerClass::logMessage(const char logmessage[]){
-      String message;
+      char message[128];
         if(!alertFile) { 
-          alertFile = SDFS.open(alertFileName,"a");
+          alertFile = SD.open(alertFileName, FILE_WRITE);
         }
         if(alertFile){
             // Mon,2 10:51:46 mDNS responder started: http://mapiscine.local
           if(!printStarted) {
-            message = (String)dayShortStr(day()) + ',' + day() + " " + hour() + ":" + minute() + ":" + second();
-            message += logmessage;
+            snprintf(message, 128, "%s,%d %d:%d:%d%s", 
+                     dayShortStr(day()), day(), hour(), minute(), second(), logmessage);
             printStarted = true;
           } else {
-            message = (String)logmessage;
+            strncpy(message, logmessage, 127);
+            message[127] = '\0';
           }
           alertFile.print(message);
           if(logmessage[strlen(logmessage)-1] == '\n') printStarted = false;
         } else {
           if(debug){
-            Serial1.printf(" Can't open alert file : %s\n",alertFileName.c_str());
+            if (nbAlertsFileOpenErrors++ >= 10) {
+              Serial1.printf_P(PSTR("[SD] ❌ ERREUR : Can't open alert file : %s\n"),alertFileName.c_str());
+              nbAlertsFileOpenErrors = 0;
+            }
           }
         }
         if(triggerDebugMessage) {
@@ -468,10 +492,9 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void LoggerClass::printDate(char *date,uint8_t length){
-      String theDate;
     
-        theDate = String(day()) + "-" + month() + "-" + year()+1970 + " " + hour() + ":" + minute() + ":" + second();
-        theDate.toCharArray(date,length);
+        snprintf(date, length, "%d-%d-%d %d:%d:%d", 
+                 day(), month(), year()+1970, hour(), minute(), second());
     }
 
   /*
@@ -505,8 +528,8 @@
    */
     void LoggerClass::checkSD(){
       if(!cardPresent){
-        if(!SDFS.begin()){          // see if the card is present and can be initialized:
-          Serial1.println("SDCard Initialization Failed");
+        if(!SD.begin(SDchipSelect)){          // see if the card is present and can be initialized:
+          Serial1.println(F("[SD] ❌ ERREUR : SDCard Initialization Failed"));
           cardPresent = false;
           return;
         } else {

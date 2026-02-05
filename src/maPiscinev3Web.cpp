@@ -23,7 +23,9 @@
 #include <TimeLib.h>
 #include <EEPROM.h>   
 #include <SPI.h>
-#include <SDFS.h>
+#include <SD.h>
+#include <LittleFS.h>
+//#include <SDFS.h>
 
 #if defined(ESP8266)
 #include <ESP8266WiFi.h>
@@ -39,7 +41,8 @@
 #include <ESPAsyncTCP.h>
 #include <DNSServer.h>
 #include <NTPClient.h>
-#include <ESPAsyncWiFiManager.h>      
+//#include <ESPAsyncWiFiManager.h> 
+#include "PiscineWifiPortal.h"          // On appelle juste la fonction, pas la lib WiFiManager complète qui est en conflit avec ESPAsyncWebServer    
 #include <ArduinoJson.h> 
 
 // include sub files
@@ -47,7 +50,7 @@
 #include "globalPiscineWeb.h"
 #include "Logger.h"
 #include "PiscineWebTelecom.h"
-#include "ManagerTelecom.h"
+// #include "ManagerTelecom.h"  // DÉSACTIVÉ : Communication ESP-NOW avec manager PAC (optimisation RAM)
 #include "PiscineWeb.h"
 #include "PiscineWebActionControler.h"
 
@@ -64,9 +67,11 @@
     bool cardPresent = false;
     const uint8_t SDchipSelect = D8;
     int8_t wifi_status = 0;    // 0: off; 1: ON; -1: blink 3 times, -2 blink fast for ever, -3 blink slow for ever
+    const char* mdnsName = "mapiscine"; 			// Domain name for the mDNS responder
+
 
     piscineParametres piscineParams[IND_MAX_PISCINE+1];   // +1 for ClearAlert
-    char indexName[IND_TOTAL+1][MAX_KEY_LEN];
+    // char indexName[IND_TOTAL+1][MAX_KEY_LEN];  // OBSOLETE : remplacé par IndexNames.h (PROGMEM, -1260 octets RAM)
     struct_configuration config;
     struct_Etalon_Data etalon_Data;
    
@@ -79,8 +84,8 @@
     
     int timerWebTelecom;
     int timerWebAction;
-    int timerManagerTelecom;
-    int timerManagerCheckCnx;
+    // int timerManagerTelecom;        // DÉSACTIVÉ : ESP-NOW manager
+    // int timerManagerCheckCnx;       // DÉSACTIVÉ : ESP-NOW manager
     int timerSendWebParams;
     int timerWebLCD;
     int timerLogger;
@@ -110,13 +115,13 @@
 /**
  * @brief Initialise le tableau indexName[IND_TOTAL] avec les noms des paramètres piscine (Temp, pH, Redox, CL, Filtration, etc.) pour affichage web/SD
  */
-    void initIndexNames();
-
+    // void initIndexNames();  // OBSOLETE : remplacé par IndexNames.h (PROGMEM, -1260 octets RAM)
+    void diagnosticSysteme();
 /**
  * @brief Orchestrateur WiFi complet : 1) Reconnexion au dernier AP, 2) Connexion aux SSIDs stockés (config), 3) Portail captif WiFi Manager si échec
  */
     bool startWiFi();
-    bool useWifiManager();
+    extern bool useWiFiManager();
 /**
  * @brief Recherche le mot de passe associé à un SSID dans le tableau config.wifi[]. Retourne pointeur vers password ou nullptr si non trouvé
  */
@@ -175,7 +180,7 @@
     PiscineWebClass maPiscineWeb;                           // gestion sur serveur web              
     PiscineWebTelecomClass webTelecom;      // telecoms avec controleur 
     PiscineWebActionControlerClass webAction;                    
-    ManagerTelecomClass managerTelecom;                     // gestion des echanges avec les modules espnow
+    // ManagerTelecomClass managerTelecom;                  // DÉSACTIVÉ : gestion des echanges avec les modules espnow (optimisation RAM)
  
  /* -------------   Callback functions  -------------*/
               /* --- Timer Callbacks  --- */
@@ -200,19 +205,20 @@
         webAction.OnUpdate();
     }
         
-/**
- * @brief Callback timer : Vérifie la connexion ESP-NOW avec le manager PAC et tente reconnexion si perdue
- */
-    void doCheckManagerTelecomConnection(){   // managerTelecom
-      managerTelecom.reconnectControlerTelecom();  
-    }
-    
-/**
- * @brief Callback timer : Envoie les nouvelles valeurs de paramètres piscine au manager ESP-NOW (si actif)
- */
-    void doManagerTelecomManage(){            // managerTelecom   
-      managerTelecom.sendToManagerNewValues();                            // ManageNewValues();
-    }
+// DÉSACTIVÉ : ESP-NOW manager (optimisation RAM)
+// /**
+//  * @brief Callback timer : Vérifie la connexion ESP-NOW avec le manager PAC et tente reconnexion si perdue
+//  */
+//     void doCheckManagerTelecomConnection(){   // managerTelecom
+//       managerTelecom.reconnectControlerTelecom();  
+//     }
+//     
+// /**
+//  * @brief Callback timer : Envoie les nouvelles valeurs de paramètres piscine au manager ESP-NOW (si actif)
+//  */
+//     void doManagerTelecomManage(){            // managerTelecom   
+//       managerTelecom.sendToManagerNewValues();                            // ManageNewValues();
+//     }
 
 /**
  * @brief Callback timer : Appelle maPiscineWeb.OnUpdate() pour envoyer les paramètres mis à jour via SSE vers les clients web
@@ -237,10 +243,11 @@
           if(!flgModulesStarted){
             WiFi.mode(WIFI_AP_STA);           //Set device in AP_STA mode to handle espnow and web
             maPiscineWeb.startup();
-            if(managerPresent){
-              managerTelecom.managerTelecomInitialisation();
-              managerTelecom.setTimeCallBack(setTheTime);
-            }  
+            // DÉSACTIVÉ : ESP-NOW manager (optimisation RAM)
+            // if(managerPresent){
+            //   managerTelecom.managerTelecomInitialisation();
+            //   managerTelecom.setTimeCallBack(setTheTime);
+            // }  
             flgModulesStarted = true;
           }
           timer.enable(timerWIFI_OK);
@@ -254,7 +261,7 @@
           timer.disable(timerNTP_NOK);
         }
       } else {                                // already connected
-        Serial1.println(F("\nAlready connected to WIFI "));    
+        Serial1.println(F("[WIFI] Already connected"));    
           timer.enable(timerWIFI_OK);
           timer.disable(timerWIFI_NOK);
           timer.enable(timerNTP_OK);
@@ -291,21 +298,21 @@
  * @brief Callback WiFi Manager : Levée du flag shouldSaveConfig quand l'utilisateur sauve une nouvelle configuration WiFi
  */
     void saveConfigCallback () {
-      Serial1.println(" !!!!  Should save config is setted  !!! ");
+      Serial1.println(F(" !!!!  Should save config is setted  !!! "));
       shouldSaveConfig = true;
     }
 
 /**
  * @brief Callback WiFi Manager : Exécuté lors de l'entrée en mode AP (portail captif). Affiche l'IP du portail de configuration
  */
-    void configModeCallback (AsyncWiFiManager  *myWiFiManager) {
-      Serial1.println("Entered config mode");
+/*    void configModeCallback (AsyncWiFiManager  *myWiFiManager) {
+      Serial1.println(F("Entered config mode"));
       Serial1.println(WiFi.softAPIP());
       Serial1.println(myWiFiManager->getConfigPortalSSID());
       webTelecom.setWriteData(IND_BlinkWifiLed,-2);   // 0: off; 1: ON; -1: blink 3 times, -2 blink fast for ever, -3 blink slow for ever
       wifi_status = -2;
     }
-
+*/
               /* --- managerTelecom Callbacks  --- */
 /**
  * @brief Callback manager : Reçoit l'heure depuis le contrôleur ESP32 et met à jour l'horloge système (setTime), puis relance NTP si nécessaire
@@ -314,7 +321,7 @@
 //      setTime(newTime);                // done by managerTelecoms to loose less secs.. 
       webAction.doChangeDate();
       Serial1.print(F(" New TIME from Manager : "));
-      Serial1.printf("New time is now : %d/%d/%d %d:%d:%d \n", day(), month(), year(), hour(), minute(), second() );
+      Serial1.printf_P(PSTR("New time is now : %d/%d/%d %d:%d:%d \n"), day(), month(), year(), hour(), minute(), second() );
       timer.enable(timerNTP_OK);
       timer.disable(timerNTP_NOK);
     }
@@ -337,7 +344,7 @@
       if(awakenByInterruptRstWifi) {
         detachInterrupt(digitalPinToInterrupt(wifiResetPin));
         resetWifiSettings();                            //reset settings back to reconnect
-        Serial1.println("Reset wifi Settings rebooting ...");    //reset and try again, or maybe put it to deep sleep
+        Serial1.println(F("Reset wifi Settings rebooting ..."));    //reset and try again, or maybe put it to deep sleep
         ESP.reset();
         delay(3000);
       }
@@ -366,12 +373,13 @@
       pinMode(masterSwPin,INPUT_PULLUP);          // D1 on the Wemos
 //      (digitalRead(masterSwPin) == HIGH) ? managerPresent = false : managerPresent = true;
       managerPresent = false;
-      Serial1.printf("Master pin is %s\n",(digitalRead(masterSwPin) == HIGH) ? "false" : "true");
+      Serial1.printf_P(PSTR("Master pin is %s\n"),(digitalRead(masterSwPin) == HIGH) ? "false" : "true");
       
-      initIndexNames();
+      // initIndexNames();  // OBSOLETE : remplacé par IndexNames.h (PROGMEM, -1260 octets RAM)
       webTelecom.initTelecom();
       webAction.initializePiscineParams();
   
+      diagnosticSysteme();
       startSD();               // Start the SD card and list all contents 
       loadConfiguration();
     
@@ -381,7 +389,7 @@
       timerNTP_NOK = timer.setInterval(5*1000L, doCheckNTPDate);              // toutes les 5 sec si nok. 
 
       if(startWiFi()){ 
-        Serial1.println("connected...yeey :)");      
+        Serial1.println(F("connected...yeey :)"));      
 
         while(maxtriesNTP-- != 0){   // wait to get a valid time
           NTPok = getNTPTime();
@@ -392,10 +400,11 @@
         WiFi.mode(WIFI_AP_STA);                          //Set device in AP_STA mode to handle espnow and web
         logger.OnUpdate();
         maPiscineWeb.startup();
-        if(managerPresent){
-          managerTelecom.managerTelecomInitialisation();
-          managerTelecom.setTimeCallBack(setTheTime);
-        }
+        // DÉSACTIVÉ : ESP-NOW manager (optimisation RAM)
+        // if(managerPresent){
+        //   managerTelecom.managerTelecomInitialisation();
+        //   managerTelecom.setTimeCallBack(setTheTime);
+        // }
         flgModulesStarted = true;
 
         timer.enable(timerWIFI_OK);
@@ -415,16 +424,21 @@
       }  
       timerWebTelecom = timer.setInterval(100L, doCheckMessages);             // telecom 100ms
       timerWebAction = timer.setInterval(200L, doAction);                     // actions exchanges
-      if(managerPresent){
-        timerManagerTelecom = timer.setInterval(1250L, doManagerTelecomManage);             // pas trop vite to laisser du temps a controlerTelecom...
-        timerManagerCheckCnx = timer.setInterval(60000L, doCheckManagerTelecomConnection);  // check if still connected to controlerTelecom every minute d'inactivité
-      }
-      timerSendWebParams = timer.setInterval(1000L,doSendWebParams);          // toutes les sec
+      // DÉSACTIVÉ : ESP-NOW manager (optimisation RAM)
+      // if(managerPresent){
+      //   timerManagerTelecom = timer.setInterval(1250L, doManagerTelecomManage);             // pas trop vite to laisser du temps a controlerTelecom...
+      //   timerManagerCheckCnx = timer.setInterval(60000L, doCheckManagerTelecomConnection);  // check if still connected to controlerTelecom every minute d'inactivité
+      // }
+      timerSendWebParams = timer.setInterval(500L,doSendWebParams);          // toutes les 1/2 sec
       timerWebLCD = timer.setInterval(10000L,doUpdatePiscineLCD);             // toutes les 10 sec
       timerLogger = timer.setInterval(60000L,doLogger);                       // toutes les mn
        
-      Serial.println("maPiscine Web is Ready !\n");
-      Serial1.println("maPiscine Web is Ready !\n");
+      // RAM monitoring : État initial après setup
+      logger.printf("[RAM] Démarrage terminé - Free heap: %d bytes (%.1f%% libre)\n", 
+                    ESP.getFreeHeap(), (ESP.getFreeHeap() * 100.0) / 81920);
+
+      Serial.println(F("[WEB] maPiscine Web is Ready!\n"));
+      Serial1.println(F("[WEB] maPiscine Web is Ready!\n"));
       flgInSetup = false;
     }
     
@@ -440,10 +454,39 @@
     
 /*_________________________________________SETUP_FUNCTIONS_____________________________________________________*/
 
+    void diagnosticSysteme() {
+      Serial1.println(F("\n[SYSTEM] --- DIAGNOSTIC SYSTEME ---"));
+
+      // 1. RAM
+      uint32_t freeRam = ESP.getFreeHeap();
+      Serial1.printf_P(PSTR("[SYSTEM] RAM Libre : %u octets\n"), freeRam);
+
+      // 2. FLASH (Code / Sketch)
+      uint32_t sketchSize = ESP.getSketchSize();
+      uint32_t freeSketchSpace = ESP.getFreeSketchSpace();
+      uint32_t totalSketchSpace = sketchSize + freeSketchSpace;
+      Serial1.printf_P(PSTR("[SYSTEM] Flash Code (Sketch) : %u / %u octets utilisés (%.1f%%)\n"), 
+                    sketchSize, totalSketchSpace, (sketchSize * 100.0 / totalSketchSpace));
+
+      // 3. LITTLEFS (Fichiers internes)
+      if (LittleFS.begin()) {
+        FSInfo fs_info;
+        LittleFS.info(fs_info);
+        Serial1.printf_P(PSTR("[SYSTEM] LittleFS Total : %u octets\n"), fs_info.totalBytes);
+        Serial1.printf_P(PSTR("[SYSTEM] LittleFS Utilisé : %u octets\n"), fs_info.usedBytes);
+        LittleFS.end();
+      } else {
+        Serial1.println(F("[SYSTEM] ❌ ERREUR : Impossible de monter LittleFS!"));
+      }
+
+      Serial1.println(F("--------------------------\n"));
+    }
+
 /**
  * @brief Initialise le tableau indexName[IND_TOTAL] avec les noms des paramètres piscine (Temp, pH, Redox, CL, Filtration, etc.) pour affichage web/SD
+ * @note OBSOLETE : remplacé par IndexNames.h (PROGMEM, -1260 octets RAM)
  */
-    void initIndexNames(){
+    /*void initIndexNames(){
       strncpy(indexName[IND_Alerte],"Alerte",MAX_KEY_LEN);           // 1 
       strncpy(indexName[IND_TempEau],"tempEau",MAX_KEY_LEN);         // 2 Temp Eau val
       strncpy(indexName[IND_TempAir],"tempAir",MAX_KEY_LEN);         // 3 Temp Air Val
@@ -513,31 +556,24 @@
       strncpy(indexName[IND_RefreshCriticalValues],"RefreshCritVal",MAX_KEY_LEN);    // 80
       strncpy(indexName[IND_Clavier],"Clavier",MAX_KEY_LEN);              // 81
       strncpy(indexName[IND_BlinkWifiLed],"BlinkWifiLed",MAX_KEY_LEN);    // 82
-
-
-    }
+    }*/
 
 /**
  * @brief Monte la carte SD (FAT, CS=D8), affiche le contenu racine et lève le flag cardPresent si succès. Retourne sans erreur si carte absente
  */
     void startSD() {            // Start the SD and list all contents
-
-        SDFSConfig cfg;
         File root;
 
-      cfg.setCSPin(SDchipSelect);
-      SDFS.setConfig(cfg);
-      if(!SDFS.begin()){          // see if the card is present and can be initialized:
-        Serial1.println("SDCard Initialization Failed");
+      if(!SD.begin(SDchipSelect)){          // see if the card is present and can be initialized:
+        Serial1.println(F("SDCard Initialization Failed"));
         cardPresent = false;
         return;
       }
       cardPresent = true;
+//      root = SD.open("/", FILE_READ);
+//      Serial1.println(F("SDCard Contents : "));
+//      printDirectory(root, 1);
 
-/*      root = SDFS.open("/","r");
-      Serial1.println("SDCard Contents : ");
-      printDirectory(root, 1);
-*/
     }
 
 /**
@@ -558,7 +594,8 @@
 //  WiFi.config(ip, gateway, subnet);
 
         Serial1.println(F(" Try to connect the Wifi..."));
-        WiFi.mode(WIFI_STA);                                 
+        WiFi.mode(WIFI_STA); 
+        WiFi.hostname(mdnsName); // Force le nom au niveau du routeur aussi                                
         Serial1.println(F(" First try with last used wifi ssid ..."));
         if(!WiFiConnect(nullptr,nullptr)){
           Serial1.println(F("WiFi cnx with last connection FAILED, Next try with ssids in config ..."));
@@ -567,7 +604,7 @@
           if(!ConnectWithStoredCredentials()){
             Serial1.println(F("WiFi with saved connections FAILED, using WifiManager"));
             WiFi.mode(WIFI_AP);
-            if(!useWifiManager()){                                      // test with wifimanager
+            if(!useWiFiManager()){                                      // test with wifimanager
               Serial1.println(F("wifimanager WiFi connection FAILED"));
             }
           }
@@ -606,7 +643,7 @@
 /**
  * @brief Lance le portail captif AsyncWiFiManager avec paramètres custom (config.adminPassword, config.user, etc.). Sauve la config si shouldSaveConfig==true
  */
-    bool useWifiManager(){
+/*    bool useWifiManager2(){
       bool rtn = true;
       char wifi_ssid[32];
       char wifi_password[64];
@@ -631,7 +668,7 @@
           checkInterrupt();
         
         if (!wifiManager.startConfigPortal(APssid,APpassword)) {
-          Serial1.println("failed to connect and hit timeout");
+          Serial1.println(F("failed to connect and hit timeout");
           rtn = false;     // connextion failed
         } else {
           if (shouldSaveConfig){
@@ -651,6 +688,7 @@
         }
         return rtn;
     }
+*/
 
 /**
  * @brief Recherche le mot de passe associé à un SSID dans le tableau config.wifi[]. Retourne pointeur vers password ou nullptr si non trouvé
@@ -678,7 +716,7 @@
         WiFi.begin(ssid, passphrase); //WiFi connection
       }
         while (WiFi.status() != WL_CONNECTED && WiFi.status() != WL_CONNECT_FAILED){
-            Serial1.print(".");
+            Serial1.print(F("."));
             delay(500);
             if((millis() / 1000) > mytimeout + 10){ // try for less than 10 seconds to connect to WiFi router
               Serial1.println();
@@ -702,35 +740,35 @@
         int retryNetworks = 4;
 
         while (retryNetworks-- > 0){
-          Serial1.printf("Retry %d \n", retryNetworks);
-          Serial1.print("Looking for networks : ");
+          Serial1.printf_P(PSTR("Retry %d \n"), retryNetworks);
+          Serial1.print(F("Looking for networks : "));
           int networksCount = WiFi.scanNetworks(false);
-          Serial1.printf("%d\n", networksCount);
+          Serial1.printf_P(PSTR("%d\n"), networksCount);
           for (int j = 0; j < networksCount; j++){
-            Serial1.printf("network %d : %s \n", j+1, WiFi.SSID(j).c_str());
+            Serial1.printf_P(PSTR("network %d : %s \n"), j+1, WiFi.SSID(j).c_str());
           }
           if (networksCount >= 0){
             for (int i = 0; i < networksCount; i++){
               checkInterrupt();
               if(strcmp(ssid,WiFi.SSID(i).c_str()) != 0){     // only if new ssid isn't the last one. 
                 ssid = strdup(WiFi.SSID(i).c_str());
-                Serial1.printf("ssid: %s \n", ssid);
+                Serial1.printf_P(PSTR("ssid: %s \n"), ssid);
                 password = findPassword(ssid);  
 
                 if (*ssid != 0x00 && ssid && password){
-                  Serial1.printf("Trying to connect to ssid %s with pwd : %s\n",ssid,password);
+                  Serial1.printf_P(PSTR("Trying to connect to ssid %s with pwd : %s\n"),ssid,password);
                   if (WiFiConnect(ssid, password)){
-                    Serial1.println("Connected to WiFi network with ssid from saved params");
+                    Serial1.println(F("Connected to WiFi network with ssid from saved params"));
                     WiFi.scanDelete();
                     if(WiFi.status() == WL_CONNECTED){  
-                      Serial1.print("\nIP address: ");
+                      Serial1.print(F("\nIP address: "));
                       IPAddress myip = WiFi.localIP();
                       Serial1.println(myip); 
                       WiFi.printDiag(Serial1);
                     }
                     return true;
                   } else {
-                    Serial1.println("\nCan't connect to this WIFI ");    
+                    Serial1.println(F("\nCan't connect to this WIFI "));    
                     Serial1.println(wl_status_to_string(WiFi.status()));
                   }
                 }
@@ -779,7 +817,7 @@
       uint8_t ssidPwdSize = sizeof(config.wifi[0].ssid_passwd);
 
 
-        Serial1.println("loading config");
+        Serial1.println(F("loading config"));
         EEPROM.begin(sizeof(config)+1);
         i = EEPROM.read(sizeof(config));
 //        i=0;                // for debug simulaes a first time
@@ -834,13 +872,13 @@
           }
         }
         EEPROM.end();
-        Serial1.println("config is now :");
-        Serial1.printf("AdminPassword : %s\n",config.adminPassword);
+        Serial1.println(F("config is now :"));
+        Serial1.printf_P(PSTR("AdminPassword : %s\n"),config.adminPassword);
         for ( j = 0; j < MAX_USERS; j++ ){
-          Serial1.printf(" User%d : user name : %s, passwd : %s\n",j,config.users[j].user,config.users[j].user_passwd);
+          Serial1.printf_P(PSTR(" User%d : user name : %s, passwd : %s\n"),j,config.users[j].user,config.users[j].user_passwd);
         }     
         for ( j = 0; j < MAX_WIFI; j++ ){
-          Serial1.printf(" SSID%d : SSID name : %s, SSID passwd : %s\n",j,config.wifi[j].ssid,config.wifi[j].ssid_passwd);
+          Serial1.printf_P(PSTR(" SSID%d : SSID name : %s, SSID passwd : %s\n"),j,config.wifi[j].ssid,config.wifi[j].ssid_passwd);
         }     
     }
 
@@ -859,7 +897,7 @@
       uint8_t ssidSize = sizeof(config.wifi[0].ssid);
       uint8_t ssidPwdSize = sizeof(config.wifi[0].ssid_passwd);
 
-        Serial1.printf("Saving config : adminPW : %s, user : %s, passwd : %s, SSID : %s, SSIDPwd : %s\n",adminPassword,user,user_password, ssid, ssid_password);
+        Serial1.printf_P(PSTR("Saving config : adminPW : %s, user : %s, passwd : %s, SSID : %s, SSIDPwd : %s\n"),adminPassword,user,user_password, ssid, ssid_password);
 
         EEPROM.begin(sizeof(config)+1);
         i = EEPROM.read(sizeof(config));
@@ -965,13 +1003,13 @@
        }
 
 
-        Serial1.println("config is now :");
-        Serial1.printf("AdminPassword : %s\n",config.adminPassword);
+        Serial1.println(F("config is now :"));
+        Serial1.printf_P(PSTR("AdminPassword : %s\n"),config.adminPassword);
         for ( j = 0; j < MAX_USERS; j++ ){
-          Serial1.printf(" User%d : user name : %s, passwd : %s\n",j,config.users[j].user,config.users[j].user_passwd);
+          Serial1.printf_P(PSTR(" User%d : user name : %s, passwd : %s\n"),j,config.users[j].user,config.users[j].user_passwd);
         }     
         for ( j = 0; j < MAX_WIFI; j++ ){
-          Serial1.printf(" SSID%d : SSID name : %s, SSID passwd : %s\n",j,config.wifi[j].ssid,config.wifi[j].ssid_passwd);
+          Serial1.printf_P(PSTR(" SSID%d : SSID name : %s, SSID passwd : %s\n"),j,config.wifi[j].ssid,config.wifi[j].ssid_passwd);
         }
         if(firstTime)     
           EEPROM.write(sizeof(config),0x75);    // not the first time anymore. 
@@ -1001,30 +1039,30 @@
         for ( i = 0; i < adminPasswordSize; i++ ){      // adm passwd
           buff[i] = EEPROM.read ( i );  
         } 
-        Serial1.printf("AdminPassword : %s\n",buff);
+        Serial1.printf_P(PSTR("AdminPassword : %s\n"),buff);
 
         for ( j = 0; j < MAX_USERS; j++ ){              // users
-            Serial1.printf(" User%d : ",j);              // user name
+            Serial1.printf_P(PSTR(" User%d : "),j);              // user name
             for ( i = 0; i < userNameSize; ++i ){
                 buff[i] = EEPROM.read ( i + adminPasswordSize + (j*aUserSize) );     
             } 
-            Serial1.printf("user name : %s, ",buff);
+            Serial1.printf_P(PSTR("user name : %s, "),buff);
             for ( i = 0; i < userPwdSize; ++i ){       // user pwd
                 buff[i] = EEPROM.read ( i + adminPasswordSize + (j*aUserSize) + userNameSize );     
             } 
-            Serial1.printf("passwd : %s, ",buff);
+            Serial1.printf_P(PSTR("passwd : %s, "),buff);
         } // end for each user
 
         for ( j = 0; j < MAX_WIFI; j++ ){              // Wifi
-            Serial1.printf(" ssid%d : ",j);              // ssid
+            Serial1.printf_P(PSTR(" ssid%d : "),j);              // ssid
             for ( i = 0; i < ssidSize; ++i ){
                 buff[i] = EEPROM.read ( i + adminPasswordSize + (MAX_USERS*aUserSize) + (j*aWifiSize) );     
             } 
-            Serial1.printf("ssid name : %s, ",buff);
+            Serial1.printf_P(PSTR("ssid name : %s, "),buff);
             for ( i = 0; i < ssidPwdSize; ++i ){       // ssid pwd
                 buff[i] = EEPROM.read ( i + adminPasswordSize + (MAX_USERS*aUserSize) + (j*aWifiSize) + ssidSize );     
             } 
-            Serial1.printf("ssid passwd : %s\n",buff);
+            Serial1.printf_P(PSTR("ssid passwd : %s\n"),buff);
         } // end for each wifi
 
         i = EEPROM.read(sizeof(config));
@@ -1039,13 +1077,13 @@
  * @brief Charge la configuration admin/user depuis EEPROM (addresses 0-499). Structure : adminPassword(64), user(64), user_password(64), wifi[3].ssid(64), wifi[3].password(64)
  */
     void loadConfiguration() {
-        JsonDocument jsonConfig;         // config file
+        StaticJsonDocument<1024> jsonConfig;  // Optimisation RAM #7 : config file
         int j = 0;
 
       // Open file for reading
-      if (SDFS.exists("/cfg/piscine.cfg")) {      
-        File configFile = SDFS.open("/cfg/piscine.cfg","r");  
-        if (configFile) logger.println(F("Okay file is open !! "));  
+      if (SD.exists("/cfg/piscine.cfg")) {      
+        File configFile = SD.open("/cfg/piscine.cfg", FILE_READ);  
+        if (configFile) logger.println(F("Okay config file is open !! "));  
         else {
           Serial1.println(F("Cant to open config file"));
           return;
@@ -1057,13 +1095,18 @@
           Serial1.println(F("Deserialization succeeded"));
           // Copy values from the JsonDocument to the Config
 
-          if (jsonConfig["adminPassword"].is<JsonVariantConst>()) {
+          if (jsonConfig["adminPassword"].is<String>()) {
             strlcpy(config.adminPassword,                      // <- destination
-                    jsonConfig["adminPassword"] | "manager",   // <- source
+                    jsonConfig["adminPassword"].as<String>().c_str(),   // <- source
                     MAX_USERNAME_SIZE               // <- destination's capacity
                     );
           } else {
               strlcpy(config.adminPassword,"manager",MAX_USERNAME_SIZE);
+          }          
+          if (jsonConfig["enableLocalAutoLogin"].is<bool>()) {
+            config.enableLocalAutoLogin = jsonConfig["enableLocalAutoLogin"].as<bool>();
+          } else {
+            config.enableLocalAutoLogin = true;
           }          
           if (jsonConfig["users"].is<JsonVariantConst>()) {
             uint8_t max_users = jsonConfig["users"].size();
@@ -1120,13 +1163,13 @@
  * @brief Sauvegarde config admin/user dans EEPROM (5 entrées : adminPassword, user, user_password, 1er SSID/password). Appelle EEPROM.commit()
  */
     void saveConfiguration() {
-          JsonDocument jsonConfig;         // config file
-          String jsonBuff;
+          StaticJsonDocument<1024> jsonConfig;  // Optimisation RAM #7 : config file
+          char jsonBuff[1536];  // Optimisation RAM
           int i;
 
       // Open file for writing
-        if (SDFS.exists("/cfg/piscine.cfg")) {      
-          File configFile = SDFS.open("/cfg/piscine.cfg", "w");  
+        if (SD.exists("/cfg/piscine.cfg")) {      
+          File configFile = SD.open("/cfg/piscine.cfg", FILE_WRITE);  
           if (configFile) logger.println(F("Okay file is open !! "));  
           else {
             Serial1.println(F("Failed to open config file for writing"));
@@ -1151,7 +1194,7 @@
             }
           }
 
-          serializeJson(jsonConfig, jsonBuff);
+          serializeJson(jsonConfig, jsonBuff, sizeof(jsonBuff));  // Optimisation RAM
           configFile.print(jsonBuff); 
           delay(1); 
           configFile.close();   //Close the file
@@ -1172,12 +1215,12 @@
           int i = 0;
 
       if(adminPassword != nullptr){
-        Serial1.printf("Saving new adminPassword: %s\n", adminPassword);
+        Serial1.printf_P(PSTR("Saving new adminPassword: %s\n"), adminPassword);
         strncpy(config.adminPassword,adminPassword,sizeof(config.adminPassword));
       }
 
       if(user != nullptr){        // new user
-        Serial1.printf("Saving new user : name : %s, Pwd : %s\n",user, user_password);
+        Serial1.printf_P(PSTR("Saving new user : name : %s, Pwd : %s\n"),user, user_password);
         for(i=0;i<MAX_USERS;i++){
           if(config.users[i].user[0]==0){ // no more users
             break;
@@ -1198,7 +1241,7 @@
         }
       }
       if(ssid != nullptr){        // new ssid
-        Serial1.printf("Saving wifi config : SSID : %s, SSIDPwd : %s\n",ssid, ssid_password);
+        Serial1.printf_P(PSTR("Saving wifi config : SSID : %s, SSIDPwd : %s\n"),ssid, ssid_password);
         for(i=0;i<MAX_WIFI;i++){
           if(config.wifi[i].ssid[0]==0){ // no more ssids
             break;
@@ -1228,12 +1271,13 @@
       uint8_t i = 0;
 
       Serial1.println(F("Configuration in config struct is :"));
-      Serial1.printf("AdminPassord: %s\n",config.adminPassword);
+      Serial1.printf_P(PSTR("AdminPassord: %s\n"),config.adminPassword);
+      Serial1.printf_P(PSTR("enableLocalAutoLogin: %s\n"),config.enableLocalAutoLogin ? "true" : "false");
       for(i=0;i<MAX_USERS;i++){
-        Serial1.printf("User %d : name %s, password %s\n",i,config.users[i].user, config.users[i].user_passwd);
+        Serial1.printf_P(PSTR("User %d : name %s, password %s\n"),i,config.users[i].user, config.users[i].user_passwd);
       }
       for(i=0;i<MAX_WIFI;i++){
-        Serial1.printf("Wifi %d : ssid %s, ssid_password %s\n",i,config.wifi[i].ssid, config.wifi[i].ssid_passwd);
+        Serial1.printf_P(PSTR("Wifi %d : ssid %s, ssid_password %s\n"),i,config.wifi[i].ssid, config.wifi[i].ssid_passwd);
       }
       Serial1.println();
     } 
@@ -1261,13 +1305,13 @@
           strncpy(config.wifi[j].ssid_passwd,"",ssidPwdSize);
         }  
 
-        Serial1.println("config is now :");
-        Serial1.printf("AdminPassword : %s\n",config.adminPassword);
+        Serial1.println(F("config is now :"));
+        Serial1.printf_P(PSTR("AdminPassword : %s\n"),config.adminPassword);
         for ( j = 0; j < MAX_USERS; j++ ){
-          Serial1.printf(" User%d : user name : %s, passwd : %s\n",j,config.users[j].user,config.users[j].user_passwd);
+          Serial1.printf_P(PSTR(" User%d : user name : %s, passwd : %s\n"),j,config.users[j].user,config.users[j].user_passwd);
         }     
         for ( j = 0; j < MAX_WIFI; j++ ){
-          Serial1.printf(" SSID%d : SSID name : %s, SSID passwd : %s\n",j,config.wifi[j].ssid,config.wifi[j].ssid_passwd);
+          Serial1.printf_P(PSTR(" SSID%d : SSID name : %s, SSID passwd : %s\n"),j,config.wifi[j].ssid,config.wifi[j].ssid_passwd);
         }
 
         EEPROM.commit();
@@ -1286,7 +1330,7 @@
           File entry =  dir.openNextFile();
           if (! entry) {
             // no more files
-            //Serial1.println("**nomorefiles**");
+            //Serial1.println(F("**nomorefiles**"));
             break;
           }
           for (uint8_t i=0; i<numTabs; i++) {
@@ -1296,11 +1340,11 @@
           Serial1.print(entry.name());
           // Recurse for directories, otherwise print the file size
           if (entry.isDirectory()) {
-            Serial1.println("/ (Rep)");
+            Serial1.println(F("/ (Rep)"));
             printDirectory(entry, numTabs+1);
           } else {
             // files have sizes, directories do not
-            Serial1.print("\t\t");
+            Serial1.print(F("\t\t"));
             Serial1.println(entry.size(), DEC);
           }
           entry.close();
@@ -1319,13 +1363,13 @@
         if(WiFi.status() == WL_CONNECTED){ 
                  // now connect to ntp server and get time
           timeClient.begin();
-          Serial1.print(" Trying to get New TIME from NTP ");
+          Serial1.print(F(" Trying to get New TIME from NTP "));
           timeUpdated = timeClient.update();
           while(!timeUpdated && counter < 20) {
             timeUpdated = timeClient.forceUpdate();
             delay(500);
             counter++;
-            Serial1.print("+");
+            Serial1.print(F("+"));
           }
           Serial1.println();
           if(timeUpdated){ // we could update the time
@@ -1334,13 +1378,13 @@
             newTime = newTime + dstOffset(newTime);  //Adjust for DLT
             setTime(newTime);
             NTPok = true;
-            Serial1.print(" New TIME from NTP : ");
+            Serial1.print(F(" New TIME from NTP : "));
             Serial1.println(timeClient.getFormattedTime());
-            Serial1.printf(" New TIME calcuated : %02d/%02d/%d %02d:%02d:%02d\n",day(),month(),year(),hour(),minute(),second());
+            Serial1.printf_P(PSTR(" New TIME calcuated : %02d/%02d/%d %02d:%02d:%02d\n"),day(),month(),year(),hour(),minute(),second());
             webAction.doChangeDate();
             rtn = true;
           }else{
-            Serial1.println("Can't get time from ntp server");
+            Serial1.println(F("Can't get time from ntp server"));
             NTPok = false;
             rtn = false;
           }
@@ -1348,7 +1392,7 @@
   //        setSyncProvider(timeClient.getEpochTime);       // the function to get the time from the RTC
   //        setSyncInterval(3600*12);          // set refresh to every 12 hour (30 days = 2592000);
         } else {
-          Serial1.println("Can't get time because not connected to WIFI");
+          Serial1.println(F("Can't get time because not connected to WIFI"));
           NTPok = false;
           rtn = false;     // can't connect to wifi
         }

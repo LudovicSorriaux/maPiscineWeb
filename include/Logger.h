@@ -16,7 +16,7 @@
 #include <globalPiscine.h>
 #include <globalPiscineWeb.h>
 #include <FS.h>                 //this needs to be first, or it all crashes and burns...
-#include <SDFS.h>
+#include <SD.h>
 #include <TimeLib.h>
 #include <pgmspace.h>
 
@@ -32,7 +32,8 @@ class LoggerClass {
         void logData();                         // // TempEau,TempAir,TempPAC,TempInt,PHVal,RedoxVal,CLVal,PompePH,PompeCL,PompeALG,PP,PAC,Auto
         bool setStartEnd(char *start,char *end);
         size_t fetchDatas(char *buffer, size_t maxLen);
-        String getDebugMessage();
+        bool hasDebugMessage();
+        void getDebugMessage(char* output, size_t outputSize);
         void setDebugMessage(bool onOff);
 
 //        virtual size_t write(const uint8_t character);
@@ -62,6 +63,7 @@ class LoggerClass {
         bool logInited = false;
         time_t tStart, tEnd, tCurr;
         size_t filePointer = 0;
+        uint nbAlertsFileOpenErrors = 10;
 
         int16_t TempEauMoy = 0;
         int16_t TempAirMoy = 0;

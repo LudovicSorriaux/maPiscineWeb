@@ -13,6 +13,7 @@
 #include "PiscineWebTelecom.h"
 #include "PiscineWebActionControler.h"
 #include "globalPiscineWeb.h"
+#include "IndexNames.h"  // Optimisation RAM #6 : Noms des paramètres en PROGMEM
 
 //#include "controlerTelecomDefs.h"
 //#include "controlerTelecomCallBacks.h"
@@ -141,26 +142,27 @@
  * @brief Envoie une paire (index, valeur) au manager via ESP-NOW (message DATA_FOR_MANAGER)
  */
     void ManagerTelecomClass::sendNewValue(uint8_t index,int16_t valeur){
-      String key;
+      char key[8];
       
-      key = String(index);
+      snprintf(key, 8, "%d", index);
       jsonValues[key] = valeur;
       newValuesToSend = true;
-      logger.printf("prepare to send to manager %s, id %d is : %d\n",indexName[index],index,piscineParams[index].valeur);
+      char nameBuf[MAX_KEY_LEN];  // Optimisation RAM #6 : Buffer pour PROGMEM
+      logger.printf("prepare to send to manager %s, id %d is : %d\n",getIndexName(index, nameBuf),index,piscineParams[index].valeur);
     }
 
 /**
  * @brief Parcourt piscineParams[] et envoie toutes les valeurs changedFromManager==true au manager ESP-NOW
  */
     void ManagerTelecomClass::sendToManagerNewValues() {
-      String jsonBuff;
+      char jsonBuff[256];
 
         if(newValuesToSend){
           dataMsg.boardID = PISCINE_ID;
           memcpy(dataMsg.macOfPeer, managerMac, ESP_NOW_ETH_ALEN);
-          serializeJson(jsonValues, jsonBuff);
+          serializeJson(jsonValues, jsonBuff, 256);
           jsonValues.clear();                                   // reset jsonvalues
-          strcpy(dataMsg.jsonBuff, jsonBuff.c_str());
+          strcpy(dataMsg.jsonBuff, jsonBuff);
           dataMsg.sendingId += 1;
           logger.printf("Sending new Data_Msg message");
       //      sendData(managerMac,dataMsg);
@@ -370,7 +372,7 @@
  * @brief Traite les callbacks différés (time sync, data update) en appelant les fonctions enregistrées (timeCallback, etc.)
  */
     void ManagerTelecomClass::doCallbacks(){
-      JsonDocument  doc;
+      StaticJsonDocument<256> doc;  // Optimisation RAM #7
 
       deserializeJson(doc, dataMsg.jsonBuff);
       JsonObject root = doc.as<JsonObject>();

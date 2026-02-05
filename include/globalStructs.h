@@ -38,6 +38,7 @@
     char adminPassword[MAX_USERNAME_SIZE];
     users_t users[MAX_USERS];
     wifi_t wifi[MAX_WIFI];
+    bool enableLocalAutoLogin = true;  // Auto-login pour clients réseau local (TTL très long)
   } struct_configuration;
 
   typedef struct data_t {
