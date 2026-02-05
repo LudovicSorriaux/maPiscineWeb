@@ -753,54 +753,445 @@ var chart={}
 var dataOrigin=[];
 var currData=[];
 
-function csvToArray1(e,t){
-	return e.split("\\r\\n").map((function(e){return e.split(t)}
-	))
+// Cache Map pour stocker les données par jour (clé: "YYYY-MM-DD", valeur: array de lignes)
+var dataCache = new Map();
+
+// Gestion multi-graphes responsive
+var charts = {
+	mobile: null,
+	chemistry: null,
+	temperature: null,
+	equipment: null
+};
+var currentMode = null; // 'mobile', 'tablet', 'desktop'
+var selectedGraphs = {
+	tablet: ['chemistry', 'temperature'] // Graphes sélectionnés en mode tablette
 };
 
-function csvToArray2(e){
-	const t=e.split("\r\n");
-	var a=[];
-	for(const e of t){
-		const t=e.split(",");
-		a.push(t)
+// Définition des graphes avec axes primaires et optionnels
+const GRAPH_DEFINITIONS = {
+	chemistry: {
+		primaryAxes: ["PHVal", "RedoxVal", "TempEau"],
+		optionalAxes: ["PompePH", "PompeCL", "PompeALG", "PAC", "TempAir"],
+		config: null // Sera assigné dynamiquement
+	},
+	temperature: {
+		primaryAxes: ["TempEau", "TempAir", "TempPAC", "TempInt"],
+		optionalAxes: ["PAC", "PP", "PHVal"],
+		config: null
+	},
+	equipment: {
+		primaryAxes: ["PP", "PAC", "PompePH", "PompeCL"],
+		optionalAxes: ["Auto", "PompeALG", "TempPAC", "TempEau", "PHVal"],
+		config: null
 	}
-	return a
 };
 
-function csvToArray3(e){
-	const t=[];
-	e.split("\n").map((e=>e.split(",")));
-	console.log("Entire Array:",array);
+// Configuration centralisée du graphique Dygraph (Mobile - graph unique)
+const DYGRAPH_CONFIG = {
+	labels: ["Date", "TempEau", "TempAir", "TempPAC", "TempInt", "PHVal", "RedoxVal", "CLVal", "PompePH", "PompeCL", "PompeALG", "PP", "PAC", "Auto"],
+	legend: "follow",
+	series: {
+		TempEau: {axis: "y2"},
+		TempAir: {axis: "y2"},
+		TempPAC: {axis: "y2"},
+		TempInt: {axis: "y2"},
+		PHVal: {axis: "y"},
+		RedoxVal: {axis: "y2"},
+		CLVal: {axis: "y"},
+		PompePH: {axis: "y"},
+		PompeCL: {axis: "y"},
+		PompeALG: {axis: "y"},
+		PP: {axis: "y"},
+		PAC: {axis: "y"},
+		Auto: {axis: "y"}
+	},
+	axes: {
+		y: {valueRange: [0, 10], axisLabelColor: "#FF00FF"},
+		y2: {valueRange: [10, 40], axisLabelColor: "#FFFFFF"}
+	},
+	ylabel: "On/Off",
+	y2label: "Température °C",
+	colors: ["#ff0000", "#00FF00", "#006FFF", "#FFFF00", "#00FFFF", "#FF00FF", "#FF6F00", "#0000FF", "#6F00FF", "#6FFF00", "#00FF6F", "#FF006F", "#00FF6F"],
+	visibility: [true, true, false, false, true, false, true, false, false, false, true, false, true],
+	rollPeriod: 2,
+	strokeWidth: 2,
+	highlightSeriesBackgroundAlpha: 1,
+	highlightSeriesOpts: {
+		strokeWidth: 5,
+		strokeBorderWidth: 0,
+		highlightCircleSize: 5
+	},
+	gridLineColor: "#eee",
+	showRangeSelector: true,
+	rangeSelectorHeight: 50
 };
 
-function csvToArray4(e){
-	const t=e.split("\r\n");
-	var a=[];
-	var s=[];
-	for(i=0;i<t.length;i++){
-		s=t[i].split(";");
-		a.push(s);
-	}
-	return a;
+// Configuration graphe Chimie (Desktop)
+const DYGRAPH_CHEMISTRY_CONFIG = {
+	labels: ["Date", "PHVal", "RedoxVal", "PompePH", "PompeCL", "PompeALG"],
+	legend: "follow",
+	series: {
+		PHVal: {axis: "y1", color: "#00FFFF", strokeWidth: 2},
+		RedoxVal: {axis: "y2", color: "#FF00FF", strokeWidth: 2},
+		PompePH: {axis: "y1", stepPlot: true, fillGraph: true, color: "#0000FF", fillAlpha: 0.15, strokeWidth: 1.5},
+		PompeCL: {axis: "y2", stepPlot: true, fillGraph: true, color: "#6F00FF", fillAlpha: 0.15, strokeWidth: 1.5},
+		PompeALG: {axis: "y1", stepPlot: true, fillGraph: true, color: "#6FFF00", fillAlpha: 0.15, strokeWidth: 1.5}
+	},
+	axes: {
+		y1: {valueRange: [3, 10], axisLabelColor: "#00FFFF", axisLabelWidth: 50, pixelsPerLabel: 30},
+		y2: {valueRange: [150, 1050], axisLabelColor: "#FF00FF", axisLabelWidth: 50, independentTicks: true, pixelsPerLabel: 30}
+	},
+	ylabel: "pH / Pompes",
+	y2label: "Redox (mV)",
+	rollPeriod: 2,
+	strokeWidth: 2,
+	highlightSeriesBackgroundAlpha: 1,
+	highlightSeriesOpts: {strokeWidth: 5, strokeBorderWidth: 0, highlightCircleSize: 5},
+	gridLineColor: "#eee",
+	showRangeSelector: true,
+	rangeSelectorHeight: 40
 };
 
-function csvToArray(e){
-	var t;
-	var a=[];
-	var s=0;
-	for(t=e.split("\r\n");s<t.length;s++){
-		var i=t[s];
-		if(0!=i.length){
-			var n=i.split(";");
-			n[0]=dayjs(n[0],"DD/MM/YY HH:mm:ss").toDate();
-			for(var o=1;o<n.length;o++){
-				n[o]=parseFloat(n[o]);
-				a.push(n);
+// Configuration graphe Températures (Desktop)
+const DYGRAPH_TEMPERATURE_CONFIG = {
+	labels: ["Date", "TempEau", "TempAir", "TempPAC", "TempInt"],
+	legend: "follow",
+	series: {
+		TempEau: {axis: "y", color: "#FF0000", strokeWidth: 3},
+		TempAir: {axis: "y", color: "#00FF00", strokeWidth: 2},
+		TempPAC: {axis: "y", color: "#006FFF", strokeWidth: 2},
+		TempInt: {axis: "y", color: "#FFFF00", strokeWidth: 2}
+	},
+	axes: {
+		y: {valueRange: [0, 55], axisLabelColor: "#FF0000", pixelsPerLabel: 30}
+	},
+	ylabel: "Température (°C)",
+	rollPeriod: 2,
+	highlightSeriesBackgroundAlpha: 1,
+	highlightSeriesOpts: {strokeWidth: 5, strokeBorderWidth: 0, highlightCircleSize: 5},
+	gridLineColor: "#eee",
+	showRangeSelector: true,
+	rangeSelectorHeight: 40
+};
+
+// Configuration graphe Équipements avec offset vertical (Desktop)
+const DYGRAPH_EQUIPMENT_CONFIG = {
+	labels: ["Date", "PP", "PAC", "Auto"],
+	legend: "follow",
+	series: {
+		PP: {axis: "y", stepPlot: true, fillGraph: true, color: "#00FF6F", fillAlpha: 0.4, strokeWidth: 2},
+		PAC: {axis: "y", stepPlot: true, fillGraph: true, color: "#FF006F", fillAlpha: 0.4, strokeWidth: 2},
+		Auto: {axis: "y", stepPlot: true, fillGraph: true, color: "#6F00FF", fillAlpha: 0.4, strokeWidth: 2}
+	},
+	axes: {
+		y: {
+			valueRange: [-0.5, 3.5],
+			axisLabelFormatter: function(y) {
+				if (y >= -0.5 && y < 0.5) return "PP";
+				if (y >= 0.5 && y < 1.5) return "PAC";
+				if (y >= 1.5 && y < 2.5) return "Auto";
+				return "";
+			},
+			ticker: function() {
+				return [{v: 0, label: "PP"}, {v: 1, label: "PAC"}, {v: 2, label: "Auto"}];
 			}
 		}
+	},
+	ylabel: "État",
+	rollPeriod: 1,
+	highlightSeriesBackgroundAlpha: 1,
+	highlightSeriesOpts: {strokeWidth: 5, strokeBorderWidth: 0, highlightCircleSize: 5},
+	gridLineColor: "#eee",
+	showRangeSelector: true,
+	rangeSelectorHeight: 40
+};
+
+// Fonction pour transformer les données avec offset vertical (graphe Équipements)
+function applyEquipmentOffset(data) {
+	// data format: [Date, TempEau, TempAir, TempPAC, TempInt, PHVal, RedoxVal, CLVal, PompePH, PompeCL, PompeALG, PP, PAC, Auto]
+	// Indices: PP=11, PAC=12, Auto=13
+	return data.map(row => {
+		if (!row || row.length < 14) return row;
+		return [
+			row[0],  // Date
+			row[11] !== null && row[11] !== undefined ? row[11] : null,          // PP reste à 0-1
+			row[12] !== null && row[12] !== undefined ? row[12] + 1 : null,      // PAC décalé à 1-2
+			row[13] !== null && row[13] !== undefined ? row[13] + 2 : null       // Auto décalé à 2-3
+		];
+	});
+}
+
+// Fonction de détection du mode responsive
+function getGraphMode() {
+	let width = window.innerWidth;
+	let orientation = (window.innerWidth > window.innerHeight) ? 'landscape' : 'portrait';
+	
+	if (width < 768) return 'mobile';
+	if (width < 1024 || orientation === 'portrait') return 'tablet';
+	return 'desktop';
+}
+
+// Fonction pour extraire données Chimie
+function extractChemistryData(data) {
+	// Extraire colonnes: Date(0), PHVal(5), RedoxVal(6), PompePH(8), PompeCL(9), PompeALG(10)
+	return data.map(row => {
+		if (!row || row.length < 11) return null;
+		return [row[0], row[5], row[6], row[8], row[9], row[10]];
+	}).filter(r => r !== null);
+}
+
+// Fonction pour extraire données Températures
+function extractTemperatureData(data) {
+	// Extraire colonnes: Date(0), TempEau(1), TempAir(2), TempPAC(3), TempInt(4)
+	return data.map(row => {
+		if (!row || row.length < 5) return null;
+		return [row[0], row[1], row[2], row[3], row[4]];
+	}).filter(r => r !== null);
+}
+
+function csvToArray(csvText) {
+	const result = Papa.parse(csvText, {
+		delimiter: ";",
+		skipEmptyLines: true,
+		dynamicTyping: false  // On parse manuellement pour les dates
+	});
+	
+	return result.data.map(row => {
+		row[0] = dayjs(row[0], "DD/MM/YY HH:mm:ss").toDate();
+		for(let i = 1; i < row.length; i++) {
+			row[i] = parseFloat(row[i]);
+		}
+		return row;
+	});
+}
+
+// Fonction de création des graphiques selon le mode
+function createGraphs(data, forceMode, mobileSelectedGraph) {
+	var mode = forceMode || currentMode || getGraphMode();
+	currentMode = mode;
+	
+	console.log("Creating graphs in mode: " + mode);
+	
+	// Détruire les graphiques existants
+	Object.keys(charts).forEach(function(key) {
+		if (charts[key] && typeof charts[key].destroy === 'function') {
+			charts[key].destroy();
+			charts[key] = null;
+		}
+	});
+	
+	var startDate = dayjs().subtract(2, "days").startOf("day");
+	var endDate = dayjs();
+	
+	// Configuration commune pour tous les graphes
+	var commonCallbacks = {
+		zoomCallback: function(minDate, maxDate, yRanges) {
+			var startX = dayjs(minDate);
+			var endX = dayjs(maxDate);
+			console.log("Zoom: " + startX.format('DD/MMM/YY HH:mm') + ' to ' + endX.format('DD/MMM/YY HH:mm'));
+			$('#daterange').data('daterangepicker').setStartDate(startX);
+			$('#daterange').data('daterangepicker').setEndDate(endX);
+			updateGraphsDateRange(startX, endX);
+		},
+		drawCallback: function(g, is_initial) {
+			if (!is_initial) {
+				var chartBounds = g.xAxisRange();
+				var startX = dayjs(chartBounds[0]);
+				var endX = dayjs(chartBounds[1]);
+				console.log("Pan: " + startX.format('DD/MMM/YY HH:mm') + ' to ' + endX.format('DD/MMM/YY HH:mm'));
+				$('#daterange').data('daterangepicker').setStartDate(startX);
+				$('#daterange').data('daterangepicker').setEndDate(endX);
+			}
+		}
+	};
+	
+	if (mode === 'mobile') {
+		// Mode mobile: 1 seul graphe sélectionnable
+		var graphType = mobileSelectedGraph || $('#graphSelector').val() || 'all';
+		
+		if (graphType === 'all') {
+			// Graphe multiaxes par défaut
+			var config = Object.assign({}, DYGRAPH_CONFIG, commonCallbacks, {
+				labelsDiv: document.getElementById("legend-mobile"),
+				dateWindow: [startDate.toDate(), endDate.toDate()],
+				interactionModel: Dygraph.defaultInteractionModel
+			});
+			charts.mobile = new Dygraph($("#graph1")[0], data, config);
+		} else {
+			// Graphe spécialisé (chemistry/temperature/equipment)
+			var graphData, graphConfig, legendId;
+			
+			if (graphType === 'chemistry') {
+				graphData = extractChemistryData(data);
+				graphConfig = DYGRAPH_CHEMISTRY_CONFIG;
+				legendId = "legend-mobile";
+			} else if (graphType === 'temperature') {
+				graphData = extractTemperatureData(data);
+				graphConfig = DYGRAPH_TEMPERATURE_CONFIG;
+				legendId = "legend-mobile";
+			} else if (graphType === 'equipment') {
+				graphData = applyEquipmentOffset(data);
+				graphConfig = DYGRAPH_EQUIPMENT_CONFIG;
+				legendId = "legend-mobile";
+			}
+			
+			var config = Object.assign({}, graphConfig, commonCallbacks, {
+				labelsDiv: document.getElementById(legendId),
+				dateWindow: [startDate.toDate(), endDate.toDate()],
+				interactionModel: Dygraph.defaultInteractionModel
+			});
+			charts.mobile = new Dygraph($("#graph1")[0], graphData, config);
+		}
+		
+	} else if (mode === 'tablet') {
+		// Mode tablette: 2 graphes sélectionnables
+		var graphs = selectedGraphs.tablet || ['chemistry', 'temperature'];
+		var graphInstances = [];
+		
+		graphs.forEach(function(graphType, idx) {
+			var elementId = idx === 0 ? "graph-chemistry" : "graph-temperature";
+			var legendId = idx === 0 ? "legend-chemistry" : "legend-temperature";
+			var graphData, graphConfig;
+			
+			if (graphType === 'chemistry') {
+				graphData = extractChemistryData(data);
+				graphConfig = DYGRAPH_CHEMISTRY_CONFIG;
+			} else if (graphType === 'temperature') {
+				graphData = extractTemperatureData(data);
+				graphConfig = DYGRAPH_TEMPERATURE_CONFIG;
+			} else if (graphType === 'equipment') {
+				graphData = applyEquipmentOffset(data);
+				graphConfig = DYGRAPH_EQUIPMENT_CONFIG;
+			}
+			
+			var config = Object.assign({}, graphConfig, commonCallbacks, {
+				labelsDiv: document.getElementById(legendId),
+				dateWindow: [startDate.toDate(), endDate.toDate()],
+				interactionModel: Dygraph.defaultInteractionModel
+			});
+			
+			charts[graphType] = new Dygraph($("#" + elementId)[0], graphData, config);
+			graphInstances.push(charts[graphType]);
+		});
+		
+		// Synchroniser les 2 graphes
+		if (graphInstances.length === 2) {
+			Dygraph.synchronize(graphInstances, {selection: true, zoom: true});
+		}
+		
+	} else if (mode === 'desktop') {
+		// Mode desktop: 3 graphes fixes
+		var graphConfigs = [
+			{type: 'chemistry', elementId: 'graph-chemistry', legendId: 'legend-chemistry'},
+			{type: 'temperature', elementId: 'graph-temperature', legendId: 'legend-temperature'},
+			{type: 'equipment', elementId: 'graph-equipment', legendId: 'legend-equipment'}
+		];
+		
+		var graphInstances = [];
+		
+		graphConfigs.forEach(function(cfg) {
+			var graphData, graphConfig;
+			
+			if (cfg.type === 'chemistry') {
+				graphData = extractChemistryData(data);
+				graphConfig = DYGRAPH_CHEMISTRY_CONFIG;
+			} else if (cfg.type === 'temperature') {
+				graphData = extractTemperatureData(data);
+				graphConfig = DYGRAPH_TEMPERATURE_CONFIG;
+			} else if (cfg.type === 'equipment') {
+				graphData = applyEquipmentOffset(data);
+				graphConfig = DYGRAPH_EQUIPMENT_CONFIG;
+			}
+			
+			var config = Object.assign({}, graphConfig, commonCallbacks, {
+				labelsDiv: document.getElementById(cfg.legendId),
+				dateWindow: [startDate.toDate(), endDate.toDate()],
+				interactionModel: Dygraph.defaultInteractionModel
+			});
+			
+			charts[cfg.type] = new Dygraph($("#" + cfg.elementId)[0], graphData, config);
+			graphInstances.push(charts[cfg.type]);
+		});
+		
+		// Synchroniser les 3 graphes
+		Dygraph.synchronize(graphInstances, {selection: true, zoom: true});
+		
+		// Initialiser les sélecteurs d'axes avec valeurs par défaut
+		initializeAxisSelectors();
 	}
-	return a;
+	
+	console.log("Graphs created successfully");
+}
+
+// Initialiser les sélecteurs d'axes avec valeurs par défaut (desktop)
+function initializeAxisSelectors() {
+	// Chimie: PHVal, RedoxVal, TempEau sélectionnés par défaut
+	var chemistryDefaults = ["PHVal", "RedoxVal", "TempEau"];
+	$("#selectChemistry").val(chemistryDefaults).selectmenu('refresh');
+	
+	// Température: tous sélectionnés par défaut
+	var temperatureDefaults = ["TempEau", "TempAir", "TempPAC", "TempInt"];
+	$("#selectTemperature").val(temperatureDefaults).selectmenu('refresh');
+	
+	// Équipements: PP, PAC, PompePH, PompeCL par défaut
+	var equipmentDefaults = ["PP", "PAC", "PompePH", "PompeCL"];
+	$("#selectEquipment").val(equipmentDefaults).selectmenu('refresh');
+}
+
+// Mettre à jour les données des graphiques existants
+function updateGraphsData(data) {
+	var mode = currentMode || getGraphMode();
+	
+	if (mode === 'mobile' && charts.mobile) {
+		var graphType = $('#graphSelector').val() || 'all';
+		var graphData = data;
+		
+		if (graphType === 'chemistry') {
+			graphData = extractChemistryData(data);
+		} else if (graphType === 'temperature') {
+			graphData = extractTemperatureData(data);
+		} else if (graphType === 'equipment') {
+			graphData = applyEquipmentOffset(data);
+		}
+		
+		charts.mobile.updateOptions({file: graphData});
+		
+	} else if (mode === 'tablet') {
+		var graphs = selectedGraphs.tablet || ['chemistry', 'temperature'];
+		
+		graphs.forEach(function(graphType) {
+			if (charts[graphType]) {
+				var graphData;
+				if (graphType === 'chemistry') {
+					graphData = extractChemistryData(data);
+				} else if (graphType === 'temperature') {
+					graphData = extractTemperatureData(data);
+				} else if (graphType === 'equipment') {
+					graphData = applyEquipmentOffset(data);
+				}
+				charts[graphType].updateOptions({file: graphData});
+			}
+		});
+		
+	} else if (mode === 'desktop') {
+		if (charts.chemistry) {
+			charts.chemistry.updateOptions({file: extractChemistryData(data)});
+		}
+		if (charts.temperature) {
+			charts.temperature.updateOptions({file: extractTemperatureData(data)});
+		}
+		if (charts.equipment) {
+			charts.equipment.updateOptions({file: applyEquipmentOffset(data)});
+		}
+	}
+}
+
+// Mettre à jour la plage de dates de tous les graphiques
+function updateGraphsDateRange(startDate, endDate) {
+	fetchDataRange(startDate, endDate).then(function(data) {
+		updateGraphsData(data);
+	});
 }
 
 function syncGraphAjax(debut,fin){
@@ -858,94 +1249,85 @@ function getOriginData(){
 	dataOrigin=fetchData(start,now);
 	chartdata=dataOrigin;
 	OrigStart=CurrStart=start;
-	OrigEnd=CurrEnd=now
+	OrigEnd=CurrEnd=now;
+	
+	// Initialiser le cache avec les données d'origine
+	populateCache(dataOrigin);
 }
 
-function getNewData(debut,fin){
-	var datas=[];
-	console.log("getNewData before; start:"+debut.format("DD-MM")+" end:"+fin.format("DD-MM")+"\nCurrStart:"+CurrStart.format("DD-MM")+" CurrEnd:"+CurrEnd.format("DD-MM")+"\nOrigStart:"+OrigStart.format("DD-MM")+" OrigEnd:"+OrigEnd.format("DD-MM")+"\n");
-	if(CurrStart==OrigStart){
-		if(debut.isBefore(OrigStart)){
-			if(fin.isAfter(OrigStart)){
-				datas=fetchData(debut,OrigStart),
-				dataOrigin=datas.concat(dataOrigin);
-				OrigStart=CurrStart=debut;
-				CurrEnd=OrigEnd;
-				chartdata=dataOrigin;
-				console.log("getNewData; extend orig data by newStart:\nCurrStart:"+CurrStart.format("DD-MM")+" CurrEnd:"+CurrEnd.format("DD-MM")+"\nOrigStart:"+OrigStart.format("DD-MM")+" OrigEnd:"+OrigEnd.format("DD-MM"));
-			} else {
-				datas=fetchData(debut,fin);
-				CurrStart=debut;
-				CurrEnd=fin;
-				chartdata=currData=datas;
-				console.log("getNewData; new data  (NewEnd < OrigStart):\nCurrStart:"+CurrStart.format("DD-MM")+" CurrEnd:"+CurrEnd.format("DD-MM")+"\nOrigStart:"+OrigStart.format("DD-MM")+" OrigEnd:"+OrigEnd.format("DD-MM"));
+// Remplir le cache Map avec un tableau de données
+function populateCache(data) {
+	data.forEach(row => {
+		if (row && row[0] instanceof Date) {
+			const dayKey = dayjs(row[0]).format("YYYY-MM-DD");
+			if (!dataCache.has(dayKey)) {
+				dataCache.set(dayKey, []);
 			}
-		}else{ 
-			chartdata=dataOrigin;
-			console.log("getNewData; newStart > OrigStart just zoom on dataOrigin:\nCurrStart:"+CurrStart.format("DD-MM")+" CurrEnd:"+CurrEnd.format("DD-MM")+"\nOrigStart:"+OrigStart.format("DD-MM")+" OrigEnd:"+OrigEnd.format("DD-MM"));
+			dataCache.get(dayKey).push(row);
 		}
-	} else {		// curStart != origStart
-		if (debut.isAfter(OrigStart)||debut.isSame(OrigStart)){
-			chartdata=dataOrigin;
-			console.log("getNewData; using dataCurr fetching into dataOrigin:\nCurrStart:"+CurrStart.format("DD-MM")+" CurrEnd:"+CurrEnd.format("DD-MM")+"\nOrigStart:"+OrigStart.format("DD-MM")+" OrigEnd:"+OrigEnd.format("DD-MM"));
-		} else {	// debut before origStart
-			if(fin.isAfter(OrigStart)||fin.isSame(OrigStart)){
-				datas=fetchData(debut,OrigStart);
-				dataOrigin=datas.concat(dataOrigin);
-				OrigStart=CurrStart=debut;
-				chartdata=dataOrigin;
-				console.log("getNewData; using dataCurr extend dataOrigin by new start :\nCurrStart:"+CurrStart.format("DD-MM")+" CurrEnd:"+CurrEnd.format("DD-MM")+"\nOrigStart:"+OrigStart.format("DD-MM")+" OrigEnd:"+OrigEnd.format("DD-MM"));
-			} else {	// debut and fin before origStart
-				if(debut.isAfter(CurrStart)||debut.isSame(CurrStart)){
-					if(fin.isBefore(CurrEnd)||fin.isSame(CurrEnd)){
-						chartdata=currData;
-						console.log("getNewData; outside dataOrigin inside currData, just zoom :\nCurrStart:"+CurrStart.format("DD-MM")+" CurrEnd:"+CurrEnd.format("DD-MM")+"\nOrigStart:"+OrigStart.format("DD-MM")+" OrigEnd:"+OrigEnd.format("DD-MM"));
-					} else{	 // debut after curStart and fin after curEnd	
-						if(debut.isBefore(CurrEnd)||debut.isSame(CurrEnd)){
-							datas=fetchData(CurrEnd,fin);
-							CurrEnd=fin;
-							currData=currData.concat(datas);
-							chartdata=currData;
-							console.log("getNewData; outside dataOrigin fetching after currEnd\nCurrStart:"+CurrStart.format("DD-MM")+" CurrEnd:"+CurrEnd.format("DD-MM")+"\nOrigStart:"+OrigStart.format("DD-MM")+" OrigEnd:"+OrigEnd.format("DD-MM"));
-						} else { // debut and fin after curEnd
-							datas=fetchData(debut,fin);
-							CurrStart=debut;
-							CurrEnd=fin;
-							chartdata=currData=datas;
-							console.log("getNewData; outside dataOrigin fetching outside (before) currdata => new currData\nCurrStart:"+CurrStart.format("DD-MM")+" CurrEnd:"+CurrEnd.format("DD-MM")+"\nOrigStart:"+OrigStart.format("DD-MM")+" OrigEnd:"+OrigEnd.format("DD-MM"));
-						}
-					}
-				} else {	// debut before curStart
-					if(fin.isAfter(CurrEnd)||fin.isSame(CurrEnd)){
-						datas=fetchData(debut,CurrStart);
-						currData=datas.concat(currData);
-						datas=fetchData(CurrEnd,fin);
-						currData=currData.concat(datas);
-						CurrStart=debut;
-						CurrEnd=fin;
-						chartdata=currData;
-						console.log("getNewData; outside dataOrigin fetch before and after currData\nCurrStart:"+CurrStart.format("DD-MM")+" CurrEnd:"+CurrEnd.format("DD-MM")+"\nOrigStart:"+OrigStart.format("DD-MM")+" OrigEnd:"+OrigEnd.format("DD-MM"));
-					} else {	// fin before curEnd	
-						if(fin.isAfter(CurrStart)||fin.isSame(CurrStart)){
-							datas=fetchData(debut,CurrStart);
-							CurrStart=debut;
-							currData=datas.concat(currData);
-							chartdata=currData;
-							console.log("getNewData; outside dataOrigin fetch before currStart but inside cuurEnd\nCurrStart:"+CurrStart.format("DD-MM")+" CurrEnd:"+CurrEnd.format("DD-MM")+"\nOrigStart:"+OrigStart.format("DD-MM")+" OrigEnd:"+OrigEnd.format("DD-MM"));
-						} else {	// debut and fin before curStart
-							datas=fetchData(debut,fin);
-							CurrStart=debut;
-							CurrEnd=fin;
-							chartdata=currData=datas;
-							console.log("getNewData; outside dataOrigin fetchig outside of currdata (after) = new currData\nCurrStart:"+CurrStart.format("DD-MM")+" CurrEnd:"+CurrEnd.format("DD-MM")+"\nOrigStart:"+OrigStart.format("DD-MM")+" OrigEnd:"+OrigEnd.format("DD-MM"));
-						}
-					}
-				}
+	});
+}
+
+// Nouvelle fonction simplifiée pour récupérer les données avec cache Map
+async function fetchDataRange(debut, fin) {
+	const start = dayjs(debut).startOf('day');
+	const end = dayjs(fin).endOf('day');
+	const missingRanges = [];
+	const result = [];
+	
+	// Parcourir chaque jour de la période demandée
+	let current = start;
+	while (current.isBefore(end) || current.isSame(end, 'day')) {
+		const dayKey = current.format("YYYY-MM-DD");
+		
+		if (dataCache.has(dayKey)) {
+			// Données en cache, les ajouter au résultat
+			result.push(...dataCache.get(dayKey));
+		} else {
+			// Jour manquant, identifier la plage à télécharger
+			const rangeStart = current;
+			while (!dataCache.has(current.format("YYYY-MM-DD")) && (current.isBefore(end) || current.isSame(end, 'day'))) {
+				current = current.add(1, 'day');
 			}
+			missingRanges.push({start: rangeStart, end: current.subtract(1, 'day')});
+			current = current.subtract(1, 'day'); // Revenir d'un jour pour le prochain incrément
 		}
+		
+		current = current.add(1, 'day');
 	}
-	chart.updateOptions({file:chartdata})
-};
+	
+	// Télécharger les plages manquantes
+	for (const range of missingRanges) {
+		console.log(`Fetching missing data from ${range.start.format("DD-MM-YYYY")} to ${range.end.format("DD-MM-YYYY")}`);
+		const newData = await fetchData(range.start, range.end);
+		populateCache(newData);
+		result.push(...newData);
+	}
+	
+	// Trier les résultats par date
+	result.sort((a, b) => a[0] - b[0]);
+	
+	return result;
+}
+
+// Timer de debounce pour éviter les requêtes trop fréquentes
+let updateDebounceTimer = null;
+
+function getNewData(debut, fin) {
+	// Annuler le timer précédent
+	if (updateDebounceTimer) {
+		clearTimeout(updateDebounceTimer);
+	}
+	
+	// Debounce de 300ms avant de lancer la requête
+	updateDebounceTimer = setTimeout(async () => {
+		console.log(`getNewData: fetching from ${debut.format("DD-MM-YYYY")} to ${fin.format("DD-MM-YYYY")}`);
+		const data = await fetchDataRange(debut, fin);
+		chart.updateOptions({file: data});
+		CurrStart = debut;
+		CurrEnd = fin;
+	}, 300);
+}
 
 // --------------------------------  global init ---------------------------------------------------
 	$(document).on("mobileinit", function (event, ui) {
@@ -3211,300 +3593,101 @@ function getNewData(debut,fin){
 			autoUpdateInput:!0
 			}
 			,(function(debut,fin,a){
-				console.log("New date range selected: "+debut.format("DD/MM/YY HH:MM")+" to "+fin.format("DD/MM/YY HH:MM")+" (predefined range: "+a+")")
-				getNewData(debut,fin);
-				var s=chart.xAxisRange();
-				if(dayjs(s[0])!=debut||dayjs(s[1]!=fin)){
-					chart.updateOptions({dateWindow:[debut,fin]});
-					console.log("A new date selection from datePicker was made: "+debut.toString()+" to "+fin.toString());
-				}
+				console.log("New date range selected: "+debut.format("DD/MM/YY HH:MM")+" to "+fin.format("DD/MM/YY HH:MM")+" (predefined range: "+a+")");
+				updateGraphsDateRange(debut, fin);
 			})
 		);
 
-		$("#selectItems").on("change",(function(){
-			var e=$(this).val();
-			var i=0,j=0;
-
-			console.log("Selected:"+e);
-			for(i=0;i<13;i++){
-				if(null!=e && j<e.length && parseInt(e[j])==i){ 
-					chart.setVisibility(i,!0);	// show
-					j++;
-				}else {
-					chart.setVisibility(i,!1);  // hide
+		// Event handlers pour sélecteurs d'axes (mobile)
+		$("#selectItems").on("change", function(){
+			var selected = $(this).val();
+			if (charts.mobile) {
+				for(var i=0; i<13; i++){
+					var isSelected = selected && selected.includes(i.toString());
+					charts.mobile.setVisibility(i, isSelected);
 				}
 			}
-		}));
+		});
+
+		// Event handlers pour sélecteurs d'axes (desktop)
+		["selectChemistry", "selectTemperature", "selectEquipment"].forEach(function(selectorId){
+			$("#" + selectorId).on("change", function(){
+				var graphType = selectorId.replace("select", "").toLowerCase();
+				var selected = $(this).val() || [];
+				if (charts[graphType]) {
+					var def = GRAPH_DEFINITIONS[graphType];
+					var allAxes = def.primaryAxes.concat(def.optionalAxes);
+					allAxes.forEach(function(axisName, idx){
+						charts[graphType].setVisibility(idx, selected.includes(axisName));
+					});
+				}
+			});
+		});
+
+		// Event handlers sélecteurs de graphes (mobile/tablette)
+		$("#graphSelector").on("change", function(){
+			var selectedGraph = $(this).val();
+			console.log("Mobile: graphe sélectionné = " + selectedGraph);
+			// Recharger les données pour ce graphe
+			var startDate = dayjs().subtract(2, "days").startOf("day");
+			var endDate = dayjs();
+			fetchDataRange(startDate, endDate).then(function(data){
+				createGraphs(data, 'mobile', selectedGraph);
+			});
+		});
+
+		$("#graphSelector1, #graphSelector2").on("change", function(){
+			var graph1 = $("#graphSelector1").val();
+			var graph2 = $("#graphSelector2").val();
+			
+			// Validation: les deux graphes doivent être différents
+			if (graph1 === graph2) {
+				alert("Veuillez sélectionner deux graphes différents");
+				return;
+			}
+			
+			selectedGraphs.tablet = [graph1, graph2];
+			console.log("Tablette: graphes sélectionnés = " + selectedGraphs.tablet.join(", "));
+			
+			// Recharger les données
+			var startDate = dayjs().subtract(2, "days").startOf("day");
+			var endDate = dayjs();
+			fetchDataRange(startDate, endDate).then(function(data){
+				createGraphs(data, 'tablet');
+			});
+		});
+
+		// Gestion resize/orientation
+		$(window).on('resize orientationchange', function(){
+			var newMode = getGraphMode();
+			if (newMode !== currentMode) {
+				console.log("Mode change: " + currentMode + " -> " + newMode);
+				currentMode = newMode;
+				var startDate = dayjs().subtract(2, "days").startOf("day");
+				var endDate = dayjs();
+				fetchDataRange(startDate, endDate).then(function(data){
+					createGraphs(data);
+				});
+			}
+		});
 
 		console.log("-- Building the chartdata array from before create --");
-		getOriginData()
+		getOriginData();
+		
+		// Créer les graphiques selon le mode détecté
+		currentMode = getGraphMode();
+		console.log("Initial graph mode: " + currentMode);
+		createGraphs(dataOrigin);
 	});
+	
 	// page PiscineGraphs pageShow
 	$(document).on("pageshow","#pagePiscineGraphs",function(){
-		function panAndZoomCallback(event, g, context,isMouse){
-			let chartBounds = chart.xAxisRange();
-			let startX = dayjs(chartBounds[0]);
-			let endX = dayjs(chartBounds[1]);
-			if(!isMouse)
-				Dygraph.defaultInteractionModel.touchend(event,g,context);
-	
-			if (context.isPanning) {
-				console.log('isPanning end');
-				console.log("A new date selection from chart (pan) was made: " + startX.format('DD/MMM/YY HH:mm') + ' to ' + endX.format('DD/MMM/YY HH:mm'));
-				$('#daterange').data('daterangepicker').setStartDate(startX);
-				$('#daterange').data('daterangepicker').setEndDate(endX);
-				if (isMouse) 
-					Dygraph.endPan(event, g, context); 
-				getNewData(startX,endX);
-			} else if (context.isZooming) {
-				console.log('isZooming end');
-				console.log("A new date selection from chart (zoom) was made: " + startX.format('DD/MMM/YY HH:mm') + ' to ' + endX.format('DD/MMM/YY HH:mm'));
-				$('#daterange').data('daterangepicker').setStartDate(startX);
-				$('#daterange').data('daterangepicker').setEndDate(endX);
-				if(isMouse)
-					Dygraph.endZoom(event, g, context);		
-			}
-		}
-		chart=new Dygraph($("#graph1")[0],[[Date.now(),0,0,0,0,0,0,0,0,0,0,0,0,0]],
-			{
-				labels:["Date","TempEau","TempAir","TempPAC","TempInt","PHVal","RedoxVal","CLVal","PompePH","PompeCL","PompeALG","PP","PAC","Auto"],
-				labelsDiv:document.getElementById("legend"),
-				legend:"follow",
-				legendFormatter:function(data){
-					if (data.x == null) {
-						// This happens when there's no selection and {legend: 'always'} is set.
-						return '<br>' + data.series.map(function(series) { return series.dashHTML + ' ' + series.labelHTML }).join('<br>');
-					  }
-					
-					  var html = this.getLabels()[0] + ': ' + data.xHTML;
-					  data.series.forEach(function(series) {
-						if (!series.isVisible) return;
-						var labeledData = series.labelHTML + ': ' + series.yHTML;
-						if (series.isHighlighted) {
-						  labeledData = '<b style="font-size:initial">' + labeledData + '</b>';
-						}
-						html += '<br>' + series.dashHTML + ' ' + labeledData;
-					  });
-					  return html;
-				},
-				series:{
-					TempEau:{axis:"y2"},
-					TempAir:{axis:"y2"},
-					TempPAC:{axis:"y2"},
-					TempInt:{axis:"y2"},
-					PHVal:{axis:"y"},
-					RedoxVal:{axis:"y2"},
-					CLVal:{axis:"y"},
-					PompePH:{axis:"y"},
-					PompeCL:{axis:"y"},
-					PompeALG:{axis:"y"},
-					PP:{axis:"y"},
-					PAC:{axis:"y"},
-					Auto:{axis:"y"}
-				},
-				axes:{
-					y:{valueRange:[0,10],axisLabelColor:"#FF00FF"},
-					y2:{valueRange:[10,40],axisLabelColor:"#FFFFFF"}
-				},
-				ylabel:"On/Off",
-				y2label:"Température °C",
-				colors:["#ff0000","#00FF00","#006FFF","#FFFF00","#00FFFF","#FF00FF","#FF6F00","#0000FF","6F00FF","6FFF00","#00FF6F","#FF006F","#00FF6F"],
-				visibility:[!0,!0,!1,!1,!0,!1,!0,!1,!1,!1,!0,!1,!0],
-				rollPeriod:2,
-				strokeWidth:2,
-				highlightSeriesBackgroundAlpha:1,
-				highlightSeriesOpts:{
-					strokeWidth:5,
-					strokeBorderWidth:0,
-					highlightCircleSize:5
-				},
-				gridLineColor:"#eee",
-				dateWindow:[dayjs().subtract(2,"days").startOf("day"),dayjs()],
-				showRangeSelector:!0,
-				rangeSelectorHeight:50,
-				interactionModel:{
-					mousedown:Dygraph.defaultInteractionModel.mousedown,
-					mousemove:Dygraph.defaultInteractionModel.mousemove,
-					click:Dygraph.defaultInteractionModel.click,
-					dblclick:Dygraph.defaultInteractionModel.dblclick,
-					mousewheel:Dygraph.defaultInteractionModel.mousewheel,
-					touchstart:function(event, g, context) {
-						// This right here is what prevents IOS from doing its own zoom/touch behavior
-						// It stops the node from being selected too
-						event.preventDefault(); // touch browsers are all nice.
-						
-						if (event.touches.length > 1) {
-							context.startTimeForDoubleTapMs = null;		// If the user ever puts two fingers down, it's not a double tap.
-						}
-						
-						var touches = [];
-						for (var i = 0; i < event.touches.length; i++) {
-							var t = event.touches[i];
-				//			var rect = t.target.getBoundingClientRect();
-							// we dispense with 'dragGetX_' because all touchBrowsers support pageX
-							touches.push({
-								pageX: t.pageX,
-								pageY: t.pageY,
-								dataX: g.toDataXCoord(t.pageX),
-								dataY: g.toDataYCoord(t.pageY)
-							// identifier: t.identifier
-							});
-						}
-						context.initialTouches = touches;
-						
-						if (touches.length == 1) {		// This is just a swipe.
-							context.initialPinchCenter = touches[0];
-							context.touchDirections = { x: true, y: true };
-							g.mouseMove_(event);
-						} else if (touches.length >= 2) {
-							// It's become a pinch!
-							// In case there are 3+ touches, we ignore all but the "first" two.
-							// only screen coordinates can be averaged (data coords could be log scale).
-							context.initialPinchCenter = {
-								pageX: 0.5 * (touches[0].pageX + touches[1].pageX),
-								pageY: 0.5 * (touches[0].pageY + touches[1].pageY),
-							
-								// TODO(danvk): remove
-								dataX: 0.5 * (touches[0].dataX + touches[1].dataX),
-								dataY: 0.5 * (touches[0].dataY + touches[1].dataY)
-							};
-							
-							// Make pinches in a 45-degree swath around either axis 1-dimensional zooms.
-							var initialAngle = 180 / Math.PI * Math.atan2(	context.initialPinchCenter.pageY - touches[0].pageY,
-																			touches[0].pageX - context.initialPinchCenter.pageX
-																		);
-							// use symmetry to get it into the first quadrant.
-							initialAngle = Math.abs(initialAngle);
-							if (initialAngle > 90) initialAngle = 90 - initialAngle;
-							context.touchDirections = {
-								x: (initialAngle < (90 - 45/2)),
-								y: (initialAngle > 45/2)
-							};
-						}
-						
-						// save the full x & y ranges.
-						context.initialRange = {
-							x: g.xAxisRange(),
-							y: g.yAxisRange()
-						};
-					},
-					touchmove:function(event, g, context) {
-						// If the tap moves, then it's definitely not part of a double-tap.
-						context.startTimeForDoubleTapMs = null;
-					  
-						var i, touches = [];
-						for (i = 0; i < event.touches.length; i++) {
-						  var t = event.touches[i];
-						  touches.push({
-							pageX: t.pageX,
-							pageY: t.pageY
-						  });
-						}
-				
-						if(touches.length == 1){
-							context.isPanning = true;
-						} else if(touches.length >= 2){
-							context.isZooming = true;
-							context.isPanning = false;
-						}
-				
-						var initialTouches = context.initialTouches;
-					  
-						var c_now;
-					  
-						// old and new centers.
-						var c_init = context.initialPinchCenter;
-						if (touches.length == 1) {
-						  c_now = touches[0];
-						} else {
-						  c_now = {
-							pageX: 0.5 * (touches[0].pageX + touches[1].pageX),
-							pageY: 0.5 * (touches[0].pageY + touches[1].pageY)
-						  };
-						}
-					  
-						// this is the "swipe" component
-						// we toss it out for now, but could use it in the future.
-						var swipe = {
-						  pageX: c_now.pageX - c_init.pageX,
-						  pageY: c_now.pageY - c_init.pageY
-						};
-						var dataWidth = context.initialRange.x[1] - context.initialRange.x[0];
-						var dataHeight = context.initialRange.y[0] - context.initialRange.y[1];
-						swipe.dataX = (swipe.pageX / g.plotter_.area.w) * dataWidth;
-						swipe.dataY = (swipe.pageY / g.plotter_.area.h) * dataHeight;
-						var xScale, yScale;
-					  
-						// The residual bits are usually split into scale & rotate bits, but we split
-						// them into x-scale and y-scale bits.
-						if (touches.length == 1) {
-						  xScale = 1.0;
-						  yScale = 1.0;
-						} else if (touches.length >= 2) {
-						  var initHalfWidth = (initialTouches[1].pageX - c_init.pageX);
-						  xScale = (touches[1].pageX - c_now.pageX) / initHalfWidth;
-					  
-						  var initHalfHeight = (initialTouches[1].pageY - c_init.pageY);
-						  yScale = (touches[1].pageY - c_now.pageY) / initHalfHeight;
-						}
-					  
-						// Clip scaling to [1/8, 8] to prevent too much blowup.
-						xScale = Math.min(8, Math.max(0.125, xScale));
-						yScale = Math.min(8, Math.max(0.125, yScale));
-					  
-						var didZoom = false;
-						if (context.touchDirections.x) {
-						  var cFactor = c_init.dataX - swipe.dataX / xScale;
-						  g.dateWindow_ = [
-							cFactor + (context.initialRange.x[0] - c_init.dataX) / xScale,
-							cFactor + (context.initialRange.x[1] - c_init.dataX) / xScale
-						  ];
-						  didZoom = true;
-						}
-					  
-						if (context.touchDirections.y) {
-						  for (i = 0; i < 1  /*g.axes_.length*/; i++) {
-							var axis = g.axes_[i];
-							var logscale = g.attributes_.getForAxis("logscale", i);
-							if (logscale) {
-							  // TODO(danvk): implement
-							} else {
-							  var cFactor = c_init.dataY - swipe.dataY / yScale;
-							  axis.valueRange = [
-								cFactor + (context.initialRange.y[0] - c_init.dataY) / yScale,
-								cFactor + (context.initialRange.y[1] - c_init.dataY) / yScale
-							  ];
-							  didZoom = true;
-							}
-						  }
-						}
-					  
-						g.drawGraph_(false);
-					  
-						// We only call zoomCallback on zooms, not pans, to mirror desktop behavior.
-						if (didZoom && touches.length > 1 && g.getFunctionOption('zoomCallback')) {
-						  var viewWindow = g.xAxisRange();
-				//		  g.getFunctionOption("zoomCallback").call(g, viewWindow[0], viewWindow[1], g.yAxisRanges());
-						}
-					},
-					mouseup: function (event, g, context) { 
-						console.log('Mouse up');
-						panAndZoomCallback(event,g,context,true);
-					},
-					touchend: function (event, g, context) { 
-						console.log('Touch end');
-						panAndZoomCallback(event,g,context,false);
-					},
-					zoomCallback: function(startX, endX, yRanges) { 
-						let start = dayjs(startX);
-						let end = dayjs(endX);
-						console.log("A new date selection from chart (zoom) was made: " + start.format('DD/MMM/YY HH:mm') + ' to ' + end.format('DD/MMM/YY HH:mm'));
-						$('#daterange').data('daterangepicker').setStartDate(start);
-						$('#daterange').data('daterangepicker').setEndDate(end);
-					}
-				} 	// end interaction model
-			}		// end chart
-		)
+		console.log("PageShow: updating chart data");
+		const startDate = dayjs().subtract(2, "days").startOf("day");
+		const endDate = dayjs();
+		fetchDataRange(startDate, endDate).then(function(data){
+			updateGraphsData(data);
+		});
 	});
 
 	// page PiscineDebug create inits
