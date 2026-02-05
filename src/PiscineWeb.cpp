@@ -617,7 +617,7 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
     // --- 5. DÉMARRAGE ---
         server.begin();                             			  // start the HTTP server
         logger.print("[WEB] HTTP server started, IP address: ");
-        logger.println(WiFi.localIP());
+        logger.println(WiFi.localIP());  // Fonctionne maintenant grâce à l'héritage de Print
 
     }
 

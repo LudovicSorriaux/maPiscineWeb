@@ -21,7 +21,7 @@
 #include <pgmspace.h>
 
 
-class LoggerClass {
+class LoggerClass : public Print {
     public :
 
         LoggerClass();
@@ -36,18 +36,16 @@ class LoggerClass {
         void getDebugMessage(char* output, size_t outputSize);
         void setDebugMessage(bool onOff);
 
-//        virtual size_t write(const uint8_t character);
+        // Méthode virtuelle obligatoire pour hériter de Print (support automatique de tous les types)
+        virtual size_t write(uint8_t c);
 
+        // printf() conservé comme bonus pratique (non standard Arduino mais utile)
         size_t printf(const char * format, ...)  __attribute__ ((format (printf, 2, 3)));
-        size_t print(const String &);
-        size_t print(const char[]);
-        size_t print(char);
-
-
-        size_t println(const String &s);
-        size_t println(const char[]);
-        size_t println(unsigned int data); 
-        size_t println(void);
+        
+        // TOUTES les autres surcharges print()/println() sont héritées automatiquement de Print :
+        // - print(int), print(long), print(unsigned long), print(float), print(double)
+        // - print(IPAddress), print(Printable&), etc.
+        // - Idem pour println() de tous ces types
 
     private :
 

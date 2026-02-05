@@ -322,10 +322,54 @@
     
 
   /*
+   * size_t LoggerClass::write
+   * But : Méthode virtuelle obligatoire pour hériter de Print
+   *       Écrit un caractère unique vers Serial ET SD Card
+   *       Toutes les autres méthodes print/println appellent write() en interne
+   * Entrées : c - caractère uint8_t à écrire
+   * Sortie : 1 si succès, 0 si erreur
+   */
+    size_t LoggerClass::write(uint8_t c) {
+        size_t n = 0;
+        
+        // Écriture vers Serial
+        n += Serial.write(c);
+        
+        // Écriture vers SD Card si fichier log ouvert
+        if (logFile) {
+            n += logFile.write(c);
+        }
+        
+        return n;
+    }
+
+  /*
+   * size_t LoggerClass::write
+   * But : Méthode virtuelle obligatoire pour hériter de Print
+   *       Écrit un caractère unique vers Serial1 ET SD Card via logMessage
+   *       Toutes les autres méthodes print/println appellent write() en interne
+   * Entrées : c - caractère uint8_t à écrire
+   * Sortie : 1 si succès, 0 si erreur
+   */
+    size_t LoggerClass::write(uint8_t c) {
+        size_t n = 0;
+        
+        // Écriture vers Serial1
+        n = Serial1.write(c);
+        
+        // Écriture vers SD Card via buffer interne (logMessage gère le fichier)
+        char buf[2] = {(char)c, '\0'};
+        logMessage(buf);
+        
+        return n;
+    }
+
+  /*
    * size_t LoggerClass::printf
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
+   * But : Fonction printf custom (bonus pratique, non standard Arduino)
+   *       Formate et écrit via Serial1 + SD
+   * Entrées : format - chaîne format style printf, ... - arguments variadiques
+   * Sortie : nombre de caractères écrits
    */
     size_t LoggerClass::printf(const char *format, ...) {
       va_list arg;
@@ -352,100 +396,11 @@
         return rtn;
     }
 
-  /*
-   * size_t LoggerClass::print
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
-    size_t LoggerClass::print(const String &s) {
-        size_t rtn;
+    // ===== SURCHARGES print()/println() SUPPRIMÉES =====
+    // Toutes les variantes (String, char[], char, int, long, float, double, IPAddress, etc.)
+    // sont désormais héritées automatiquement de la classe Print.
+    // Elles appellent toutes write(uint8_t) en interne → écriture Serial1 + SD automatique.
 
-        rtn = Serial1.print(s);
-        logMessage(s.c_str());
-        return rtn;
-    }
-
-  /*
-   * size_t LoggerClass::print
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
-    size_t LoggerClass::print(const char str[]) {
-        size_t rtn;
-
-        rtn = Serial1.print(str);
-        logMessage(str);
-        return rtn;
-    }
-
-  /*
-   * size_t LoggerClass::print
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
-    size_t LoggerClass::print(char c) {
-      size_t rtn;
-      char str[2];
-        str[0] = c;
-        str[1] = 0;
-        rtn = Serial1.print(str);
-        logMessage(str);
-        return rtn;
-    }
-
-  /*
-   * size_t LoggerClass::println
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
-    size_t LoggerClass::println(unsigned int data) {
-      size_t rtn;
-      rtn = printf("%d\n",data);
-      return rtn;
-    }
-
-  /*
-   * size_t LoggerClass::println
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
-    size_t LoggerClass::println(void) {
-      size_t rtn;
-        rtn = print("\r\n");
-        if(printStarted) printStarted = false;
-        return rtn;
-    }
-
-  /*
-   * size_t LoggerClass::println
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
-    size_t LoggerClass::println(const String &s) {
-      size_t rtn;
-        rtn = print(s);
-        println();
-        return rtn;
-    }
-
-  /*
-   * size_t LoggerClass::println
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
-    size_t LoggerClass::println(const char c[]) {
-      size_t rtn;
-        rtn = print(c);
-        println();
-        return rtn;
-    }
     
 // private :
 
