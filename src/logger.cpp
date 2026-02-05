@@ -324,44 +324,36 @@
   /*
    * size_t LoggerClass::write
    * But : Méthode virtuelle obligatoire pour hériter de Print
-   *       Écrit un caractère unique vers Serial ET SD Card
-   *       Toutes les autres méthodes print/println appellent write() en interne
+   *       Écrit un caractère vers Serial1 et accumule dans buffer pour SD Card
+   *       Flush vers logMessage() quand rencontre '\n' pour préserver l'horodatage
    * Entrées : c - caractère uint8_t à écrire
-   * Sortie : 1 si succès, 0 si erreur
+   * Sortie : 1 si succès
    */
     size_t LoggerClass::write(uint8_t c) {
-        size_t n = 0;
+        // Buffer statique pour accumuler les caractères jusqu'au '\n'
+        static char writeBuffer[256];
+        static uint8_t bufferPos = 0;
         
-        // Écriture vers Serial
-        n += Serial.write(c);
+        // Écriture immédiate vers Serial1
+        Serial1.write(c);
         
-        // Écriture vers SD Card si fichier log ouvert
-        if (logFile) {
-            n += logFile.write(c);
+        // Accumulation dans buffer pour SD Card
+        if (c == '\n' || bufferPos >= 254) {
+            // Terminer la chaîne
+            writeBuffer[bufferPos] = (char)c;
+            writeBuffer[bufferPos + 1] = '\0';
+            
+            // Écrire vers SD via logMessage (gère horodatage et alertFile)
+            logMessage(writeBuffer);
+            
+            // Reset buffer
+            bufferPos = 0;
+        } else {
+            // Accumuler le caractère
+            writeBuffer[bufferPos++] = (char)c;
         }
         
-        return n;
-    }
-
-  /*
-   * size_t LoggerClass::write
-   * But : Méthode virtuelle obligatoire pour hériter de Print
-   *       Écrit un caractère unique vers Serial1 ET SD Card via logMessage
-   *       Toutes les autres méthodes print/println appellent write() en interne
-   * Entrées : c - caractère uint8_t à écrire
-   * Sortie : 1 si succès, 0 si erreur
-   */
-    size_t LoggerClass::write(uint8_t c) {
-        size_t n = 0;
-        
-        // Écriture vers Serial1
-        n = Serial1.write(c);
-        
-        // Écriture vers SD Card via buffer interne (logMessage gère le fichier)
-        char buf[2] = {(char)c, '\0'};
-        logMessage(buf);
-        
-        return n;
+        return 1;
     }
 
   /*
