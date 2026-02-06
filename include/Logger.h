@@ -83,6 +83,10 @@ class LoggerClass : public Print {
         String debugMessage = "";
         bool triggerDebugMessage = false;
 
+        // Buffer pour write() (accumulation avant logMessage)
+        char writeBuffer[256];
+        uint8_t writeBufferPos = 0;
+
         void logMessage(const char logmessage[]);
         void printDate(char *date,uint8_t length);       
         int calculMoyenne(int16_t valeur);

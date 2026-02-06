@@ -388,6 +388,9 @@
       timerNTP_OK = timer.setInterval(60*60*1000L, doCheckNTPDate);           // toutes les heures get new ntp time
       timerNTP_NOK = timer.setInterval(5*1000L, doCheckNTPDate);              // toutes les 5 sec si nok. 
 
+      WiFi.mode(WIFI_AP_STA);                          // IMPORTANT : Définir mode AVANT startWiFi() pour stabilité
+      delay(100);                                       // Délai stabilisation mode WiFi
+
       if(startWiFi()){ 
         Serial1.println(F("connected...yeey :)"));      
 
@@ -397,7 +400,6 @@
             break;
           }
         }
-        WiFi.mode(WIFI_AP_STA);                          //Set device in AP_STA mode to handle espnow and web
         logger.OnUpdate();
         maPiscineWeb.startup();
         // DÉSACTIVÉ : ESP-NOW manager (optimisation RAM)
@@ -708,10 +710,15 @@
  */
     bool WiFiConnect(const char *ssid, const char *passphrase){
        unsigned long mytimeout = millis() / 1000;
+      
       if(ssid == nullptr){
+        // Reconnexion automatique au dernier AP (WiFi.begin() sans paramètres)
         WiFi.persistent( false );
         WiFi.begin();
       } else {
+        // Nouvelle connexion explicite : disconnect d'abord pour éviter cache corrompu
+        WiFi.disconnect(false); // false = ne pas effacer les credentials stockées
+        delay(100);
         WiFi.persistent( true );
         WiFi.begin(ssid, passphrase); //WiFi connection
       }
@@ -735,49 +742,63 @@
  * @brief Scanne les réseaux WiFi disponibles et tente connexion aux SSIDs stockés dans config.wifi[] (jusqu'à 3 entrées)
  */
     bool ConnectWithStoredCredentials(){
-        const char *ssid = "null";
+        const char *ssid = nullptr;
         const char *password = nullptr;
-        int retryNetworks = 4;
+        
+        Serial1.print(F("Looking for networks : "));
+        int networksCount = WiFi.scanNetworks(false);
+        Serial1.printf_P(PSTR("%d\n"), networksCount);
+        
+        if (networksCount <= 0) {
+          Serial1.println(F("No networks found"));
+          return false;
+        }
 
-        while (retryNetworks-- > 0){
-          Serial1.printf_P(PSTR("Retry %d \n"), retryNetworks);
-          Serial1.print(F("Looking for networks : "));
-          int networksCount = WiFi.scanNetworks(false);
-          Serial1.printf_P(PSTR("%d\n"), networksCount);
-          for (int j = 0; j < networksCount; j++){
-            Serial1.printf_P(PSTR("network %d : %s \n"), j+1, WiFi.SSID(j).c_str());
-          }
-          if (networksCount >= 0){
-            for (int i = 0; i < networksCount; i++){
-              checkInterrupt();
-              if(strcmp(ssid,WiFi.SSID(i).c_str()) != 0){     // only if new ssid isn't the last one. 
-                ssid = strdup(WiFi.SSID(i).c_str());
-                Serial1.printf_P(PSTR("ssid: %s \n"), ssid);
-                password = findPassword(ssid);  
+        // Afficher les réseaux trouvés
+        for (int j = 0; j < networksCount; j++){
+          Serial1.printf_P(PSTR("network %d : %s (RSSI: %d)\n"), j+1, WiFi.SSID(j).c_str(), WiFi.RSSI(j));
+        }
 
-                if (*ssid != 0x00 && ssid && password){
-                  Serial1.printf_P(PSTR("Trying to connect to ssid %s with pwd : %s\n"),ssid,password);
-                  if (WiFiConnect(ssid, password)){
-                    Serial1.println(F("Connected to WiFi network with ssid from saved params"));
-                    WiFi.scanDelete();
-                    if(WiFi.status() == WL_CONNECTED){  
-                      Serial1.print(F("\nIP address: "));
-                      IPAddress myip = WiFi.localIP();
-                      Serial1.println(myip); 
-                      WiFi.printDiag(Serial1);
-                    }
-                    return true;
-                  } else {
-                    Serial1.println(F("\nCan't connect to this WIFI "));    
-                    Serial1.println(wl_status_to_string(WiFi.status()));
-                  }
-                }
-              }
+        // Tester UNIQUEMENT les SSIDs configurés dans config.wifi[]
+        for (int configIdx = 0; configIdx < MAX_WIFI; configIdx++) {
+          if (config.wifi[configIdx].ssid[0] == 0) continue; // SSID vide, skip
+          
+          ssid = config.wifi[configIdx].ssid;
+          password = config.wifi[configIdx].ssid_passwd;
+          
+          // Vérifier si ce SSID est dans les réseaux scannés
+          bool found = false;
+          for (int i = 0; i < networksCount; i++){
+            if (strcmp(ssid, WiFi.SSID(i).c_str()) == 0) {
+              found = true;
+              break;
             }
           }
-          delay(250);
+          
+          if (!found) {
+            Serial1.printf_P(PSTR("SSID '%s' from config not found in scan, skipping\n"), ssid);
+            continue;
+          }
+          
+          checkInterrupt();
+          Serial1.printf_P(PSTR("Trying to connect to '%s' from config...\n"), ssid);
+          
+          if (WiFiConnect(ssid, password)){
+            Serial1.println(F("✓ Connected to WiFi network with ssid from saved params"));
+            WiFi.scanDelete();
+            if(WiFi.status() == WL_CONNECTED){  
+              Serial1.print(F("IP address: "));
+              Serial1.println(WiFi.localIP()); 
+              WiFi.printDiag(Serial1);
+            }
+            return true;
+          } else {
+            Serial1.printf_P(PSTR("✗ Can't connect to '%s' - %s\n"), ssid, wl_status_to_string(WiFi.status()));
+          }
         }
-      return false;
+        
+        WiFi.scanDelete();
+        return false;
     }
 
 /**

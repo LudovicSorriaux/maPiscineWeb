@@ -37,6 +37,7 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
       logger.println("[WEB] maPiscineWeb Startup ... ");
       startServer();               // Start a HTTP server with a file read handler and an upload handler
       startMDNS();                 // Start the mDNS responder
+      delay(200);                  // Délai stabilisation réseau après mDNS
       
       // RAM monitoring : État après démarrage serveur web (AsyncWebServer + mDNS)
       logger.printf("[RAM] Serveur web démarré - Free heap: %d bytes\n", ESP.getFreeHeap());
@@ -478,7 +479,7 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
             logger.println(F("[MDNS] ❌ ERREUR : Setup failed!"));
         } else {
             MDNS.addService(PSTR("http"), PSTR("tcp"), 80);
-            MDNS.addServiceTxt(PSTR("http"), PSTR("tcp"), PSTR("path"), PSTR("/"));     // Ajoute quelques propriétés pour être mieux détecté
+            // MDNS.addServiceTxt(PSTR("http"), PSTR("tcp"), PSTR("path"), PSTR("/"));     // TEMPORAIREMENT DÉSACTIVÉ : Crash etharp_output
             logger.printf("[MDNS] Responder started: http://%s.local\n",mdnsName);
         }
     }

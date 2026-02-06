@@ -19,6 +19,8 @@
  * @brief Constructeur : Initialise la classe LoggerClass (log debug si activé)
  */
     LoggerClass::LoggerClass(){
+      writeBufferPos = 0;  // Initialisation buffer write()
+      writeBuffer[0] = '\0';
       if(debug){
         println ("  in Logger setup ");
       }
@@ -324,33 +326,29 @@
   /*
    * size_t LoggerClass::write
    * But : Méthode virtuelle obligatoire pour hériter de Print
-   *       Écrit un caractère vers Serial1 et accumule dans buffer pour SD Card
+   *       Écrit un caractère vers Serial1 et accumule dans buffer membre pour SD Card
    *       Flush vers logMessage() quand rencontre '\n' pour préserver l'horodatage
    * Entrées : c - caractère uint8_t à écrire
    * Sortie : 1 si succès
    */
     size_t LoggerClass::write(uint8_t c) {
-        // Buffer statique pour accumuler les caractères jusqu'au '\n'
-        static char writeBuffer[256];
-        static uint8_t bufferPos = 0;
-        
         // Écriture immédiate vers Serial1
         Serial1.write(c);
         
-        // Accumulation dans buffer pour SD Card
-        if (c == '\n' || bufferPos >= 254) {
+        // Accumulation dans buffer membre pour SD Card
+        if (c == '\n' || writeBufferPos >= 254) {
             // Terminer la chaîne
-            writeBuffer[bufferPos] = (char)c;
-            writeBuffer[bufferPos + 1] = '\0';
+            writeBuffer[writeBufferPos] = (char)c;
+            writeBuffer[writeBufferPos + 1] = '\0';
             
             // Écrire vers SD via logMessage (gère horodatage et alertFile)
             logMessage(writeBuffer);
             
             // Reset buffer
-            bufferPos = 0;
+            writeBufferPos = 0;
         } else {
             // Accumuler le caractère
-            writeBuffer[bufferPos++] = (char)c;
+            writeBuffer[writeBufferPos++] = (char)c;
         }
         
         return 1;
