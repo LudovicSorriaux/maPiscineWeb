@@ -2763,7 +2763,14 @@ void PiscineWebClass::handleFileUpload(AsyncWebServerRequest *request, String fi
             // Note: SD FAT ne supporte pas mkdir récursif, créer manuellement si besoin
         }
 
-        // Ouvrir le fichier en écriture (écrase si existe)
+        // IMPORTANT: Sur ESP8266, FILE_WRITE est en mode APPEND, pas TRUNCATE
+        // Il faut supprimer le fichier existant avant de le recréer
+        if (SD.exists(targetPath)) {
+            logger.printf("[UPLOAD] Suppression ancien fichier: %s\n", targetPath.c_str());
+            SD.remove(targetPath);
+        }
+
+        // Ouvrir le fichier en écriture (maintenant vide après suppression)
         uploadFile = SD.open(targetPath, FILE_WRITE);
         if (!uploadFile) {
             logger.printf("[UPLOAD] ERREUR: Impossible d'ouvrir %s en écriture\n", targetPath.c_str());
