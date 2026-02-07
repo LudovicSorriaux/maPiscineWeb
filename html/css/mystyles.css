@@ -455,10 +455,12 @@ background-color: #333;
   
   /* Fix font trop grande dans leftpanel - Réduire taille Kaushan Script */
   /* jQuery Mobile : le texte "Piscine" est directement dans <a class="ui-btn"> pas dans h3 */
-  /* Cibler .ui-collapsible-heading-toggle.ui-btn qui contient le texte */
-  #leftpanel .ui-collapsible-heading .ui-collapsible-heading-toggle.ui-btn,
-  #leftpanel .ui-collapsible-heading a.ui-btn,
-  #leftpanel h3.ui-collapsible-heading a.ui-btn {
+  /* Cibler avec TOUTES les classes du lien généré par jQuery Mobile pour maximiser spécificité */
+  #leftpanel h3.ui-collapsible-heading a.ui-collapsible-heading-toggle.ui-btn.ui-btn-icon-right.ui-btn-b,
+  #leftpanel .ui-collapsible-heading a.ui-collapsible-heading-toggle.ui-btn.ui-btn-b,
+  #leftpanel .ui-collapsible-heading a.ui-btn-b.ui-btn,
+  #leftpanel h3 a.ui-btn-b,
+  #leftpanel a.ui-collapsible-heading-toggle {
     font-family: 'Kaushan Script', cursive !important;
     font-size: 1em !important;
     font-weight: normal !important;
