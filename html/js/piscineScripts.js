@@ -4585,7 +4585,9 @@ detectLayout();
 // FIX LEFTPANEL FONT - FORCER KAUSHAN SCRIPT VIA JAVASCRIPT
 // Nécessaire car jQuery Mobile CDN écrase les règles CSS malgré !important
 // ========================================
-$(document).on('panelcreate', '#leftpanel', function() {
+
+// Fonction pour forcer Kaushan Script
+function fixLeftPanelFont() {
   console.log('🔧 Fix leftPanel font via JavaScript');
   // Forcer Kaushan Script sur les titres collapsibles
   $('#leftpanel a.ui-collapsible-heading-toggle').css({
@@ -4599,20 +4601,17 @@ $(document).on('panelcreate', '#leftpanel', function() {
     'font-size': '1em',
     'font-weight': 'normal'
   });
+}
+
+// Appeler au panelbeforeopen (événement qui se déclenche déjà selon les logs)
+$(document).on('panelbeforeopen', '#leftpanel', fixLeftPanelFont);
+
+// Appeler aussi après pagecreate pour être sûr
+$(document).on('pagecreate', function() {
+  setTimeout(fixLeftPanelFont, 200);
 });
 
-// Au cas où panelcreate ne se déclenche pas, forcer après pagecreate
-$(document).on('pagecreate', function() {
-  setTimeout(function() {
-    $('#leftpanel a.ui-collapsible-heading-toggle').css({
-      'font-family': 'Kaushan Script, cursive',
-      'font-size': '1em',
-      'font-weight': 'normal'
-    });
-    $('#leftpanel h4.myh4').css({
-      'font-family': 'Kaushan Script, cursive',
-      'font-size': '1em',
-      'font-weight': 'normal'
-    });
-  }, 100);
+// Appeler au chargement initial
+$(document).ready(function() {
+  setTimeout(fixLeftPanelFont, 500);
 });
