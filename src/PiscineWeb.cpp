@@ -1580,75 +1580,39 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
                     response->addHeader("Access-Control-Allow-Origin","*");
                     request->send(response);
                 } else {
-                    // CHUNKED RESPONSE avec buffer statique pré-rempli
-                    // Pattern identique à handleFileUpload: pas d'I/O SD dans le callback
-                    static String graphDataBuffer = "";
-                    static size_t dataOffset = 0;
+                    // RÉPONSE SIMPLE NON-CHUNKED (fix WDT reset)
+                    // Chunked response causait Soft WDT reset car fetchDatas() boucle SD trop longue
+                    // Solution: String simple avec limite stricte RAM
                     
-                    // Pré-charger TOUTES les données en RAM AVANT de démarrer le chunked response
-                    graphDataBuffer = "";
-                    dataOffset = 0;
-                    char buffer[512];  // Buffer adapté
+                    String graphData = "";
+                    char buffer[1024];
                     size_t totalRead = 0;
-                    int chunkCount = 0;
-                    unsigned long startTime = millis();
                     
-                    logger.printf("[GRAPH] Pré-chargement données SD...\n");
+                    logger.printf("[GRAPH] Chargement données SD (réponse simple)...\n");
                     
                     while (true) {
-                        // ATTENTION: yield() et ESP.wdtFeed() INTERDITS dans handler AsyncWebServer
-                        // Cause panic __yield. Limite via timeout court et chunks max.
-                        
-                        // Timeout de sécurité: max 5 secondes
-                        if (millis() - startTime > 5000) {
-                            logger.printf("[GRAPH] WARNING: Timeout après 5s, arrêt chargement\n");
-                            break;
-                        }
-                        
-                        // Limite nombre chunks (7 jours = ~350 lignes = ~17KB max)
-                        if (chunkCount >= 40) {  // 40 × 512B = 20KB max
-                            logger.printf("[GRAPH] Limite chunks atteinte, arrêt\n");
-                            break;
-                        }
-                        
                         size_t bytesRead = logger.fetchDatas(buffer, sizeof(buffer) - 1);
-                        chunkCount++;
                         
                         if (bytesRead == 0) break;
                         
                         buffer[bytesRead] = '\0';
-                        graphDataBuffer += buffer;
+                        graphData += buffer;
                         totalRead += bytesRead;
                         
-                        // Limite 64KB pour éviter crash RAM
+                        // Limite STRICTE 64KB pour éviter crash RAM
                         if (totalRead > 65536) {
                             logger.printf("[GRAPH] WARNING: Données tronquées à 64KB\n");
                             break;
                         }
                     }
                     
-                    logger.printf("[GRAPH] Pré-chargement terminé: %d bytes\n", graphDataBuffer.length());
+                    logger.printf("[GRAPH] Chargement terminé: %d bytes\n", graphData.length());
                     
-                    // Maintenant envoyer en chunked response SANS I/O SD dans le callback
-                    AsyncWebServerResponse *response = 
-                        request->beginChunkedResponse("text/plain", [](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
-                            // Callback chunked: AUCUN I/O SD, juste copie depuis buffer RAM statique
-                            size_t remainingBytes = graphDataBuffer.length() - dataOffset;
-                            
-                            if (remainingBytes == 0) {
-                                return 0;  // Fin de transmission
-                            }
-                            
-                            size_t bytesToSend = min(maxLen, remainingBytes);
-                            memcpy(buffer, graphDataBuffer.c_str() + dataOffset, bytesToSend);
-                            dataOffset += bytesToSend;
-                            
-                            return bytesToSend;
-                        });
-                    
+                    AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", graphData);
                     response->addHeader("Server","Web Server Piscine");
                     response->addHeader("Cache-Control","no-cache");
                     request->send(response);
+                    
                     logger.printf("OK handlePiscineGraphs done\n");
                 }
             } else {                                                            // bad parameter
