@@ -612,6 +612,54 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
         strcpy_P(pathBuf, piscineFolder);
         server.serveStatic("/", SDFS, pathBuf);   // serve static files (js,css,html,etc..) from SD card piscine folder
 
+    // --- 3B. UPLOAD DE FICHIERS ---
+        // Page d'upload (accessible via /upload?adminPassword=xxx)
+        server.on("/upload", HTTP_GET, [this](AsyncWebServerRequest *request) {
+            if (!request->hasParam("adminPassword")) {
+                request->send(401, "text/plain", "Accès refusé : paramètre adminPassword manquant");
+                logger.println("[UPLOAD] ❌ Tentative d'accès sans adminPassword");
+                return;
+            }
+            
+            char adminPwd[11];
+            request->getParam("adminPassword")->value().toCharArray(adminPwd, 11);
+            
+            if (strcmp(adminPwd, config.adminPassword) != 0) {
+                request->send(403, "text/plain", "Accès refusé : mot de passe administrateur invalide");
+                logger.printf("[UPLOAD] ❌ Tentative d'accès avec mauvais mot de passe : %s\n", adminPwd);
+                return;
+            }
+            
+            logger.println("[UPLOAD] ✓ Accès autorisé à la page d'upload");
+            handleUploadPage(request);
+        });
+        
+        // Handler d'upload avec gestion du body (sécurisé par adminPassword)
+        server.on("/upload", HTTP_POST,
+            [this](AsyncWebServerRequest *request) {
+                // Vérification adminPassword dans POST
+                if (!request->hasParam("adminPassword", true)) {
+                    request->send(401, "text/plain", "Upload refusé : adminPassword manquant");
+                    logger.println("[UPLOAD] ❌ POST sans adminPassword");
+                    return;
+                }
+                
+                char adminPwd[11];
+                request->getParam("adminPassword", true)->value().toCharArray(adminPwd, 11);
+                
+                if (strcmp(adminPwd, config.adminPassword) != 0) {
+                    request->send(403, "text/plain", "Upload refusé : mot de passe invalide");
+                    logger.printf("[UPLOAD] ❌ POST avec mauvais mot de passe : %s\n", adminPwd);
+                    return;
+                }
+                
+                request->send(200, "text/plain", "Upload terminé");
+            },
+            std::bind(&PiscineWebClass::handleFileUpload, this, 
+                     std::placeholders::_1, std::placeholders::_2, std::placeholders::_3,
+                     std::placeholders::_4, std::placeholders::_5, std::placeholders::_6)
+        );
+
     // --- 4. NOT FOUND ---
         server.onNotFound(std::bind(&PiscineWebClass::handleOtherFiles, this, std::placeholders::_1));           			  // When a client requests an unknown URI (i.e. something other than "/"), call function handleNotFound"
     
@@ -2212,7 +2260,422 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
                      subnet.toString().c_str());
         return true;
     }
+
+// HTML de la page d'upload (PROGMEM pour économiser RAM)
+const char UPLOAD_HTML[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Fichiers SD - Piscine</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+        .container {
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+        }
+        h1 { 
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .upload-form {
+            background: rgba(255,255,255,0.2);
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="file"], input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255,255,255,0.9);
+            color: #333;
+            box-sizing: border-box;
+        }
+        input[type="password"] {
+            font-size: 18px;
+            letter-spacing: 2px;
+        }
+        small {
+            display: block;
+            margin-top: -10px;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        button:hover { background: #45a049; }
+        button:disabled { 
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .progress-container {
+            display: none;
+            margin-top: 20px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .message {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+            white-space: pre-line;
+            text-align: left;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .success { 
+            background: rgba(76, 175, 80, 0.3);
+            border: 2px solid #4CAF50;
+            display: block;
+        }
+        .error { 
+            background: rgba(244, 67, 54, 0.3);
+            border: 2px solid #f44336;
+            display: block;
+        }
+        .info {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        .info strong { display: block; margin-bottom: 10px; }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .back-link:hover { background: rgba(255,255,255,0.3); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📤 Upload Fichiers vers SD</h1>
+        
+        <div class="upload-form">
+            <label for="adminPassword">Mot de passe administrateur :</label>
+            <input type="password" id="adminPassword" placeholder="Mot de passe admin" autocomplete="current-password">
+            <small style="color: #ffeb3b; display: block; margin-bottom: 15px;">⚠️ Requis pour uploader des fichiers</small>
+            
+            <label for="targetPath">Chemin de destination (ex: /html/):</label>
+            <input type="text" id="targetPath" value="/html/" placeholder="/html/">
+            <small style="color: #90CAF9; display: block; margin-bottom: 15px;">💡 Pour plusieurs fichiers, indiquez juste le dossier (ex: /html/)</small>
+            
+            <label for="fileInput">Sélectionner fichier(s):</label>
+            <input type="file" id="fileInput" multiple>
+            <div id="fileList" style="margin-top: 10px; font-size: 13px; color: rgba(255,255,255,0.8);"></div>
+            
+            <button id="uploadBtn" onclick="uploadFiles()">Uploader</button>
+        </div>
+
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill">0%</div>
+            </div>
+        </div>
+
+        <div class="message" id="message"></div>
+
+        <div class="info">
+            <strong>ℹ️ Chemins courants:</strong>
+            • Fichiers HTML: <code>/html/</code><br>
+            • Scripts JS: <code>/html/script.js</code><br>
+            • Styles CSS: <code>/html/style.css</code><br>
+            • Images: <code>/html/images/</code><br>
+            • Config: <code>/cfg/piscine.cfg</code>
+        </div>
+
+        <a href="/" class="back-link">← Retour à l'accueil</a>
+    </div>
+
+    <script>
+        // Affiche la liste des fichiers sélectionnés
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            const fileList = document.getElementById('fileList');
+            const files = e.target.files;
+            if (files.length > 0) {
+                fileList.innerHTML = `<strong>📁 ${files.length} fichier(s) sélectionné(s):</strong><br>` +
+                    Array.from(files).map(f => `• ${f.name} (${(f.size/1024).toFixed(1)} KB)`).join('<br>');
+            } else {
+                fileList.innerHTML = '';
+            }
+        });
+
+        async function uploadFiles() {
+            const fileInput = document.getElementById('fileInput');
+            const targetPath = document.getElementById('targetPath').value;
+            const adminPassword = document.getElementById('adminPassword').value;
+            const uploadBtn = document.getElementById('uploadBtn');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressFill = document.getElementById('progressFill');
+            const message = document.getElementById('message');
+
+            if (!adminPassword) {
+                showMessage('⚠️ Mot de passe administrateur requis', 'error');
+                return;
+            }
+
+            if (!fileInput.files.length) {
+                showMessage('Veuillez sélectionner au moins un fichier', 'error');
+                return;
+            }
+
+            if (!targetPath || targetPath === '/') {
+                showMessage('Veuillez spécifier un chemin valide', 'error');
+                return;
+            }
+
+            const files = Array.from(fileInput.files);
+            const totalFiles = files.length;
+            let uploadedCount = 0;
+            let failedCount = 0;
+            const results = [];
+
+            uploadBtn.disabled = true;
+            progressContainer.style.display = 'block';
+            message.style.display = 'none';
+
+            // Upload séquentiel des fichiers
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                let finalPath = targetPath;
+                
+                // Auto-ajout du nom de fichier si targetPath se termine par /
+                if (targetPath.endsWith('/')) {
+                    finalPath = targetPath + file.name;
+                }
+
+                try {
+                    const success = await uploadSingleFile(file, finalPath, adminPassword, (percent) => {
+                        // Progression globale
+                        const fileProgress = (i / totalFiles) * 100;
+                        const currentFileProgress = (percent / 100) * (100 / totalFiles);
+                        const totalProgress = Math.round(fileProgress + currentFileProgress);
+                        progressFill.style.width = totalProgress + '%';
+                        progressFill.textContent = `${i+1}/${totalFiles}: ${file.name} (${percent}%)`;
+                    });
+
+                    if (success) {
+                        uploadedCount++;
+                        results.push(`✓ ${file.name}`);
+                    } else {
+                        failedCount++;
+                        results.push(`✗ ${file.name}`);
+                    }
+                } catch (error) {
+                    failedCount++;
+                    results.push(`✗ ${file.name}: ${error.message}`);
+                }
+            }
+
+            // Affichage du résumé
+            progressFill.style.width = '100%';
+            progressFill.textContent = '100%';
+            
+            let summaryMsg = `Upload terminé: ${uploadedCount}/${totalFiles} réussi(s)`;
+            if (failedCount > 0) summaryMsg += `, ${failedCount} échec(s)`;
+            summaryMsg += '\n' + results.join('\n');
+            
+            showMessage(summaryMsg, failedCount === 0 ? 'success' : 'error');
+            
+            fileInput.value = '';
+            document.getElementById('fileList').innerHTML = '';
+            uploadBtn.disabled = false;
+            
+            setTimeout(() => {
+                progressContainer.style.display = 'none';
+                progressFill.style.width = '0%';
+            }, 3000);
+        }
+
+        function uploadSingleFile(file, path, adminPassword, onProgress) {
+            return new Promise((resolve, reject) => {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('path', path);
+                formData.append('adminPassword', adminPassword);
+
+                const xhr = new XMLHttpRequest();
+                
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable) {
+                        const percent = Math.round((e.loaded / e.total) * 100);
+                        onProgress(percent);
+                    }
+                });
+
+                xhr.addEventListener('load', () => {
+                    if (xhr.status === 200) {
+                        resolve(true);
+                    } else {
+                        resolve(false);
+                    }
+                });
+
+                xhr.addEventListener('error', () => {
+                    reject(new Error('Erreur réseau'));
+                });
+
+                xhr.open('POST', '/upload');
+                xhr.send(formData);
+            });
+        }
+
+        function showMessage(text, type) {
+            const message = document.getElementById('message');
+            message.textContent = text;
+            message.className = 'message ' + type;
+            message.style.display = 'block';
+        }
+
+        // Auto-remplir le chemin avec le nom du fichier
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                const currentPath = document.getElementById('targetPath').value;
+                if (currentPath.endsWith('/')) {
+                    document.getElementById('targetPath').value = currentPath + e.target.files[0].name;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+)rawliteral";
+
+/**
+ * @brief Page HTML d'upload de fichiers vers la carte SD
+ * @param request Requête HTTP AsyncWebServer
+ */
+void PiscineWebClass::handleUploadPage(AsyncWebServerRequest *request) {
+    request->send_P(200, "text/html", UPLOAD_HTML);
+}
+
+/**
+ * @brief Handler d'upload de fichiers vers la carte SD (multi-part)
+ * @param request Requête HTTP AsyncWebServer
+ * @param filename Nom du fichier uploadé
+ * @param index Position actuelle dans le flux
+ * @param data Buffer de données
+ * @param len Taille du buffer
+ * @param final Indique si c'est le dernier chunk
+ */
+void PiscineWebClass::handleFileUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+    static File uploadFile;
+    static String targetPath;
+
+    // Premier chunk : ouverture du fichier
+    if (index == 0) {
+        // Récupérer le chemin de destination depuis le paramètre 'path'
+        if (request->hasParam("path", true)) {
+            targetPath = request->getParam("path", true)->value();
+            
+            // Si le chemin se termine par /, c'est un répertoire → ajouter le nom du fichier
+            if (targetPath.endsWith("/")) {
+                targetPath += filename;
+                logger.printf("[UPLOAD] Chemin répertoire détecté, ajout nom fichier: %s\n", targetPath.c_str());
+            }
+            
+            logger.printf("[UPLOAD] Début upload vers: %s (fichier: %s, taille estimée: %d bytes)\n", 
+                         targetPath.c_str(), filename.c_str(), request->contentLength());
+        } else {
+            // Par défaut, utiliser /html/ + nom fichier
+            targetPath = "/html/" + filename;
+            logger.printf("[UPLOAD] Pas de chemin spécifié, utilisation de: %s\n", targetPath.c_str());
+        }
+
+        // Créer les répertoires parents si nécessaire
+        String dirPath = targetPath.substring(0, targetPath.lastIndexOf('/'));
+        if (!SD.exists(dirPath)) {
+            logger.printf("[UPLOAD] Création répertoire: %s\n", dirPath.c_str());
+            // Note: SD FAT ne supporte pas mkdir récursif, créer manuellement si besoin
+        }
+
+        // Ouvrir le fichier en écriture (écrase si existe)
+        uploadFile = SD.open(targetPath, FILE_WRITE);
+        if (!uploadFile) {
+            logger.printf("[UPLOAD] ERREUR: Impossible d'ouvrir %s en écriture\n", targetPath.c_str());
+            request->send(500, "text/plain", "Erreur ouverture fichier SD");
+            return;
+        }
+    }
+
+    // Écriture des chunks de données
+    if (uploadFile && len) {
+        size_t written = uploadFile.write(data, len);
+        if (written != len) {
+            logger.printf("[UPLOAD] ERREUR: Écriture partielle (%d/%d bytes)\n", written, len);
+        }
+        logger.printf("[UPLOAD] Chunk écrit: %d bytes (offset: %d)\n", len, index);
+    }
+
+    // Dernier chunk : fermeture du fichier
+    if (final) {
+        if (uploadFile) {
+            uploadFile.close();
+            logger.printf("[UPLOAD] ✓ Upload terminé: %s (%d bytes total)\n", targetPath.c_str(), index + len);
+        } else {
+            logger.println("[UPLOAD] ERREUR: Fichier non ouvert lors de la finalisation");
+        }
+    }
+}
   
+
+
+
+
 
 
 
