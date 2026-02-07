@@ -1584,14 +1584,28 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
                     // Pré-charger TOUTES les données en RAM AVANT de démarrer le chunked response
                     graphDataBuffer = "";
                     dataOffset = 0;
-                    char buffer[1024];
+                    char buffer[256];  // Buffer réduit pour forcer plus d'appels wdtFeed
                     size_t totalRead = 0;
+                    int chunkCount = 0;
+                    unsigned long startTime = millis();
                     
                     logger.printf("[GRAPH] Pré-chargement données SD...\n");
                     
                     while (true) {
-                        ESP.wdtFeed();  // Reset watchdog
+                        // Reset watchdog TRÈS FRÉQUEMMENT
+                        if (chunkCount % 5 == 0) {  // Tous les 5 chunks
+                            ESP.wdtFeed();
+                            yield();  // Aussi laisser du temps au système
+                        }
+                        
+                        // Timeout de sécurité: max 10 secondes
+                        if (millis() - startTime > 10000) {
+                            logger.printf("[GRAPH] WARNING: Timeout après 10s, arrêt chargement\n");
+                            break;
+                        }
+                        
                         size_t bytesRead = logger.fetchDatas(buffer, sizeof(buffer) - 1);
+                        chunkCount++;
                         
                         if (bytesRead == 0) break;
                         
