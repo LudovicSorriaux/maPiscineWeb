@@ -454,15 +454,21 @@ background-color: #333;
   }
   
   /* Fix font trop grande dans leftpanel - Réduire taille Kaushan Script */
+  /* jQuery Mobile enveloppe h3 dans <a class="ui-collapsible-heading-toggle ui-btn"> */
   body #leftpanel .myh3,
   body #leftpanel h3.myh3,
   body #leftpanel h3,
   body #leftpanel .ui-listview .myh3,
-  body .ui-page #leftpanel h3.myh3 {
+  body .ui-page #leftpanel h3.myh3,
+  #leftpanel .ui-collapsible-heading a h3,
+  #leftpanel .ui-collapsible-heading a h3.myh3,
+  #leftpanel .ui-collapsible-heading .ui-btn h3,
+  #leftpanel .ui-collapsible-heading-toggle h3 {
     font-family: 'Kaushan Script', cursive !important;
     font-size: 1em !important;
     margin: 0.3em 0 !important;
     line-height: 1.2 !important;
+    font-weight: normal !important;
   }
   
   /* Surcharger le .ui-btn ajouté automatiquement par jQuery Mobile */
