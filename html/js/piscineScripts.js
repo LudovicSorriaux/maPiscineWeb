@@ -1,6 +1,6 @@
 
 // Global functions and variables
-console.log("📌 piscineScripts.js VERSION 2026-02-07-03:40 loaded");
+console.log("📌 piscineScripts.js VERSION 2026-02-07-19:25 loaded");
 
 var maPiscine = maPiscine || {};
 
