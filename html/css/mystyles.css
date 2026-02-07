@@ -193,6 +193,44 @@ background-color: #333;
 }
 
 /* ========================================
+   FIX LEFTPANEL - FORCER KAUSHAN SCRIPT
+   Doit être AVANT les media queries pour éviter problèmes de cascade CSS
+   ======================================== */
+
+/* Fix titre collapsible "Piscine" dans leftPanel - cibler le lien généré par jQuery Mobile */
+#leftpanel a.ui-collapsible-heading-toggle.ui-btn.ui-btn-icon-right.ui-btn-b.ui-icon-minus,
+#leftpanel h3 a.ui-collapsible-heading-toggle.ui-btn.ui-btn-icon-right.ui-btn-b.ui-icon-minus,
+#leftpanel .ui-collapsible-heading a.ui-collapsible-heading-toggle.ui-btn.ui-btn-b.ui-icon-minus,
+#leftpanel h3.ui-collapsible-heading a.ui-btn {
+  font-family: 'Kaushan Script', cursive !important;
+  font-size: 1em !important;
+  font-weight: normal !important;
+}
+
+/* Fix h3 dans leftPanel */
+#leftpanel h3.myh3,
+#leftpanel h3.ui-collapsible-heading {
+  font-family: 'Kaushan Script', cursive !important;
+  font-size: 1em !important;
+  margin: 0 !important;
+  line-height: 1.2 !important;
+  font-weight: normal !important;
+}
+
+/* Fix h4 dans leftPanel (items de menu) */
+#leftpanel .ui-listview li a.ui-btn h4.myh4,
+#leftpanel .ui-listview li .ui-btn h4.myh4,
+#leftpanel .ui-listview li h4.myh4,
+#leftpanel .ui-listview .myh4,
+#leftpanel h4.myh4 {
+  font-family: 'Kaushan Script', cursive !important;
+  font-size: 1em !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-weight: normal !important;
+}
+
+/* ========================================
    RESPONSIVE ADAPTATIONS
    Portrait mobile (0-479px) : INCHANGÉ
    ======================================== */
@@ -453,47 +491,12 @@ background-color: #333;
     box-shadow: 2px 0 8px rgba(0,0,0,0.3) !important;
   }
   
-  /* Fix font trop grande dans leftpanel - Réduire taille Kaushan Script */
-  /* jQuery Mobile : le texte "Piscine" est directement dans <a class="ui-btn"> pas dans h3 */
-  /* Cibler EXACTEMENT la règle trouvée via Inspect Element */
-  #leftpanel a.ui-collapsible-heading-toggle.ui-btn.ui-btn-icon-right.ui-btn-b.ui-icon-minus,
-  #leftpanel h3 a.ui-collapsible-heading-toggle.ui-btn.ui-btn-icon-right.ui-btn-b.ui-icon-minus,
-  #leftpanel .ui-collapsible-heading a.ui-collapsible-heading-toggle.ui-btn.ui-btn-b.ui-icon-minus {
-    font-family: 'Kaushan Script', cursive !important;
-    font-size: 1em !important;
-    font-weight: normal !important;
-  }
-  
-  /* Et aussi les h3 au cas où (mais le texte n'est pas dedans) */
-  #leftpanel h3.myh3,
-  #leftpanel h3.ui-collapsible-heading {
-    font-family: 'Kaushan Script', cursive !important;
-    font-size: 1em !important;
-    margin: 0 !important;
-    line-height: 1.2 !important;
-    font-weight: normal !important;
-  }
-  
   /* Surcharger le .ui-btn ajouté automatiquement par jQuery Mobile */
   #leftpanel .ui-listview li a,
   #leftpanel .ui-listview li a.ui-btn,
   #leftpanel .ui-listview .ui-btn {
     font-size: 0.95em !important;
     text-align: left !important;
-  }
-  
-  /* Forcer Kaushan Script pour les h4.myh4 dans leftpanel (jQuery Mobile enveloppe dans .ui-btn) */
-  /* Spécificité élevée pour surcharger .ui-listview>li h4 */
-  #leftpanel .ui-listview li a.ui-btn h4.myh4,
-  #leftpanel .ui-listview li .ui-btn h4.myh4,
-  #leftpanel .ui-listview li h4.myh4,
-  #leftpanel .ui-listview .myh4,
-  #leftpanel h4.myh4 {
-    font-family: 'Kaushan Script', cursive !important;
-    font-size: 1em !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    font-weight: normal !important;
   }
   
   /* Panel options (optionsPiscineManager) : laisser jQuery Mobile gérer l'animation */
