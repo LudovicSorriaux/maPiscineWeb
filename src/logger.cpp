@@ -528,5 +528,81 @@
         return fileName;
     }
 
+  /*
+   * bool LoggerClass::getFileInfo
+   * But : Récupère info fichier log (existe, taille, nb chunks) pour une date donnée
+   * Entrées : date (format "DD-MM-YYYY"), chunkSize (taille chunk en bytes)
+   * Sortie : Structure FileInfo avec exists, size, chunks
+   */
+    LoggerClass::FileInfo LoggerClass::getFileInfo(const char* date, uint16_t chunkSize) {
+        FileInfo info;
+        info.exists = false;
+        info.size = 0;
+        info.chunks = 0;
+        
+        // Parse date DD-MM-YYYY → time_t
+        struct tm tm;
+        strptime(date, "%d-%m-%Y", &tm);
+        time_t fileTime = mktime(&tm);
+        
+        // Construire chemin fichier
+        char fileName[80];
+        snprintf(fileName, 80, "/Log/%d/Logs/%s/%s-%d-Moy.log", 
+                 (year(fileTime)+1970), monthStr(month(fileTime)), 
+                 dayShortStr(fileTime), day(fileTime));
+        
+        // Vérifier existence + taille
+        File logFile = SD.open(fileName, FILE_READ);
+        if (logFile) {
+            info.exists = true;
+            info.size = logFile.size();
+            info.chunks = (info.size + chunkSize - 1) / chunkSize;  // ceil division
+            logFile.close();
+        }
+        
+        return info;
+    }
+
+  /*
+   * size_t LoggerClass::fetchChunk
+   * But : Récupère un chunk de données d'un fichier log (évite WDT reset)
+   * Entrées : date (format "DD-MM-YYYY"), chunkIndex, buffer, chunkSize
+   * Sortie : Nombre de bytes lus (0 si erreur ou EOF)
+   */
+    size_t LoggerClass::fetchChunk(const char* date, uint16_t chunkIndex, 
+                                   char* buffer, size_t chunkSize) {
+        // Parse date
+        struct tm tm;
+        strptime(date, "%d-%m-%Y", &tm);
+        time_t fileTime = mktime(&tm);
+        
+        // Construire chemin fichier
+        char fileName[80];
+        snprintf(fileName, 80, "/Log/%d/Logs/%s/%s-%d-Moy.log", 
+                 (year(fileTime)+1970), monthStr(month(fileTime)), 
+                 dayShortStr(fileTime), day(fileTime));
+        
+        // Ouvrir fichier
+        File logFile = SD.open(fileName, FILE_READ);
+        if (!logFile) {
+            return 0;  // Fichier absent
+        }
+        
+        // Seek position chunk
+        uint32_t position = chunkIndex * chunkSize;
+        if (position >= logFile.size()) {
+            logFile.close();
+            return 0;  // Chunk hors limites
+        }
+        
+        logFile.seek(position);
+        
+        // Lire chunk (opération rapide: 1024B max = ~100ms)
+        size_t bytesRead = logFile.readBytes(buffer, chunkSize);
+        logFile.close();
+        
+        return bytesRead;
+    }
+
 //------------------------------------------------------------------------------
 

@@ -1,6 +1,6 @@
 
 // Global functions and variables
-console.log("📌 piscineScripts.js VERSION 2026-02-07-21:50 loaded");
+console.log("📌 piscineScripts.js VERSION 2026-02-07-22:10 loaded");
 
 var maPiscine = maPiscine || {};
 
@@ -1251,15 +1251,176 @@ async function fetchData(debut, fin){
 async function getOriginData(){
 	i=0;
 	now=dayjs().set("minute",0).set("second",0);
-	start=dayjs().subtract(1,"day");  // ← LIMITE MATÉRIELLE ESP8266: 1 JOUR SEULEMENT (WDT reset >1j)
+	start=dayjs().subtract(7,"day");  // ← API CHUNKED: Maintenant on peut charger 7 jours sans WDT !
 	console.log("Fetching Origin Data: start:"+start.format("DD-MM-YYYY")+" end:"+now.format("DD-MM-YYYY"));
-	dataOrigin=await fetchData(start,now);  // ← FIX: await pour récupérer le tableau, pas la Promise
+	dataOrigin=await fetchDataChunked(start,now);  // ← NOUVELLE API: Chunking multi-requêtes
 	chartdata=dataOrigin;
 	OrigStart=CurrStart=start;
 	OrigEnd=CurrEnd=now;
 	
 	// Initialiser le cache avec les données d'origine
 	populateCache(dataOrigin);
+}
+
+// ========== NOUVELLE API CHUNKED (fix WDT reset ESP8266) ==========
+
+/**
+ * Mise à jour progress bar graphique
+ * @param {number} current - Étape actuelle
+ * @param {number} total - Total d'étapes
+ * @param {string} message - Message à afficher
+ */
+function updateGraphProgress(current, total, message) {
+	const percent = Math.round((current / total) * 100);
+	
+	// Créer progress bar si inexistante
+	if (!$('#graphProgressBar').length) {
+		const progressHTML = `
+			<div id="graphProgressContainer" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+			     background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); 
+			     min-width: 300px; z-index: 9999;">
+				<div id="graphProgressMessage" style="margin-bottom: 10px; font-weight: bold; text-align: center;">Chargement...</div>
+				<div style="background: #e0e0e0; border-radius: 4px; overflow: hidden; height: 24px;">
+					<div id="graphProgressBar" style="background: linear-gradient(90deg, #4CAF50, #8BC34A); 
+					     height: 100%; width: 0%; transition: width 0.3s ease; display: flex; align-items: center; 
+					     justify-content: center; color: white; font-weight: bold; font-size: 12px;">0%</div>
+				</div>
+				<div id="graphProgressDetail" style="margin-top: 8px; font-size: 12px; color: #666; text-align: center;"></div>
+			</div>
+		`;
+		$('body').append(progressHTML);
+	}
+	
+	$('#graphProgressBar').css('width', percent + '%').text(percent + '%');
+	$('#graphProgressMessage').text(message);
+	$('#graphProgressDetail').text(`${current} / ${total}`);
+}
+
+/**
+ * Masquer progress bar
+ */
+function hideGraphProgress() {
+	$('#graphProgressContainer').fadeOut(300, function() {
+		$(this).remove();
+	});
+}
+
+/**
+ * Nouvelle fonction fetchDataChunked : Charge données par chunks (évite WDT ESP8266)
+ * @param {dayjs} debut - Date début
+ * @param {dayjs} fin - Date fin
+ * @returns {Promise<Array>} Données CSV parsées
+ */
+async function fetchDataChunked(debut, fin) {
+	const datas = [];
+	const start = dayjs(debut);
+	const end = dayjs(fin);
+	
+	console.log("📊 [CHUNKED API] Fetching data: " + start.format("DD-MM-YYYY") + " → " + end.format("DD-MM-YYYY"));
+	
+	try {
+		// Étape 1 : Récupérer le plan (liste des dates)
+		updateGraphProgress(0, 100, "Planification chargement...");
+		
+		const planResponse = await $.ajax({
+			type: "POST",
+			url: "/api/graph/plan",
+			data: "sess=" + sessID + "&start=" + start.format("DD-MM-YYYY") + "&end=" + end.format("DD-MM-YYYY"),
+			dataType: "json"
+		});
+		
+		const dates = planResponse.dates;
+		const totalDays = planResponse.total_days;
+		
+		console.log(`📋 Plan reçu: ${totalDays} jours à charger`);
+		
+		if (totalDays === 0) {
+			hideGraphProgress();
+			showToast("Aucune donnée disponible", 'warning');
+			return datas;
+		}
+		
+		let totalChunks = 0;
+		let loadedChunks = 0;
+		const fileInfos = [];
+		
+		// Étape 2 : Récupérer info de chaque fichier
+		updateGraphProgress(10, 100, "Analyse fichiers...");
+		
+		for (const date of dates) {
+			const info = await $.ajax({
+				type: "GET",
+				url: "/api/graph/file-info",
+				data: "sess=" + sessID + "&date=" + date + "&chunk_size=1024",
+				dataType: "json"
+			});
+			
+			if (info.exists) {
+				fileInfos.push(info);
+				totalChunks += info.chunks;
+				console.log(`  📄 ${date}: ${info.size} bytes, ${info.chunks} chunks`);
+			} else {
+				console.log(`  ⚠️ ${date}: Fichier absent`);
+			}
+		}
+		
+		if (totalChunks === 0) {
+			hideGraphProgress();
+			showToast("Aucune donnée trouvée", 'warning');
+			return datas;
+		}
+		
+		console.log(`📦 Total: ${totalChunks} chunks à charger`);
+		
+		// Étape 3 : Charger chunks fichier par fichier
+		let allData = "";
+		
+		for (const fileInfo of fileInfos) {
+			for (let chunkIndex = 0; chunkIndex < fileInfo.chunks; chunkIndex++) {
+				const percentComplete = 10 + Math.round((loadedChunks / totalChunks) * 85);  // 10% → 95%
+				updateGraphProgress(
+					percentComplete, 
+					100, 
+					`Chargement ${fileInfo.date}... (${loadedChunks + 1}/${totalChunks})`
+				);
+				
+				// Charger chunk (~100ms, WDT safe)
+				const chunkData = await $.ajax({
+					type: "GET",
+					url: "/api/graph/chunk",
+					data: "sess=" + sessID + "&date=" + fileInfo.date + "&index=" + chunkIndex + "&size=1024",
+					dataType: "text"
+				});
+				
+				allData += chunkData;
+				loadedChunks++;
+				
+				console.log(`  ✅ Chunk ${chunkIndex + 1}/${fileInfo.chunks} de ${fileInfo.date} chargé (${chunkData.length} bytes)`);
+			}
+		}
+		
+		// Étape 4 : Parser données
+		updateGraphProgress(95, 100, "Traitement données...");
+		
+		const parsedData = csvToArray(allData.trim());
+		datas.push(...parsedData);
+		
+		updateGraphProgress(100, 100, "Terminé !");
+		
+		setTimeout(hideGraphProgress, 500);
+		
+		showToast(`✅ ${totalDays} jours chargés (${totalChunks} chunks)`, 'success');
+		
+		console.log(`✅ [CHUNKED API] Success: ${datas.length} lignes chargées`);
+		
+	} catch (e) {
+		hideGraphProgress();
+		console.error("[CHUNKED API ERROR]", e);
+		showToast("Échec chargement données", 'error');
+		onPageError(e);
+	}
+	
+	return datas;
 }
 
 // Remplir le cache Map avec un tableau de données
@@ -1303,10 +1464,10 @@ async function fetchDataRange(debut, fin) {
 		current = current.add(1, 'day');
 	}
 	
-	// Télécharger les plages manquantes
+	// Télécharger les plages manquantes avec API chunked
 	for (const range of missingRanges) {
 		console.log(`Fetching missing data from ${range.start.format("DD-MM-YYYY")} to ${range.end.format("DD-MM-YYYY")}`);
-		const newData = await fetchData(range.start, range.end);
+		const newData = await fetchDataChunked(range.start, range.end);  // ← Utilise API chunked
 		populateCache(newData);
 		result.push(...newData);
 	}

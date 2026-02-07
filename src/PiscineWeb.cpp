@@ -574,6 +574,11 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
             // ---------- Routeur ------
         server.on("/setRouteurInfo", HTTP_POST, std::bind(&PiscineWebClass::handleRouteurInfo, this, std::placeholders::_1)); 
 
+            // ---------- Graphs API Chunked (fix WDT reset) ------
+        server.on("/api/graph/plan", HTTP_POST, std::bind(&PiscineWebClass::handleGraphPlan, this, std::placeholders::_1));
+        server.on("/api/graph/file-info", HTTP_GET, std::bind(&PiscineWebClass::handleGraphFileInfo, this, std::placeholders::_1));
+        server.on("/api/graph/chunk", HTTP_GET, std::bind(&PiscineWebClass::handleGraphChunk, this, std::placeholders::_1));
+
     // --- 2. GESTION DU SSE UNIQUE ---
         piscineEvents.onConnect([](AsyncEventSourceClient *client){
             if(client->lastId()){
@@ -1628,6 +1633,162 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
             }
         }
     }
+
+  /*
+   * void PiscineWebClass::handleGraphPlan
+   * But : Retourne la liste des dates disponibles pour une plage (chunking API step 1)
+   * Entrées : POST {"start": "DD-MM-YYYY", "end": "DD-MM-YYYY"}
+   * Sortie : JSON {"dates": [...], "total_days": N}
+   */
+    void PiscineWebClass::handleGraphPlan(AsyncWebServerRequest *request) {
+        logger.println("[GRAPH API] Enter handleGraphPlan");
+        
+        if (!checkSessionParam(request)) {
+            logger.println("Error : Invalid Session");
+            request->send(400, "text/plain", "400: Invalid Session");
+            return;
+        }
+        
+        if (!request->hasParam("start", true) || !request->hasParam("end", true)) {
+            request->send(400, "text/plain", "400: Missing start/end parameters");
+            return;
+        }
+        
+        String start = request->getParam("start", true)->value();
+        String end = request->getParam("end", true)->value();
+        
+        logger.printf("[GRAPH API] Plan request: %s → %s\n", start.c_str(), end.c_str());
+        
+        // Parse dates
+        struct tm tm_start, tm_end;
+        strptime(start.c_str(), "%d-%m-%Y", &tm_start);
+        strptime(end.c_str(), "%d-%m-%Y", &tm_end);
+        time_t t_start = mktime(&tm_start);
+        time_t t_end = mktime(&tm_end);
+        
+        // Construire tableau dates
+        StaticJsonDocument<1024> doc;
+        JsonArray dates = doc.createNestedArray("dates");
+        
+        int total_days = 0;
+        for (time_t t = t_start; t <= t_end; t += 86400) {  // +1 jour
+            char dateStr[11];
+            snprintf(dateStr, sizeof(dateStr), "%02d-%02d-%04d", 
+                     day(t), month(t), year(t) + 1970);
+            dates.add(dateStr);
+            total_days++;
+        }
+        
+        doc["total_days"] = total_days;
+        
+        String response;
+        serializeJson(doc, response);
+        
+        AsyncWebServerResponse *resp = request->beginResponse(200, "application/json", response);
+        resp->addHeader("Cache-Control", "no-cache");
+        resp->addHeader("Access-Control-Allow-Origin", "*");
+        request->send(resp);
+        
+        logger.printf("[GRAPH API] Plan sent: %d days\n", total_days);
+    }
+
+  /*
+   * void PiscineWebClass::handleGraphFileInfo
+   * But : Retourne info fichier (existe, taille, nb chunks) pour une date (chunking API step 2)
+   * Entrées : GET /api/graph/file-info?date=DD-MM-YYYY&chunk_size=1024
+   * Sortie : JSON {"exists": bool, "size": N, "chunks": N}
+   */
+    void PiscineWebClass::handleGraphFileInfo(AsyncWebServerRequest *request) {
+        if (!checkSessionParam(request)) {
+            request->send(400, "text/plain", "400: Invalid Session");
+            return;
+        }
+        
+        if (!request->hasParam("date")) {
+            request->send(400, "text/plain", "400: Missing date parameter");
+            return;
+        }
+        
+        String date = request->getParam("date")->value();
+        uint16_t chunkSize = request->hasParam("chunk_size") ? 
+                             request->getParam("chunk_size")->value().toInt() : 1024;
+        
+        logger.printf("[GRAPH API] File info: %s (chunk %d)\n", date.c_str(), chunkSize);
+        
+        // Récupérer info via logger
+        LoggerClass::FileInfo info = logger.getFileInfo(date.c_str(), chunkSize);
+        
+        StaticJsonDocument<256> doc;
+        doc["date"] = date;
+        doc["exists"] = info.exists;
+        doc["size"] = info.size;
+        doc["chunks"] = info.chunks;
+        doc["chunk_size"] = chunkSize;
+        
+        String response;
+        serializeJson(doc, response);
+        
+        AsyncWebServerResponse *resp = request->beginResponse(200, "application/json", response);
+        resp->addHeader("Cache-Control", "no-cache");
+        request->send(resp);
+        
+        logger.printf("[GRAPH API] Info sent: exists=%d, size=%d, chunks=%d\n", 
+                     info.exists, info.size, info.chunks);
+    }
+
+  /*
+   * void PiscineWebClass::handleGraphChunk
+   * But : Retourne un chunk de données pour une date (chunking API step 3)
+   * Entrées : GET /api/graph/chunk?date=DD-MM-YYYY&index=0&size=1024
+   * Sortie : Données brutes (CSV text/plain)
+   */
+    void PiscineWebClass::handleGraphChunk(AsyncWebServerRequest *request) {
+        if (!checkSessionParam(request)) {
+            request->send(400, "text/plain", "400: Invalid Session");
+            return;
+        }
+        
+        if (!request->hasParam("date") || !request->hasParam("index")) {
+            request->send(400, "text/plain", "400: Missing date/index parameters");
+            return;
+        }
+        
+        String date = request->getParam("date")->value();
+        uint16_t index = request->getParam("index")->value().toInt();
+        uint16_t size = request->hasParam("size") ? 
+                        request->getParam("size")->value().toInt() : 1024;
+        
+        logger.printf("[GRAPH API] Chunk request: %s chunk %d (size %d)\n", 
+                     date.c_str(), index, size);
+        
+        // Buffer pour chunk (max 2048B pour sécurité RAM)
+        char* buffer = (char*)malloc(size + 1);
+        if (!buffer) {
+            request->send(500, "text/plain", "500: Out of memory");
+            return;
+        }
+        
+        // Récupérer chunk via logger (~100ms, WDT safe)
+        size_t bytesRead = logger.fetchChunk(date.c_str(), index, buffer, size);
+        
+        if (bytesRead == 0) {
+            free(buffer);
+            request->send(404, "text/plain", "404: Chunk not found");
+            logger.printf("[GRAPH API] Chunk %d not found\n", index);
+            return;
+        }
+        
+        buffer[bytesRead] = '\0';
+        
+        AsyncWebServerResponse *resp = request->beginResponse(200, "text/plain", buffer);
+        resp->addHeader("Cache-Control", "no-cache");
+        request->send(resp);
+        
+        free(buffer);
+        
+        logger.printf("[GRAPH API] Chunk %d sent: %d bytes\n", index, bytesRead);
+    }
+
 
   /*
    * void PiscineWebClass::handlePiscinePageDebug

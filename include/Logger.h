@@ -24,6 +24,13 @@
 class LoggerClass : public Print {
     public :
 
+        // Structure pour info fichier (chunking API)
+        struct FileInfo {
+            bool exists;
+            uint32_t size;
+            uint16_t chunks;
+        };
+
         LoggerClass();
 
         bool initDirs();
@@ -35,6 +42,10 @@ class LoggerClass : public Print {
         bool hasDebugMessage();
         void getDebugMessage(char* output, size_t outputSize);
         void setDebugMessage(bool onOff);
+
+        // Nouvelles méthodes chunking (fix WDT reset graphs)
+        FileInfo getFileInfo(const char* date, uint16_t chunkSize);
+        size_t fetchChunk(const char* date, uint16_t chunkIndex, char* buffer, size_t chunkSize);
 
         // Méthode virtuelle obligatoire pour hériter de Print (support automatique de tous les types)
         virtual size_t write(uint8_t c);
