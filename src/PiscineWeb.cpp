@@ -1576,23 +1576,41 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
                     response->addHeader("Access-Control-Allow-Origin","*");
                     request->send(response);
                 } else {
-                    AsyncWebServerResponse *response = 
-                        request->beginChunkedResponse("text/plain", [](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
-                                    //Write up to "maxLen" bytes into "buffer" and return the amount written.
-                                    //index equals the amount of bytes that have been already sent
-                                    //You will be asked for more data until 0 is returned
-                                    //Keep in mind that you can not delay or yield waiting for more data!
-                            size_t len = 0;
-                            Serial1.printf_P(PSTR("Chunk callback: maxLen %d index %d\n"), maxLen, index );
-                            len = logger.fetchDatas((char *)buffer, maxLen);
-                            if (len == 0) {
-                                Serial1.printf_P(PSTR("ReadLog complete, bytesread %d of %d\n"), len, maxLen);
-                            }
-                            Serial1.printf_P(PSTR("Chunk read complete, read /return %d of %d\n"), len, maxLen);
-                            return len;
-                        });
+                    // NOUVELLE APPROCHE: Charger toutes les données en mémoire avant envoi
+                    // pour éviter les appels SD depuis le callback chunked (interdit yield/delay)
+                    String allData = "";
+                    char buffer[512];  // Buffer temporaire pour lecture
+                    size_t totalRead = 0;
+                    
+                    logger.printf("[GRAPH] Starting data collection from SD...\n");
+                    
+                    // Lecture de tous les chunks en avance
+                    while (true) {
+                        ESP.wdtFeed();  // Reset watchdog entre chaque chunk
+                        size_t bytesRead = logger.fetchDatas(buffer, sizeof(buffer) - 1);
+                        
+                        if (bytesRead == 0) {
+                            break;  // Fin des données
+                        }
+                        
+                        buffer[bytesRead] = '\0';  // Null-terminate
+                        allData += buffer;
+                        totalRead += bytesRead;
+                        
+                        // Limite de sécurité: max 64KB pour éviter crash RAM
+                        if (totalRead > 65536) {
+                            logger.printf("[GRAPH] WARNING: Data truncated at 64KB\n");
+                            break;
+                        }
+                    }
+                    
+                    logger.printf("[GRAPH] Data collection done: %d bytes\n", allData.length());
+                    
+                    // Envoi simple (non-chunked)
+                    AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", allData);
                     response->addHeader("Server","Web Server Piscine");
-                    request->send(response);    // here we start the chunking
+                    response->addHeader("Cache-Control","no-cache");
+                    request->send(response);
                     logger.printf("OK handlePiscineGraphs done");
                 }
             } else {                                                            // bad parameter
