@@ -1582,15 +1582,22 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
                 } else {
                     // RÉPONSE SIMPLE NON-CHUNKED (fix WDT reset)
                     // Chunked response causait Soft WDT reset car fetchDatas() boucle SD trop longue
-                    // Solution: String simple avec limite stricte RAM
+                    // Solution: String simple + buffer petit (256B) + limite 1 fichier/appel
                     
                     String graphData = "";
-                    char buffer[1024];
+                    char buffer[256];  // Buffer réduit 1024→256B pour forcer itérations courtes
                     size_t totalRead = 0;
+                    int loopCount = 0;  // Compteur sécurité
                     
                     logger.printf("[GRAPH] Chargement données SD (réponse simple)...\n");
                     
                     while (true) {
+                        // Sécurité: max 100 itérations (100×256B = 25KB max)
+                        if (loopCount++ >= 100) {
+                            logger.printf("[GRAPH] WARNING: Limite 100 itérations atteinte\n");
+                            break;
+                        }
+                        
                         size_t bytesRead = logger.fetchDatas(buffer, sizeof(buffer) - 1);
                         
                         if (bytesRead == 0) break;

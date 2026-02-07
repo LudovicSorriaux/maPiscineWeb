@@ -230,16 +230,16 @@
         File logFile;
         size_t currLen = 0;
         bool nextFile = false;    // process next file. 
-        int filesProcessed = 0;   // LIMITE: max 3 fichiers par appel (évite WDT reset)
+        int filesProcessed = 0;   // LIMITE: max 1 fichier par appel (évite WDT reset)
         
 
       currLen = 0;
       while (maxLen-currLen > 0){
         nextFile = false;
         
-        // SÉCURITÉ WDT: Limite nombre fichiers lus par appel
-        if (filesProcessed >= 3) {
-          // printf("[LOGGER] Limite 3 fichiers atteinte, arrêt temporaire\n");
+        // SÉCURITÉ WDT: Limite STRICTE 1 fichier par appel
+        if (filesProcessed >= 1) {
+          // printf("[LOGGER] Limite 1 fichier atteinte, arrêt temporaire\n");
           break;
         }
         
