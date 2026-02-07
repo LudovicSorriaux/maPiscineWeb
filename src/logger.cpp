@@ -234,6 +234,7 @@
 
       currLen = 0;
       while (maxLen-currLen > 0){
+        yield();  // FIX: Permet au watchdog de se réinitialiser pendant les opérations SD longues
         nextFile = false;
         snprintf(fileName, 80, "/Log/%d/Logs/%s/%s-%d-Moy.log", 
                  (year(tCurr)+1970), monthStr(month(tCurr)), dayShortStr(tCurr), day(tCurr));
