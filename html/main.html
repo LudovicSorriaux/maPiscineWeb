@@ -64,7 +64,7 @@
 <!-- debuger -->
 	<script src="https://cdn.jsdelivr.net/gh/arschmitz/jquery-mobile-event-debugger@v0.0.4/jquery.mobile.event.debugger.js"></script>
 
-  <!-- build:css style.css -->
+  <!-- build:css styles.css -->
 	<link rel="stylesheet" href="/css/jqm-fluid960.min.css" />	
 	<link rel="stylesheet" href="/css/wowanimate.css" /> 
 	<link rel="stylesheet" href="/css/mystyles.css" />
@@ -79,7 +79,7 @@
 
 <!-- endbuild -->
 
-  <!-- build:js script.js -->
+  <!-- build:js scripts.js -->
 	<script src="/js/wow.min.js"></script>
 	<script src="/js/jquery.sse.min.js" ></script>
 	<script src="/js/gauge.js"></script>
@@ -1528,8 +1528,22 @@
 	<div class="ui-loader ui-body-a ui-corner-all" style="top: 560px;">
 		<span class="ui-icon ui-icon-loading spin"></span>
 		<h1>loading</h1>
-	</div>		
+	</div>
 
+<!-- FIX LEFTPANEL - Style inline en dernier pour override jQuery Mobile CDN -->
+<style>
+#leftpanel a.ui-collapsible-heading-toggle.ui-btn.ui-btn-icon-right.ui-btn-b.ui-icon-minus,
+#leftpanel a.ui-collapsible-heading-toggle.ui-btn {
+  font-family: 'Kaushan Script', cursive !important;
+  font-size: 1em !important;
+  font-weight: normal !important;
+}
+#leftpanel h4.myh4 {
+  font-family: 'Kaushan Script', cursive !important;
+  font-size: 1em !important;
+  font-weight: normal !important;
+}
+</style>
 
 </body>
 </html>
