@@ -1245,12 +1245,12 @@ async function fetchData(debut, fin){
 	return datas;
 }
 
-function getOriginData(){
+async function getOriginData(){
 	i=0;
 	now=dayjs().set("minute",0).set("second",0);
 	start=dayjs().subtract(1,"month").startOf("month");
 	console.log("Fetching Origin Data: start:"+start.format("DD-MM-YYYY")+" end:"+now.format("DD-MM-YYYY"));
-	dataOrigin=fetchData(start,now);
+	dataOrigin=await fetchData(start,now);  // ← FIX: await pour récupérer le tableau, pas la Promise
 	chartdata=dataOrigin;
 	OrigStart=CurrStart=start;
 	OrigEnd=CurrEnd=now;
