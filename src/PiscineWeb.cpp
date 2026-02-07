@@ -1576,42 +1576,59 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
                     response->addHeader("Access-Control-Allow-Origin","*");
                     request->send(response);
                 } else {
-                    // NOUVELLE APPROCHE: Charger toutes les données en mémoire avant envoi
-                    // pour éviter les appels SD depuis le callback chunked (interdit yield/delay)
-                    String allData = "";
-                    char buffer[512];  // Buffer temporaire pour lecture
+                    // CHUNKED RESPONSE avec buffer statique pré-rempli
+                    // Pattern identique à handleFileUpload: pas d'I/O SD dans le callback
+                    static String graphDataBuffer = "";
+                    static size_t dataOffset = 0;
+                    
+                    // Pré-charger TOUTES les données en RAM AVANT de démarrer le chunked response
+                    graphDataBuffer = "";
+                    dataOffset = 0;
+                    char buffer[1024];
                     size_t totalRead = 0;
                     
-                    logger.printf("[GRAPH] Starting data collection from SD...\n");
+                    logger.printf("[GRAPH] Pré-chargement données SD...\n");
                     
-                    // Lecture de tous les chunks en avance
                     while (true) {
-                        ESP.wdtFeed();  // Reset watchdog entre chaque chunk
+                        ESP.wdtFeed();  // Reset watchdog
                         size_t bytesRead = logger.fetchDatas(buffer, sizeof(buffer) - 1);
                         
-                        if (bytesRead == 0) {
-                            break;  // Fin des données
-                        }
+                        if (bytesRead == 0) break;
                         
-                        buffer[bytesRead] = '\0';  // Null-terminate
-                        allData += buffer;
+                        buffer[bytesRead] = '\0';
+                        graphDataBuffer += buffer;
                         totalRead += bytesRead;
                         
-                        // Limite de sécurité: max 64KB pour éviter crash RAM
+                        // Limite 64KB pour éviter crash RAM
                         if (totalRead > 65536) {
-                            logger.printf("[GRAPH] WARNING: Data truncated at 64KB\n");
+                            logger.printf("[GRAPH] WARNING: Données tronquées à 64KB\n");
                             break;
                         }
                     }
                     
-                    logger.printf("[GRAPH] Data collection done: %d bytes\n", allData.length());
+                    logger.printf("[GRAPH] Pré-chargement terminé: %d bytes\n", graphDataBuffer.length());
                     
-                    // Envoi simple (non-chunked)
-                    AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", allData);
+                    // Maintenant envoyer en chunked response SANS I/O SD dans le callback
+                    AsyncWebServerResponse *response = 
+                        request->beginChunkedResponse("text/plain", [](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
+                            // Callback chunked: AUCUN I/O SD, juste copie depuis buffer RAM statique
+                            size_t remainingBytes = graphDataBuffer.length() - dataOffset;
+                            
+                            if (remainingBytes == 0) {
+                                return 0;  // Fin de transmission
+                            }
+                            
+                            size_t bytesToSend = min(maxLen, remainingBytes);
+                            memcpy(buffer, graphDataBuffer.c_str() + dataOffset, bytesToSend);
+                            dataOffset += bytesToSend;
+                            
+                            return bytesToSend;
+                        });
+                    
                     response->addHeader("Server","Web Server Piscine");
                     response->addHeader("Cache-Control","no-cache");
                     request->send(response);
-                    logger.printf("OK handlePiscineGraphs done");
+                    logger.printf("OK handlePiscineGraphs done\n");
                 }
             } else {                                                            // bad parameter
                 logger.println("Error : Invalid Parameter");
