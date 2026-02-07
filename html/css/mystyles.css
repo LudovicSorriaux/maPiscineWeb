@@ -193,18 +193,11 @@ background-color: #333;
 }
 
 /* ========================================
-   FIX LEFTPANEL - FORCER KAUSHAN SCRIPT
-   Doit être AVANT les media queries pour éviter problèmes de cascade CSS
+   FIX LEFTPANEL - FORCER KAUSHAN SCRIPT POUR H4 (items menu)
+   Les titres H3 restent en sans-serif car jQuery Mobile CDN les écrase
    ======================================== */
 
-/* Fix titre collapsible "Piscine" dans leftPanel - cibler EXACTEMENT le lien généré par jQuery Mobile */
-#leftpanel a.ui-collapsible-heading-toggle.ui-btn.ui-btn-icon-right.ui-btn-b.ui-icon-minus {
-  font-family: 'Kaushan Script', cursive !important;
-  font-size: 1em !important;
-  font-weight: normal !important;
-}
-
-/* Fix h4 dans leftPanel (items de menu) */
+/* Fix h4 dans leftPanel (items de menu) - FONCTIONNE ✓ */
 #leftpanel .ui-listview li a.ui-btn h4.myh4,
 #leftpanel .ui-listview li .ui-btn h4.myh4,
 #leftpanel .ui-listview li h4.myh4,
@@ -545,29 +538,4 @@ background-color: #333;
     max-width: 1400px !important;
     margin: 0 auto !important;
   }
-}
-
-/* ========================================
-   FIX LEFTPANEL - ULTIME OVERRIDE (doit être EN DERNIER après tout le CSS)
-   Pour forcer Kaushan Script malgré jQuery Mobile CDN
-   ======================================== */
-
-/* Fix titre collapsible "Piscine" - cibler EXACTEMENT le sélecteur jQuery Mobile */
-#leftpanel a.ui-collapsible-heading-toggle.ui-btn.ui-btn-icon-right.ui-btn-b.ui-icon-minus {
-  font-family: 'Kaushan Script', cursive !important;
-  font-size: 1em !important;
-  font-weight: normal !important;
-}
-
-/* Fix h4 dans leftPanel (items de menu) */
-#leftpanel .ui-listview li a.ui-btn h4.myh4,
-#leftpanel .ui-listview li .ui-btn h4.myh4,
-#leftpanel .ui-listview li h4.myh4,
-#leftpanel .ui-listview .myh4,
-#leftpanel h4.myh4 {
-  font-family: 'Kaushan Script', cursive !important;
-  font-size: 1em !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  font-weight: normal !important;
 }
