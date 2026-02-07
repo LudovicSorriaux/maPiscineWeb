@@ -230,14 +230,23 @@
         File logFile;
         size_t currLen = 0;
         bool nextFile = false;    // process next file. 
+        int filesProcessed = 0;   // LIMITE: max 3 fichiers par appel (évite WDT reset)
         
 
       currLen = 0;
       while (maxLen-currLen > 0){
         nextFile = false;
+        
+        // SÉCURITÉ WDT: Limite nombre fichiers lus par appel
+        if (filesProcessed >= 3) {
+          // printf("[LOGGER] Limite 3 fichiers atteinte, arrêt temporaire\n");
+          break;
+        }
+        
         snprintf(fileName, 80, "/Log/%d/Logs/%s/%s-%d-Moy.log", 
                  (year(tCurr)+1970), monthStr(month(tCurr)), dayShortStr(tCurr), day(tCurr));
         if(SD.exists(fileName)){
+          filesProcessed++;  // Compteur fichiers traités
           logFile = SD.open(fileName, FILE_READ);
           if(logFile){
             if(filePointer != 0){   // file processed patialy start a the end. 
