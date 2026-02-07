@@ -711,6 +711,7 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
             }
             
             json += "{\"name\":\"" + fileName + "\",\"size\":" + String(file.size());
+            json += ",\"date\":" + String(file.getLastWrite());
             json += ",\"isDir\":" + String(file.isDirectory() ? "true" : "false") + "}";
             
             first = false;
@@ -2512,7 +2513,19 @@ const char UPLOAD_HTML[] PROGMEM = R"rawliteral(
             } else {
                 fileList.innerHTML = '';
             }
+            // NE PAS modifier le champ targetPath ici
         });
+
+        // Formater une date Unix timestamp en chaîne lisible
+        function formatDate(timestamp) {
+            const date = new Date(timestamp * 1000);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${day}/${month}/${year} ${hours}:${minutes}`;
+        }
 
         // Charger et afficher le contenu du répertoire
         async function loadDirectoryListing(dirPath, adminPassword) {
@@ -2528,7 +2541,11 @@ const char UPLOAD_HTML[] PROGMEM = R"rawliteral(
                     const listing = document.getElementById('fileListingBefore');
                     if (data.files && data.files.length > 0) {
                         listing.innerHTML = `<strong>📂 ${dirPath}</strong><br>` +
-                            data.files.map(f => `• ${f.name} <span style="color: #90CAF9;">(${(f.size/1024).toFixed(1)} KB)</span>`).join('<br>');
+                            data.files.map(f => {
+                                const sizeKB = (f.size / 1024).toFixed(1);
+                                const dateStr = f.date ? formatDate(f.date) : 'N/A';
+                                return `• ${f.name} <span style="color: #90CAF9;">(${sizeKB} KB - ${dateStr})</span>`;
+                            }).join('<br>');
                     } else {
                         listing.innerHTML = `<strong>📂 ${dirPath}</strong><br><em>Répertoire vide</em>`;
                     }
