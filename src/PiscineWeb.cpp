@@ -2183,23 +2183,37 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
 /*__________________________________________________________AUTHENTIFY_FUNCTIONS__________________________________________________________*/
 
   /*
+  /*
    * bool PiscineWebClass::isSessionValid
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
+   * But : Vérifier validité session + nettoyage sessions expirées/trop anciennes
+   * Entrées : sessID (char*) — Session ID à valider
+   * Sortie : true si session valide, false sinon
    */
     bool PiscineWebClass::isSessionValid(char *sessID){
         uint8_t i = 0;
         bool flagOK=false;
         bool sessionsModified = false;
+        const time_t MAX_SESSION_AGE = 604800;  // 1 semaine en secondes (7 * 86400)
 
-        // first manage activeSessions struct
-        for (i=0; i<10;i++){
-            if(activeSessions[i].timecreated + activeSessions[i].ttl < now() ){ // time exhasted : delete sessionID
-            activeSessions[i].sessID[0]=0;
-            activeSessions[i].ttl=0;
-            activeSessions[i].timecreated=0;
-            sessionsModified = true;
+        // Nettoyage sessions expirées ou trop anciennes
+        for (i=0; i<5; i++){  // Optimisation RAM : 5 slots au lieu de 10
+            if(activeSessions[i].ttl == 0) continue;  // Slot vide, skip
+            
+            time_t sessionExpiry = activeSessions[i].timecreated + activeSessions[i].ttl;
+            time_t sessionAge = now() - activeSessions[i].timecreated;
+            
+            // Supprimer si : expirée OU > 1 semaine
+            if (sessionExpiry < now() || sessionAge > MAX_SESSION_AGE) {
+                if (sessionExpiry < now()) {
+                    logger.printf("[SESSION] Suppression session expirée: %s\n", activeSessions[i].sessID);
+                } else {
+                    logger.printf("[SESSION] Suppression session trop ancienne (>1 semaine): %s\n", activeSessions[i].sessID);
+                }
+                
+                activeSessions[i].sessID[0] = 0;
+                activeSessions[i].ttl = 0;
+                activeSessions[i].timecreated = 0;
+                sessionsModified = true;
             }
         }
         
@@ -2210,13 +2224,15 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
         
         printActiveSessions();
         logger.printf("Looking for session: %s\n",sessID);
-        // search for sessID
-        for (i=0; i<10;i++){
-            if(activeSessions[i].ttl == 0) continue;  // found an empty slot
+        
+        // Rechercher sessID dans sessions actives
+        for (i=0; i<5; i++){  // Optimisation RAM : 5 slots
+            if(activeSessions[i].ttl == 0) continue;  // Slot vide
             if(strcmp(activeSessions[i].sessID, sessID) == 0){ 
-            logger.printf("Found right session, time to live is :%lld\n", (activeSessions[i].timecreated + activeSessions[i].ttl) - now());
-            flagOK = true;
-            break; 
+                time_t ttl_remaining = (activeSessions[i].timecreated + activeSessions[i].ttl) - now();
+                logger.printf("Found right session, time to live is :%lld\n", (long long)ttl_remaining);
+                flagOK = true;
+                break; 
             }
         }
         return flagOK;   
@@ -2266,7 +2282,8 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
         // Charger sessions depuis JSON vers activeSessions[]
         JsonArray sessions = doc["sessions"];
         uint8_t loaded = 0;
-        for (uint8_t i = 0; i < sessions.size() && i < 5; i++) {  // Max 5 sessions (optimisation RAM)
+        uint8_t slot = 0;
+        for (uint8_t i = 0; i < sessions.size() && slot < 5; i++) {  // Max 5 sessions (optimisation RAM)
             JsonObject session = sessions[i];
             const char* sessID = session["sessID"];
             time_t ttl = session["ttl"];
@@ -2278,10 +2295,11 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
                 continue;
             }
 
-            strlcpy(activeSessions[i].sessID, sessID, 16);
-            activeSessions[i].ttl = ttl;
-            activeSessions[i].timecreated = timecreated;
+            strlcpy(activeSessions[slot].sessID, sessID, 16);
+            activeSessions[slot].ttl = ttl;
+            activeSessions[slot].timecreated = timecreated;
             loaded++;
+            slot++;
             
             time_t expireTime = timecreated + ttl;
             logger.printf("[SESSION] Chargé session %s (TTL: %lld, expire: %s)\n", 
@@ -2398,16 +2416,23 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
     strlcpy( sessID, strSess, 16);  
     logger.printf("new key is : %s\n", sessID);  
 
-    // manage activeSessions struct
-    for (i=0; i<10;i++){
-        if(activeSessions[i].timecreated+activeSessions[i].ttl < now() ){ // time exhasted : delete sessionID
-        activeSessions[i].sessID[0]=0;
-        activeSessions[i].ttl=0;
-        activeSessions[i].timecreated=0;
+    // Nettoyage sessions expirées ou trop anciennes (> 1 semaine)
+    const time_t MAX_SESSION_AGE = 604800;  // 1 semaine
+    for (i=0; i<5; i++){  // Optimisation RAM : 5 slots
+        if(activeSessions[i].ttl == 0) continue;
+        
+        time_t sessionExpiry = activeSessions[i].timecreated + activeSessions[i].ttl;
+        time_t sessionAge = now() - activeSessions[i].timecreated;
+        
+        if (sessionExpiry < now() || sessionAge > MAX_SESSION_AGE) {
+            activeSessions[i].sessID[0]=0;
+            activeSessions[i].ttl=0;
+            activeSessions[i].timecreated=0;
         }
     }
-    // store new infos
-    for (i=0; i<10;i++){
+    
+    // Stocker nouvelle session dans slot vide
+    for (i=0; i<5; i++){  // Optimisation RAM : 5 slots
         if(activeSessions[i].ttl == 0) { // found an empty slot
         strlcpy(activeSessions[i].sessID, sessID, 16);
         activeSessions[i].timecreated=now();
