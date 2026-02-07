@@ -1,6 +1,6 @@
 
 // Global functions and variables
-console.log("📌 piscineScripts.js VERSION 2026-02-07-21:25 loaded");
+console.log("📌 piscineScripts.js VERSION 2026-02-07-21:35 loaded");
 
 var maPiscine = maPiscine || {};
 
@@ -1251,7 +1251,7 @@ async function fetchData(debut, fin){
 async function getOriginData(){
 	i=0;
 	now=dayjs().set("minute",0).set("second",0);
-	start=dayjs().subtract(3,"day");  // ← TEST WDT: Réduit à 3 jours pour tester limite ESP8266
+	start=dayjs().subtract(2,"day");  // ← LIMITE ESP8266: Max 2 jours pour éviter WDT reset
 	console.log("Fetching Origin Data: start:"+start.format("DD-MM-YYYY")+" end:"+now.format("DD-MM-YYYY"));
 	dataOrigin=await fetchData(start,now);  // ← FIX: await pour récupérer le tableau, pas la Promise
 	chartdata=dataOrigin;
