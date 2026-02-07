@@ -1588,7 +1588,7 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
                     // Pré-charger TOUTES les données en RAM AVANT de démarrer le chunked response
                     graphDataBuffer = "";
                     dataOffset = 0;
-                    char buffer[256];  // Buffer réduit pour forcer plus d'appels wdtFeed
+                    char buffer[512];  // Buffer adapté
                     size_t totalRead = 0;
                     int chunkCount = 0;
                     unsigned long startTime = millis();
@@ -1596,15 +1596,18 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
                     logger.printf("[GRAPH] Pré-chargement données SD...\n");
                     
                     while (true) {
-                        // Reset watchdog TRÈS FRÉQUEMMENT
-                        if (chunkCount % 5 == 0) {  // Tous les 5 chunks
-                            ESP.wdtFeed();
-                            yield();  // Aussi laisser du temps au système
+                        // ATTENTION: yield() et ESP.wdtFeed() INTERDITS dans handler AsyncWebServer
+                        // Cause panic __yield. Limite via timeout court et chunks max.
+                        
+                        // Timeout de sécurité: max 5 secondes
+                        if (millis() - startTime > 5000) {
+                            logger.printf("[GRAPH] WARNING: Timeout après 5s, arrêt chargement\n");
+                            break;
                         }
                         
-                        // Timeout de sécurité: max 10 secondes
-                        if (millis() - startTime > 10000) {
-                            logger.printf("[GRAPH] WARNING: Timeout après 10s, arrêt chargement\n");
+                        // Limite nombre chunks (7 jours = ~350 lignes = ~17KB max)
+                        if (chunkCount >= 40) {  // 40 × 512B = 20KB max
+                            logger.printf("[GRAPH] Limite chunks atteinte, arrêt\n");
                             break;
                         }
                         
@@ -2063,7 +2066,6 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
         bool flagOK=false;
         bool sessionsModified = false;
 
-        printActiveSessions();
         // first manage activeSessions struct
         for (i=0; i<10;i++){
             if(activeSessions[i].timecreated + activeSessions[i].ttl < now() ){ // time exhasted : delete sessionID
