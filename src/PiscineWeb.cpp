@@ -2214,7 +2214,7 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
         for (i=0; i<10;i++){
             if(activeSessions[i].ttl == 0) continue;  // found an empty slot
             if(strcmp(activeSessions[i].sessID, sessID) == 0){ 
-            logger.printf("Found right session, time to live is :%lld\n",now() - (activeSessions[i].timecreated+activeSessions[i].ttl));
+            logger.printf("Found right session, time to live is :%lld\n", (activeSessions[i].timecreated + activeSessions[i].ttl) - now());
             flagOK = true;
             break; 
             }
