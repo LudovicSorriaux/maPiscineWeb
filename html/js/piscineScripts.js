@@ -1,6 +1,6 @@
 
 // Global functions and variables
-console.log("📌 piscineScripts.js VERSION 2026-02-07-19:45 loaded");
+console.log("📌 piscineScripts.js VERSION 2026-02-07-19:50 loaded");
 
 var maPiscine = maPiscine || {};
 
@@ -3700,12 +3700,12 @@ function getNewData(debut, fin) {
 		});
 
 		console.log("-- Building the chartdata array from before create --");
-		getOriginData();
-		
-		// Créer les graphiques selon le mode détecté
-		currentMode = getGraphMode();
-		console.log("Initial graph mode: " + currentMode);
-		createGraphs(dataOrigin);
+		getOriginData().then(function() {
+			// Créer les graphiques selon le mode détecté
+			currentMode = getGraphMode();
+			console.log("Initial graph mode: " + currentMode);
+			createGraphs(dataOrigin);
+		});
 	});
 	
 	// page PiscineGraphs pageShow
