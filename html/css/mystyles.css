@@ -12,6 +12,7 @@ form .error {
 	 }
 .myh2,.myh3{
 	 font-family: 'Kaushan Script', cursive;
+	 font-size: 1.5em;
 	 }
 .myh4,.myh5,.myh6{
 	 font-family: 'Kaushan Script';
@@ -452,11 +453,27 @@ background-color: #333;
     box-shadow: 2px 0 8px rgba(0,0,0,0.3) !important;
   }
   
-  /* Panel options (optionsPiscineManager) : centré comme dialog */
+  /* Fix font trop grande dans leftpanel - Réduire taille Kaushan Script */
+  body #leftpanel .myh3,
+  body #leftpanel h3.myh3,
+  body #leftpanel h3,
+  body #leftpanel .ui-listview .myh3,
+  body .ui-page #leftpanel h3.myh3 {
+    font-size: 1.1em !important;
+    margin: 0.3em 0 !important;
+    line-height: 1.2 !important;
+  }
+  
+  /* Surcharger le .ui-btn ajouté automatiquement par jQuery Mobile */
+  #leftpanel .ui-listview li a,
+  #leftpanel .ui-listview li a.ui-btn,
+  #leftpanel .ui-listview .ui-btn {
+    font-size: 0.95em !important;
+  }
+  
+  /* Panel options (optionsPiscineManager) : laisser jQuery Mobile gérer l'animation */
   #optionsPiscineManager.ui-panel {
     max-width: 400px !important;
-    right: 50% !important;
-    transform: translateX(50%) !important;
     box-shadow: 0 0 20px rgba(0,0,0,0.5) !important;
   }
   
