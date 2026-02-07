@@ -459,7 +459,8 @@ background-color: #333;
   body #leftpanel h3,
   body #leftpanel .ui-listview .myh3,
   body .ui-page #leftpanel h3.myh3 {
-    font-size: 1.1em !important;
+    font-family: 'Kaushan Script', cursive !important;
+    font-size: 1em !important;
     margin: 0.3em 0 !important;
     line-height: 1.2 !important;
   }
