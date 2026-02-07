@@ -540,10 +540,19 @@
         info.size = 0;
         info.chunks = 0;
         
-        // Parse date DD-MM-YYYY → time_t
-        struct tm tm;
-        strptime(date, "%d-%m-%Y", &tm);
-        time_t fileTime = mktime(&tm);
+        // Parse date DD-MM-YYYY manuellement (strptime buggy sur ESP8266)
+        int d, m, y;
+        sscanf(date, "%d-%d-%d", &d, &m, &y);
+        
+        tmElements_t tm;
+        tm.Year = y - 1970;
+        tm.Month = m;
+        tm.Day = d;
+        tm.Hour = 0;
+        tm.Minute = 0;
+        tm.Second = 0;
+        
+        time_t fileTime = makeTime(tm);
         
         // Construire chemin fichier
         char fileName[80];
@@ -571,10 +580,19 @@
    */
     size_t LoggerClass::fetchChunk(const char* date, uint16_t chunkIndex, 
                                    char* buffer, size_t chunkSize) {
-        // Parse date
-        struct tm tm;
-        strptime(date, "%d-%m-%Y", &tm);
-        time_t fileTime = mktime(&tm);
+        // Parse date DD-MM-YYYY manuellement (strptime buggy sur ESP8266)
+        int d, m, y;
+        sscanf(date, "%d-%d-%d", &d, &m, &y);
+        
+        tmElements_t tm;
+        tm.Year = y - 1970;
+        tm.Month = m;
+        tm.Day = d;
+        tm.Hour = 0;
+        tm.Minute = 0;
+        tm.Second = 0;
+        
+        time_t fileTime = makeTime(tm);
         
         // Construire chemin fichier
         char fileName[80];

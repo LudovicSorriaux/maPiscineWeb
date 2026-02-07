@@ -1659,15 +1659,36 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
         
         logger.printf("[GRAPH API] Plan request: %s → %s\n", start.c_str(), end.c_str());
         
-        // Parse dates
-        struct tm tm_start, tm_end;
-        strptime(start.c_str(), "%d-%m-%Y", &tm_start);
-        strptime(end.c_str(), "%d-%m-%Y", &tm_end);
-        time_t t_start = mktime(&tm_start);
-        time_t t_end = mktime(&tm_end);
+        // Parse dates manuellement (DD-MM-YYYY) - strptime() buggy sur ESP8266
+        int d_start, m_start, y_start;
+        int d_end, m_end, y_end;
+        sscanf(start.c_str(), "%d-%d-%d", &d_start, &m_start, &y_start);
+        sscanf(end.c_str(), "%d-%d-%d", &d_end, &m_end, &y_end);
         
-        // Calcul simple nombre de jours (évite boucle WDT)
+        // Construire time_t via TimeLib (year commence à 1970)
+        tmElements_t tm_start, tm_end;
+        tm_start.Year = y_start - 1970;
+        tm_start.Month = m_start;
+        tm_start.Day = d_start;
+        tm_start.Hour = 0;
+        tm_start.Minute = 0;
+        tm_start.Second = 0;
+        
+        tm_end.Year = y_end - 1970;
+        tm_end.Month = m_end;
+        tm_end.Day = d_end;
+        tm_end.Hour = 0;
+        tm_end.Minute = 0;
+        tm_end.Second = 0;
+        
+        time_t t_start = makeTime(tm_start);
+        time_t t_end = makeTime(tm_end);
+        
+        // Calcul nombre de jours
         int total_days = ((t_end - t_start) / 86400) + 1;
+        
+        logger.printf("[GRAPH API] Parsed: %d-%02d-%02d → %d-%02d-%02d = %d days\n",
+                     d_start, m_start, y_start, d_end, m_end, y_end, total_days);
         
         // Réponse minimaliste (client calcule dates lui-même)
         StaticJsonDocument<256> doc;
