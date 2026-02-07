@@ -31,10 +31,14 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
 
 // public
 /**
- * @brief Démarrage complet du serveur web : Appelle startServer() (routes AsyncWebServer) et startMDNS() (mDNS responder piscine.local)
+ * @brief Démarrage complet du serveur web : Charge sessions SD, appelle startServer() (routes AsyncWebServer) et startMDNS() (mDNS responder piscine.local)
  */
     void PiscineWebClass::startup(){
       logger.println("[WEB] maPiscineWeb Startup ... ");
+      
+      // Charger sessions sauvegardées depuis SD (auto-login après reboot)
+      loadSessionsFromSD();
+      
       startServer();               // Start a HTTP server with a file read handler and an upload handler
       startMDNS();                 // Start the mDNS responder
       delay(200);                  // Délai stabilisation réseau après mDNS
@@ -2057,6 +2061,7 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
     bool PiscineWebClass::isSessionValid(char *sessID){
         uint8_t i = 0;
         bool flagOK=false;
+        bool sessionsModified = false;
 
         printActiveSessions();
         // first manage activeSessions struct
@@ -2065,8 +2070,15 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
             activeSessions[i].sessID[0]=0;
             activeSessions[i].ttl=0;
             activeSessions[i].timecreated=0;
+            sessionsModified = true;
             }
         }
+        
+        // Sauvegarder sur SD si sessions supprimées
+        if (sessionsModified) {
+            saveSessionsToSD();
+        }
+        
         printActiveSessions();
         logger.printf("Looking for session: %s\n",sessID);
         // search for sessID
@@ -2079,6 +2091,125 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
             }
         }
         return flagOK;   
+    }
+
+  /*
+   * void PiscineWebClass::loadSessionsFromSD
+   * But : Charger les sessions sauvegardées depuis /sessions.json au démarrage ESP
+   * Entrées : aucune (lit depuis SD card)
+   * Sortie : Remplit activeSessions[] avec données persistées, ignore si fichier absent
+   */
+    void PiscineWebClass::loadSessionsFromSD() {
+        if (!cardPresent) {
+            logger.println("[SESSION] SD non présente, skip load sessions");
+            return;
+        }
+
+        if (!SD.exists("/sessions.json")) {
+            logger.println("[SESSION] Fichier /sessions.json absent, démarrage avec sessions vides");
+            return;
+        }
+
+        File sessionFile = SD.open("/sessions.json", FILE_READ);
+        if (!sessionFile) {
+            logger.println("[SESSION] ERREUR: Impossible d'ouvrir /sessions.json");
+            return;
+        }
+
+        // Limite taille lecture (sécurité)
+        const size_t maxSize = 2048;
+        String jsonContent = "";
+        size_t bytesRead = 0;
+        while (sessionFile.available() && bytesRead < maxSize) {
+            jsonContent += (char)sessionFile.read();
+            bytesRead++;
+        }
+        sessionFile.close();
+
+        // Parse JSON
+        DynamicJsonDocument doc(2048);
+        DeserializationError error = deserializeJson(doc, jsonContent);
+        if (error) {
+            logger.printf("[SESSION] ERREUR parse JSON: %s\n", error.c_str());
+            return;
+        }
+
+        // Charger sessions depuis JSON vers activeSessions[]
+        JsonArray sessions = doc["sessions"];
+        uint8_t loaded = 0;
+        for (uint8_t i = 0; i < sessions.size() && i < 5; i++) {  // Max 5 sessions (optimisation RAM)
+            JsonObject session = sessions[i];
+            const char* sessID = session["sessID"];
+            time_t ttl = session["ttl"];
+            time_t timecreated = session["timecreated"];
+
+            // Vérifier validité avant charger
+            if (timecreated + ttl < now()) {
+                logger.printf("[SESSION] Session %s expirée, skip\n", sessID);
+                continue;
+            }
+
+            strlcpy(activeSessions[i].sessID, sessID, 16);
+            activeSessions[i].ttl = ttl;
+            activeSessions[i].timecreated = timecreated;
+            loaded++;
+            
+            time_t expireTime = timecreated + ttl;
+            logger.printf("[SESSION] Chargé session %s (TTL: %lld, expire: %s)\n", 
+                          sessID, (long long)ttl, ctime(&expireTime));
+        }
+
+        logger.printf("[SESSION] ✅ %d sessions chargées depuis SD\n", loaded);
+        printActiveSessions();
+    }
+
+  /*
+   * void PiscineWebClass::saveSessionsToSD
+   * But : Sauvegarder activeSessions[] vers /sessions.json pour persistence reboot
+   * Entrées : aucune (lit activeSessions[])
+   * Sortie : Écrit /sessions.json sur SD, écrase fichier existant
+   */
+    void PiscineWebClass::saveSessionsToSD() {
+        if (!cardPresent) {
+            logger.println("[SESSION] SD non présente, skip save sessions");
+            return;
+        }
+
+        // Supprimer ancien fichier pour écraser (FILE_WRITE = append sur ESP8266)
+        if (SD.exists("/sessions.json")) {
+            SD.remove("/sessions.json");
+        }
+
+        File sessionFile = SD.open("/sessions.json", FILE_WRITE);
+        if (!sessionFile) {
+            logger.println("[SESSION] ERREUR: Impossible d'ouvrir /sessions.json pour écriture");
+            return;
+        }
+
+        // Créer JSON
+        DynamicJsonDocument doc(2048);
+        JsonArray sessions = doc.createNestedArray("sessions");
+
+        uint8_t saved = 0;
+        for (uint8_t i = 0; i < 5; i++) {  // Max 5 sessions (optimisation RAM)
+            if (activeSessions[i].ttl == 0) continue;  // Slot vide
+
+            JsonObject session = sessions.createNestedObject();
+            session["sessID"] = activeSessions[i].sessID;
+            session["ttl"] = activeSessions[i].ttl;
+            session["timecreated"] = activeSessions[i].timecreated;
+            saved++;
+        }
+
+        // Écrire JSON sur SD
+        size_t bytesWritten = serializeJson(doc, sessionFile);
+        sessionFile.close();
+
+        if (bytesWritten > 0) {
+            logger.printf("[SESSION] ✅ %d sessions sauvegardées (%d bytes)\n", saved, bytesWritten);
+        } else {
+            logger.println("[SESSION] ERREUR: Échec écriture /sessions.json");
+        }
     }
 
 /*__________________________________________________________HELPER_FUNCTIONS__________________________________________________________*/
@@ -2156,6 +2287,12 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
         break;
         }
     }
+    
+    // Sauvegarder sur SD après création session
+    if (flagOK) {
+        saveSessionsToSD();
+    }
+    
     printActiveSessions();
         
     return flagOK;   //  if (!flagOK){   // couldn't store no room left.

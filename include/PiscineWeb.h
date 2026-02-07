@@ -109,6 +109,8 @@ class PiscineWebClass {
         void handleRoot(AsyncWebServerRequest *request);                           // When URI / is requested, send a login web page
         void handleOtherFiles(AsyncWebServerRequest *request);
         void handleNotFound(AsyncWebServerRequest *request); 	                    // if the requested file or page doesn't exist, return a 404 not found error
+        void handleFileUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final);  // Upload de fichiers vers SD
+        void handleUploadPage(AsyncWebServerRequest *request);                    // Page HTML d'upload
 
             
         // --- PAGES HANDLERS ---
@@ -134,6 +136,8 @@ class PiscineWebClass {
         // --- Authetified_FUNCTIONS ---
         bool isSessionValid(char *sessID);
         bool isLocalClient(AsyncWebServerRequest *request);  // Détecte si IP client dans même sous-réseau
+        void loadSessionsFromSD();   // Charge sessions depuis /sessions.json au boot
+        void saveSessionsToSD();     // Sauvegarde sessions vers /sessions.json
 
         // --- HELPER_FUNCTIONS ---
         void printDirectory(File dir, int numTabs, String *output);
