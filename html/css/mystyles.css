@@ -454,28 +454,22 @@ background-color: #333;
   }
   
   /* Fix font trop grande dans leftpanel - Réduire taille Kaushan Script */
-  /* jQuery Mobile enveloppe h3 dans <a class="ui-collapsible-heading-toggle ui-btn"> */
-  /* Spécificité élevée pour surcharger .ui-btn (font-size: 16px) */
-  /* Cibler le .ui-btn lui-même car c'est lui qui a font-size: 16px */
+  /* jQuery Mobile : le texte "Piscine" est directement dans <a class="ui-btn"> pas dans h3 */
+  /* Cibler .ui-collapsible-heading-toggle.ui-btn qui contient le texte */
+  #leftpanel .ui-collapsible-heading .ui-collapsible-heading-toggle.ui-btn,
   #leftpanel .ui-collapsible-heading a.ui-btn,
-  #leftpanel .ui-collapsible-heading-toggle.ui-btn,
-  #leftpanel .ui-collapsible-heading a.ui-collapsible-heading-toggle {
+  #leftpanel h3.ui-collapsible-heading a.ui-btn {
     font-family: 'Kaushan Script', cursive !important;
     font-size: 1em !important;
     font-weight: normal !important;
   }
   
-  /* Et aussi les h3 à l'intérieur au cas où */
-  #leftpanel .ui-collapsible-heading a.ui-btn h3.myh3,
-  #leftpanel .ui-collapsible-heading a.ui-btn h3,
-  #leftpanel .ui-collapsible-heading-toggle.ui-btn h3.myh3,
-  #leftpanel .ui-collapsible-heading-toggle.ui-btn h3,
-  body #leftpanel .myh3,
-  body #leftpanel h3.myh3,
-  body #leftpanel h3 {
+  /* Et aussi les h3 au cas où (mais le texte n'est pas dedans) */
+  #leftpanel h3.myh3,
+  #leftpanel h3.ui-collapsible-heading {
     font-family: 'Kaushan Script', cursive !important;
     font-size: 1em !important;
-    margin: 0.3em 0 !important;
+    margin: 0 !important;
     line-height: 1.2 !important;
     font-weight: normal !important;
   }
