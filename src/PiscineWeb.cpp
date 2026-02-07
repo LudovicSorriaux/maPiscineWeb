@@ -663,6 +663,68 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
     // --- 4. NOT FOUND ---
         server.onNotFound(std::bind(&PiscineWebClass::handleOtherFiles, this, std::placeholders::_1));           			  // When a client requests an unknown URI (i.e. something other than "/"), call function handleNotFound"
     
+    // Endpoint pour lister le contenu d'un répertoire
+    server.on("/listdir", HTTP_GET, [this](AsyncWebServerRequest *request) {
+        if (!request->hasParam("adminPassword") || !request->hasParam("path")) {
+            request->send(400, "application/json", "{\"error\":\"Missing parameters\"}");
+            return;
+        }
+        
+        char adminPwd[11];
+        request->getParam("adminPassword")->value().toCharArray(adminPwd, 11);
+        if (strcmp(adminPwd, config.adminPassword) != 0) {
+            logger.print("[LISTDIR] ❌ Mot de passe incorrect\n");
+            request->send(403, "application/json", "{\"error\":\"Invalid password\"}");
+            return;
+        }
+        
+        String dirPath = request->getParam("path")->value();
+        logger.printf("[LISTDIR] Lecture répertoire: %s\n", dirPath.c_str());
+        
+        File dir = SD.open(dirPath);
+        if (!dir) {
+            logger.printf("[LISTDIR] ❌ Répertoire introuvable: %s\n", dirPath.c_str());
+            request->send(404, "application/json", "{\"error\":\"Directory not found\"}");
+            return;
+        }
+        
+        if (!dir.isDirectory()) {
+            logger.printf("[LISTDIR] ❌ Chemin n'est pas un répertoire: %s\n", dirPath.c_str());
+            dir.close();
+            request->send(400, "application/json", "{\"error\":\"Path is not a directory\"}");
+            return;
+        }
+        
+        String json = "{\"files\":[";
+        bool first = true;
+        int fileCount = 0;
+        
+        File file = dir.openNextFile();
+        while (file) {
+            if (!first) json += ",";
+            
+            String fileName = String(file.name());
+            // Extraire seulement le nom de fichier sans le chemin complet
+            int lastSlash = fileName.lastIndexOf('/');
+            if (lastSlash >= 0) {
+                fileName = fileName.substring(lastSlash + 1);
+            }
+            
+            json += "{\"name\":\"" + fileName + "\",\"size\":" + String(file.size());
+            json += ",\"isDir\":" + String(file.isDirectory() ? "true" : "false") + "}";
+            
+            first = false;
+            fileCount++;
+            file.close();
+            file = dir.openNextFile();
+        }
+        json += "]}";
+        dir.close();
+        
+        logger.printf("[LISTDIR] ✅ Répertoire lu: %d fichier(s) trouvé(s)\n", fileCount);
+        request->send(200, "application/json", json);
+    });
+    
     // --- 5. DÉMARRAGE ---
         server.begin();                             			  // start the HTTP server
         logger.print("[WEB] HTTP server started, IP address: ");
@@ -2429,20 +2491,18 @@ const char UPLOAD_HTML[] PROGMEM = R"rawliteral(
 
         <div class="message" id="message"></div>
 
-        <div class="info">
-            <strong>ℹ️ Chemins courants:</strong>
-            • Fichiers HTML: <code>/html/</code><br>
-            • Scripts JS: <code>/html/script.js</code><br>
-            • Styles CSS: <code>/html/style.css</code><br>
-            • Images: <code>/html/images/</code><br>
-            • Config: <code>/cfg/piscine.cfg</code>
+        <div class="info" id="dirListing">
+            <strong>📂 Contenu du répertoire:</strong>
+            <div id="fileListingBefore" style="margin-top: 10px; font-family: monospace; font-size: 12px;">
+                Sélectionnez un répertoire pour voir son contenu
+            </div>
         </div>
 
         <a href="/" class="back-link">← Retour à l'accueil</a>
     </div>
 
     <script>
-        // Affiche la liste des fichiers sélectionnés
+        // Affiche la liste des fichiers sélectionnés (sans modifier le chemin)
         document.getElementById('fileInput').addEventListener('change', (e) => {
             const fileList = document.getElementById('fileList');
             const files = e.target.files;
@@ -2452,6 +2512,45 @@ const char UPLOAD_HTML[] PROGMEM = R"rawliteral(
             } else {
                 fileList.innerHTML = '';
             }
+        });
+
+        // Charger et afficher le contenu du répertoire
+        async function loadDirectoryListing(dirPath, adminPassword) {
+            if (!dirPath || !dirPath.endsWith('/') || !adminPassword) {
+                document.getElementById('fileListingBefore').innerHTML = 'Sélectionnez un répertoire pour voir son contenu';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/listdir?path=${encodeURIComponent(dirPath)}&adminPassword=${encodeURIComponent(adminPassword)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const listing = document.getElementById('fileListingBefore');
+                    if (data.files && data.files.length > 0) {
+                        listing.innerHTML = `<strong>📂 ${dirPath}</strong><br>` +
+                            data.files.map(f => `• ${f.name} <span style="color: #90CAF9;">(${(f.size/1024).toFixed(1)} KB)</span>`).join('<br>');
+                    } else {
+                        listing.innerHTML = `<strong>📂 ${dirPath}</strong><br><em>Répertoire vide</em>`;
+                    }
+                } else {
+                    document.getElementById('fileListingBefore').innerHTML = '⚠️ Erreur de lecture du répertoire';
+                }
+            } catch (e) {
+                document.getElementById('fileListingBefore').innerHTML = '⚠️ Erreur réseau';
+            }
+        }
+
+        // Rafraîchir le listing quand le chemin ou le mot de passe change
+        document.getElementById('targetPath').addEventListener('change', () => {
+            const path = document.getElementById('targetPath').value;
+            const pwd = document.getElementById('adminPassword').value;
+            loadDirectoryListing(path, pwd);
+        });
+
+        document.getElementById('adminPassword').addEventListener('input', () => {
+            const path = document.getElementById('targetPath').value;
+            const pwd = document.getElementById('adminPassword').value;
+            loadDirectoryListing(path, pwd);
         });
 
         async function uploadFiles() {
@@ -2530,6 +2629,10 @@ const char UPLOAD_HTML[] PROGMEM = R"rawliteral(
             summaryMsg += '\n' + results.join('\n');
             
             showMessage(summaryMsg, failedCount === 0 ? 'success' : 'error');
+            
+            // Rafraîchir le listing du répertoire
+            const pwd = document.getElementById('adminPassword').value;
+            loadDirectoryListing(targetPath.endsWith('/') ? targetPath : targetPath.substring(0, targetPath.lastIndexOf('/') + 1), pwd);
             
             fileInput.value = '';
             document.getElementById('fileList').innerHTML = '';
