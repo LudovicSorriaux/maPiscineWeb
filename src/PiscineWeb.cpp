@@ -1666,19 +1666,13 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
         time_t t_start = mktime(&tm_start);
         time_t t_end = mktime(&tm_end);
         
-        // Construire tableau dates
-        StaticJsonDocument<1024> doc;
-        JsonArray dates = doc.createNestedArray("dates");
+        // Calcul simple nombre de jours (évite boucle WDT)
+        int total_days = ((t_end - t_start) / 86400) + 1;
         
-        int total_days = 0;
-        for (time_t t = t_start; t <= t_end; t += 86400) {  // +1 jour
-            char dateStr[11];
-            snprintf(dateStr, sizeof(dateStr), "%02d-%02d-%04d", 
-                     day(t), month(t), year(t) + 1970);
-            dates.add(dateStr);
-            total_days++;
-        }
-        
+        // Réponse minimaliste (client calcule dates lui-même)
+        StaticJsonDocument<256> doc;
+        doc["start"] = start;
+        doc["end"] = end;
         doc["total_days"] = total_days;
         
         String response;

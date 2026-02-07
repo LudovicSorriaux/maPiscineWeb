@@ -1,6 +1,6 @@
 
 // Global functions and variables
-console.log("📌 piscineScripts.js VERSION 2026-02-07-22:10 loaded");
+console.log("📌 piscineScripts.js VERSION 2026-02-07-22:15 loaded");
 
 var maPiscine = maPiscine || {};
 
@@ -1319,7 +1319,7 @@ async function fetchDataChunked(debut, fin) {
 	console.log("📊 [CHUNKED API] Fetching data: " + start.format("DD-MM-YYYY") + " → " + end.format("DD-MM-YYYY"));
 	
 	try {
-		// Étape 1 : Récupérer le plan (liste des dates)
+		// Étape 1 : Récupérer le plan (start, end, total_days seulement - évite WDT serveur)
 		updateGraphProgress(0, 100, "Planification chargement...");
 		
 		const planResponse = await $.ajax({
@@ -1329,7 +1329,6 @@ async function fetchDataChunked(debut, fin) {
 			dataType: "json"
 		});
 		
-		const dates = planResponse.dates;
 		const totalDays = planResponse.total_days;
 		
 		console.log(`📋 Plan reçu: ${totalDays} jours à charger`);
@@ -1338,6 +1337,14 @@ async function fetchDataChunked(debut, fin) {
 			hideGraphProgress();
 			showToast("Aucune donnée disponible", 'warning');
 			return datas;
+		}
+		
+		// Générer liste dates côté client (évite boucle serveur)
+		const dates = [];
+		let current = start;
+		for (let i = 0; i < totalDays; i++) {
+			dates.push(current.format("DD-MM-YYYY"));
+			current = current.add(1, 'day');
 		}
 		
 		let totalChunks = 0;
