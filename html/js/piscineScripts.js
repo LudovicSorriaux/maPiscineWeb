@@ -1,6 +1,6 @@
 
 // Global functions and variables
-console.log("📌 piscineScripts.js VERSION 2026-02-07-19:50 loaded");
+console.log("📌 piscineScripts.js VERSION 2026-02-07-19:55 loaded");
 
 var maPiscine = maPiscine || {};
 
@@ -258,14 +258,17 @@ var statusErrorMap = {
 	window.localStorage.removeItem("maPiscine-session");
 	setCookie("maPiscine", "", 0);
 	
+	// Récupérer les données de session
+	var sessionData = maPiscine.Session.getInstance().get();
+	
 	// Mettre à jour contenu dialog dynamiquement
-	var expiredTime = new Date(sessionData.theExpirationDate).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
-	var expiredDate = new Date(sessionData.theExpirationDate).toLocaleDateString('fr-FR');
-	var sessionDuration = Math.floor((sessionData.theExpirationDate - (now - timeRemaining)) / 3600000); // heures
+	var expiredTime = sessionData && sessionData.theExpirationDate ? new Date(sessionData.theExpirationDate).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}) : 'N/A';
+	var expiredDate = sessionData && sessionData.theExpirationDate ? new Date(sessionData.theExpirationDate).toLocaleDateString('fr-FR') : 'N/A';
+	var sessionDuration = sessionData && sessionData.theExpirationDate ? Math.floor((sessionData.theExpirationDate - (now - timeRemaining)) / 3600000) : 0; // heures
 	
 	var message = "<p><strong>Votre session a expiré.</strong></p>";
 	message += "<p>Heure d'expiration : <strong>" + expiredDate + " à " + expiredTime + "</strong></p>";
-	message += "<p>Utilisateur : <strong>" + (sessionData.username || userName) + "</strong></p>";
+	message += "<p>Utilisateur : <strong>" + (sessionData && sessionData.username ? sessionData.username : (typeof userName !== 'undefined' ? userName : 'N/A')) + "</strong></p>";
 	message += "<p>Action : <strong>" + action + "</strong></p>";
 	message += "<p><em>Veuillez vous reconnecter.</em></p>";
 	message += "<p><em>Redirection automatique dans 10 secondes...</em></p>";
