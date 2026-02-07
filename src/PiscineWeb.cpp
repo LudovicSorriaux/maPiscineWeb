@@ -2196,7 +2196,7 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
         const time_t MAX_SESSION_AGE = 604800;  // 1 semaine en secondes (7 * 86400)
 
         // Nettoyage sessions expirées ou trop anciennes
-        for (i=0; i<5; i++){  // Optimisation RAM : 5 slots au lieu de 10
+        for (i=0; i<10; i++){  // 10 sessions max
             if(activeSessions[i].ttl == 0) continue;  // Slot vide, skip
             
             time_t sessionExpiry = activeSessions[i].timecreated + activeSessions[i].ttl;
@@ -2226,7 +2226,7 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
         logger.printf("Looking for session: %s\n",sessID);
         
         // Rechercher sessID dans sessions actives
-        for (i=0; i<5; i++){  // Optimisation RAM : 5 slots
+        for (i=0; i<10; i++){  // 10 sessions max
             if(activeSessions[i].ttl == 0) continue;  // Slot vide
             if(strcmp(activeSessions[i].sessID, sessID) == 0){ 
                 time_t ttl_remaining = (activeSessions[i].timecreated + activeSessions[i].ttl) - now();
@@ -2283,7 +2283,7 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
         JsonArray sessions = doc["sessions"];
         uint8_t loaded = 0;
         uint8_t slot = 0;
-        for (uint8_t i = 0; i < sessions.size() && slot < 5; i++) {  // Max 5 sessions (optimisation RAM)
+        for (uint8_t i = 0; i < sessions.size() && slot < 10; i++) {  // Max 10 sessions
             JsonObject session = sessions[i];
             const char* sessID = session["sessID"];
             time_t ttl = session["ttl"];
@@ -2338,7 +2338,7 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
         JsonArray sessions = doc.createNestedArray("sessions");
 
         uint8_t saved = 0;
-        for (uint8_t i = 0; i < 5; i++) {  // Max 5 sessions (optimisation RAM)
+        for (uint8_t i = 0; i < 10; i++) {  // Max 10 sessions
             if (activeSessions[i].ttl == 0) continue;  // Slot vide
 
             JsonObject session = sessions.createNestedObject();
@@ -2418,7 +2418,7 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
 
     // Nettoyage sessions expirées ou trop anciennes (> 1 semaine)
     const time_t MAX_SESSION_AGE = 604800;  // 1 semaine
-    for (i=0; i<5; i++){  // Optimisation RAM : 5 slots
+    for (i=0; i<10; i++){  // 10 sessions max
         if(activeSessions[i].ttl == 0) continue;
         
         time_t sessionExpiry = activeSessions[i].timecreated + activeSessions[i].ttl;
@@ -2432,7 +2432,7 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
     }
     
     // Stocker nouvelle session dans slot vide
-    for (i=0; i<5; i++){  // Optimisation RAM : 5 slots
+    for (i=0; i<10; i++){  // 10 sessions max
         if(activeSessions[i].ttl == 0) { // found an empty slot
         strlcpy(activeSessions[i].sessID, sessID, 16);
         activeSessions[i].timecreated=now();

@@ -83,7 +83,7 @@ class PiscineWebClass {
                 time_t ttl;
                 time_t timecreated;
             } actSessions;
-            actSessions activeSessions[5];  // Optimisation RAM : réduit de 10 à 5 sessions
+            actSessions activeSessions[10];  // 10 sessions max (persistées sur SD)
 
             // debug
         void prepareNewParamsPiscine();
