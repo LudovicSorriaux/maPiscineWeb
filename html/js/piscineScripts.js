@@ -1,6 +1,6 @@
 
 // Global functions and variables
-console.log("📌 piscineScripts.js VERSION 2026-02-07-19:55 loaded");
+console.log("📌 piscineScripts.js VERSION 2026-02-07-20:45 loaded");
 
 var maPiscine = maPiscine || {};
 
@@ -1251,7 +1251,7 @@ async function fetchData(debut, fin){
 async function getOriginData(){
 	i=0;
 	now=dayjs().set("minute",0).set("second",0);
-	start=dayjs().subtract(1,"month").startOf("month");
+	start=dayjs().subtract(7,"day");  // ← FIX WDT: Réduit 1 mois → 7 jours pour éviter timeout watchdog
 	console.log("Fetching Origin Data: start:"+start.format("DD-MM-YYYY")+" end:"+now.format("DD-MM-YYYY"));
 	dataOrigin=await fetchData(start,now);  // ← FIX: await pour récupérer le tableau, pas la Promise
 	chartdata=dataOrigin;
