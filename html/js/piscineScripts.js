@@ -713,11 +713,11 @@ var statusErrorMap = {
 	(first) ? html += 'data-collapsed="false">' : html += '>';
 	html += '	<h3 class="myh3">Piscine</h3>';
 	html += '	<ul data-role="listview" data-inset="true">';
-	html += '		<li><a href="#pagePiscinePrincipale" data-transition="slide">Piscine</a></li>';
-	html += '		<li><a href="#pagePiscineParametres" data-transition="slide">Piscine Parametres</a></li>';
-	html += '		<li><a href="#pagePiscineMaintenance" data-transition="slide">Piscine Maintenance</a></li>';
-	html += '		<li><a href="#pagePiscineGraphs" data-transition="slide">Piscine Graphs</a></li>';
-	html += '		<li><a href="#pagePiscineDebug" data-transition="slide">Piscine Debug</a></li>';
+	html += '		<li><a href="#pagePiscinePrincipale" data-transition="slide"><h4 class="myh4">Piscine</h4></a></li>';
+	html += '		<li><a href="#pagePiscineParametres" data-transition="slide"><h4 class="myh4">Piscine Parametres</h4></a></li>';
+	html += '		<li><a href="#pagePiscineMaintenance" data-transition="slide"><h4 class="myh4">Piscine Maintenance</h4></a></li>';
+	html += '		<li><a href="#pagePiscineGraphs" data-transition="slide"><h4 class="myh4">Piscine Graphs</h4></a></li>';
+	html += '		<li><a href="#pagePiscineDebug" data-transition="slide"><h4 class="myh4">Piscine Debug</h4></a></li>';
 	html += '	</ul>';
 	html += '</div>';
 	return html;
@@ -4581,3 +4581,38 @@ $(document).on('pagecreate', detectLayout);
 // Détection initiale
 detectLayout();
 
+// ========================================
+// FIX LEFTPANEL FONT - FORCER KAUSHAN SCRIPT VIA JAVASCRIPT
+// Nécessaire car jQuery Mobile CDN écrase les règles CSS malgré !important
+// ========================================
+$(document).on('panelcreate', '#leftpanel', function() {
+  console.log('🔧 Fix leftPanel font via JavaScript');
+  // Forcer Kaushan Script sur les titres collapsibles
+  $('#leftpanel a.ui-collapsible-heading-toggle').css({
+    'font-family': 'Kaushan Script, cursive',
+    'font-size': '1em',
+    'font-weight': 'normal'
+  });
+  // Forcer sur les items h4
+  $('#leftpanel h4.myh4').css({
+    'font-family': 'Kaushan Script, cursive',
+    'font-size': '1em',
+    'font-weight': 'normal'
+  });
+});
+
+// Au cas où panelcreate ne se déclenche pas, forcer après pagecreate
+$(document).on('pagecreate', function() {
+  setTimeout(function() {
+    $('#leftpanel a.ui-collapsible-heading-toggle').css({
+      'font-family': 'Kaushan Script, cursive',
+      'font-size': '1em',
+      'font-weight': 'normal'
+    });
+    $('#leftpanel h4.myh4').css({
+      'font-family': 'Kaushan Script, cursive',
+      'font-size': '1em',
+      'font-weight': 'normal'
+    });
+  }, 100);
+});
