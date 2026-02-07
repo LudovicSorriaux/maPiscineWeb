@@ -1,5 +1,6 @@
 
 // Global functions and variables
+console.log("📌 piscineScripts.js VERSION 2026-02-07-03:40 loaded");
 
 var maPiscine = maPiscine || {};
 
@@ -689,13 +690,16 @@ var statusErrorMap = {
 	var flgExterieur = false;
 	var flgFirst = false;
 
-	console.log("In set UI\n");
+	console.log("[DEBUG] In setUserUI - START");
 	theHtml += piscineMenu((flgFirst) ? false : true);
 	if (!flgFirst) flgFirst = true;
 	if(!flgExterieur) flgExterieur = true;
 	theHtml += '<hr class="inset">'
+	console.log("[DEBUG] Generated HTML length:", theHtml.length);
+	console.log("[DEBUG] Looking for #leftpanelMenu element:", $('#leftpanelMenu').length);
 	$('#leftpanelMenu').html(theHtml); 		// .collapsibleset("refresh");
 	$('#leftpanelMenu').enhanceWithin(); 	
+	console.log("[DEBUG] setUserUI - COMPLETE");
 	// $('#leftpanelMenu').collapsibleset("destroy").html(theHtml).collapsibleset().enhanceWithin();
 
 		// $('#mainPageButton').prop('href', '#myNewPopup');
@@ -1426,27 +1430,51 @@ function getNewData(debut, fin) {
 					$("#dlg-login .ui-title").text("User Management");
 				}
 			break;
-			case "leftpanel":
-				if(!userMenu){
-					console.log("calling leftpanel, set ui\n")
-					setUserUI();
-					userMenu = true;
-				}
-			break;
 		}
+	});
+
+	// Event handler for left panel opening
+	$(document).on("panelbeforeopen", "#leftpanel", function(event, ui) {
+		console.log("[DEBUG] panelbeforeopen - leftpanel triggered, userMenu=", userMenu);
+		if(!userMenu){
+			console.log("[DEBUG] calling setUserUI from panelbeforeopen");
+			setUserUI();
+			userMenu = true;
+		}
+	});
+
+	// Event handler for Options button - open panel of active page
+	$(document).on("vclick", "a[href='#optionsPiscineManager']", function(event) {
+		event.preventDefault();
+		event.stopPropagation();
+		
+		console.log("[DEBUG] Options button vclick!");
+		
+		// Find panel in the button's parent page
+		var currentPage = $(this).closest("[data-role='page']");
+		var pageId = currentPage.attr("id");
+		console.log("[DEBUG] Current page ID:", pageId);
+		
+		// Select panel within this specific page (use .find() instead of .children())
+		var activePanel = currentPage.find("#optionsPiscineManager");
+		console.log("[DEBUG] Panel found:", activePanel.length);
+		
+		if (activePanel.length) {
+			console.log("[DEBUG] Opening panel on page:", pageId);
+			activePanel.panel('open');
+		} else {
+			console.warn("[WARN] No panel found on page:", pageId);
+		}
+		
+		return false;
 	});
 
 	$(document).on("pagecontainerbeforeshow", function(event, ui) {
 
 		if (typeof ui.toPage !== "object") return;
+		console.log("[DEBUG] pagecontainerbeforeshow triggered for:", ui.toPage.attr("id"));
+		
 		switch (ui.toPage.attr("id")) {
-			case "leftpanel":
-				if(!userMenu){
-					setUserUI();
-					$("#leftpanel").enhanceWithin();
-					userMenu = true;
-				}
-			break;
 			case "dlg-login???":
 				if(ui.prevPage.attr("id") == "pageLogin"){
 					$("#dlg-login .ui-title").text("Login");
