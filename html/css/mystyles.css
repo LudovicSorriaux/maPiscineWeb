@@ -469,6 +469,19 @@ background-color: #333;
   #leftpanel .ui-listview li a.ui-btn,
   #leftpanel .ui-listview .ui-btn {
     font-size: 0.95em !important;
+    text-align: left !important;
+  }
+  
+  /* Forcer Kaushan Script pour les h4.myh4 dans leftpanel (jQuery Mobile enveloppe dans .ui-btn) */
+  #leftpanel .ui-listview li a h4.myh4,
+  #leftpanel .ui-listview li .ui-btn h4.myh4,
+  #leftpanel .ui-listview .myh4,
+  #leftpanel h4.myh4 {
+    font-family: 'Kaushan Script', cursive !important;
+    font-size: 1em !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-weight: normal !important;
   }
   
   /* Panel options (optionsPiscineManager) : laisser jQuery Mobile gérer l'animation */
