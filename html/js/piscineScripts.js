@@ -1,6 +1,6 @@
 
 // Global functions and variables
-console.log("📌 piscineScripts.js VERSION 2026-02-07-22:15 loaded");
+console.log("📌 piscineScripts.js VERSION 2026-02-07-22:20 loaded");
 
 var maPiscine = maPiscine || {};
 
@@ -1277,15 +1277,18 @@ function updateGraphProgress(current, total, message) {
 	if (!$('#graphProgressBar').length) {
 		const progressHTML = `
 			<div id="graphProgressContainer" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-			     background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); 
-			     min-width: 300px; z-index: 9999;">
-				<div id="graphProgressMessage" style="margin-bottom: 10px; font-weight: bold; text-align: center;">Chargement...</div>
-				<div style="background: #e0e0e0; border-radius: 4px; overflow: hidden; height: 24px;">
-					<div id="graphProgressBar" style="background: linear-gradient(90deg, #4CAF50, #8BC34A); 
+			     background: #1F2736; padding: 20px; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,0.5); 
+			     border: 1px solid #36455b; min-width: 320px; max-width: 90%; z-index: 9999;">
+				<div id="graphProgressMessage" style="margin-bottom: 12px; font-weight: bold; text-align: center; 
+				     color: #ddd; font-size: 14px;">Chargement...</div>
+				<div style="background: #0e0e0e; border-radius: 4px; overflow: hidden; height: 28px; 
+				     border: 1px solid #252525;">
+					<div id="graphProgressBar" style="background: linear-gradient(90deg, #1045a9, #3a7bc8); 
 					     height: 100%; width: 0%; transition: width 0.3s ease; display: flex; align-items: center; 
-					     justify-content: center; color: white; font-weight: bold; font-size: 12px;">0%</div>
+					     justify-content: center; color: #fff; font-weight: bold; font-size: 13px; 
+					     box-shadow: inset 0 2px 4px rgba(255,255,255,0.2);">0%</div>
 				</div>
-				<div id="graphProgressDetail" style="margin-top: 8px; font-size: 12px; color: #666; text-align: center;"></div>
+				<div id="graphProgressDetail" style="margin-top: 10px; font-size: 12px; color: #aaa; text-align: center;"></div>
 			</div>
 		`;
 		$('body').append(progressHTML);
