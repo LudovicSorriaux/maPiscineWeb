@@ -15,9 +15,9 @@
 #include "Logger.h"
 
 /**
- * @brief Helper: Parse date DD-MM-YYYY vers time_t (struct tm)
+ * @brief Helper: Parse date DD-MM-YYYY vers time_t (calcul manuel, pas de NTP requis)
  * @param dateStr Format "DD-MM-YYYY" (ex: "07-02-2026")
- * @return time_t Unix timestamp
+ * @return time_t Unix timestamp (UTC, minuit)
  */
 time_t parseDateDDMMYYYY(const char* dateStr) {
     int d, m, y;
@@ -25,17 +25,31 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
         return 0;  // Échec parsing
     }
     
-    struct tm tm;
-    memset(&tm, 0, sizeof(struct tm));
-    tm.tm_year = y - 1900;  // struct tm: années depuis 1900
-    tm.tm_mon = m - 1;      // struct tm: mois 0-11
-    tm.tm_mday = d;         // jour du mois 1-31
-    tm.tm_hour = 0;
-    tm.tm_min = 0;
-    tm.tm_sec = 0;
-    tm.tm_isdst = -1;       // Auto DST
+    // Calcul manuel timestamp (évite mktime() qui nécessite NTP sync)
+    // Jours par mois (non bissextile)
+    const int daysInMonth[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
     
-    return mktime(&tm);
+    // Années depuis epoch (1970-01-01)
+    int years = y - 1970;
+    long days = years * 365;
+    
+    // Ajouter jours des années bissextiles (1972, 1976, ..., 2024, 2028, ...)
+    days += (years + 1) / 4;  // Années divisibles par 4
+    
+    // Ajouter jours des mois précédents
+    for (int i = 0; i < m - 1; i++) {
+        days += daysInMonth[i];
+    }
+    
+    // Ajouter jour bissextile si année courante bissextile ET mois > février
+    if (m > 2 && (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0))) {
+        days++;
+    }
+    
+    // Ajouter jours du mois
+    days += d - 1;
+    
+    return days * 86400;  // Convertir jours → secondes
 }
 
 /**
