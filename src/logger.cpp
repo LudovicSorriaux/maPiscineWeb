@@ -245,11 +245,15 @@
         
         snprintf(fileName, 80, "/Log/%d/Logs/%s/%s-%d-Moy.log", 
                  (year(tCurr)+1970), monthStr(month(tCurr)), dayShortStr(tCurr), day(tCurr));
-        if(SD.exists(fileName)){
+        
+        // FIX WDT: SD.exists() cause WDT reset (parcourt arborescence FAT)
+        // Tentative ouverture directe, skip si échec (fichier absent)
+        logFile = SD.open(fileName, FILE_READ);
+        
+        if(logFile){
           filesProcessed++;  // Compteur fichiers traités
-          logFile = SD.open(fileName, FILE_READ);
-          if(logFile){
-            if(filePointer != 0){   // file processed patialy start a the end. 
+          
+          if(filePointer != 0){   // file processed patialy start a the end. 
               logFile.seek(filePointer+1);
             } else {
               if(currLen != 0){   // already done a previous file need to skip file's first line of this one
@@ -274,12 +278,11 @@
                 nextFile = true;
               }
             }
-          } else {
-            break;    // can't open existing file something went wrong !
-          }
-        } else {    // file doesn't exist process next day
+            logFile.close();  // Fermer fichier proprement
+        } else {
+          // Fichier n'existe pas, passer au jour suivant
           nextFile = true;
-        } 
+        }
 
         if(nextFile){
           tCurr += 24*60*60;  // add one day        
