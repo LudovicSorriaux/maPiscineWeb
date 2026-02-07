@@ -15,23 +15,27 @@
 #include "Logger.h"
 
 /**
- * @brief Helper: Parse date DD-MM-YYYY vers time_t (TimeLib)
+ * @brief Helper: Parse date DD-MM-YYYY vers time_t (struct tm)
  * @param dateStr Format "DD-MM-YYYY" (ex: "07-02-2026")
  * @return time_t Unix timestamp
  */
 time_t parseDateDDMMYYYY(const char* dateStr) {
     int d, m, y;
-    sscanf(dateStr, "%d-%d-%d", &d, &m, &y);
+    if (sscanf(dateStr, "%d-%d-%d", &d, &m, &y) != 3) {
+        return 0;  // Échec parsing
+    }
     
-    tmElements_t tm;
-    tm.Year = y - 1970;  // TimeLib: année depuis 1970
-    tm.Month = m;
-    tm.Day = d;
-    tm.Hour = 0;
-    tm.Minute = 0;
-    tm.Second = 0;
+    struct tm tm;
+    memset(&tm, 0, sizeof(struct tm));
+    tm.tm_year = y - 1900;  // struct tm: années depuis 1900
+    tm.tm_mon = m - 1;      // struct tm: mois 0-11
+    tm.tm_mday = d;         // jour du mois 1-31
+    tm.tm_hour = 0;
+    tm.tm_min = 0;
+    tm.tm_sec = 0;
+    tm.tm_isdst = -1;       // Auto DST
     
-    return makeTime(tm);
+    return mktime(&tm);
 }
 
 /**
