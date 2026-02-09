@@ -261,26 +261,26 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
                 if (piscineParams[IND_PP].valeur != 0) {
                     char heureMinPP[16];
                     minuteToHeureMinute(piscineParams[IND_PP].valeur, heureMinPP, sizeof(heureMinPP));
-                    snprintf(strTempo3, sizeof(strTempo3), "%s%s", FPSTR(STR_PP_FOR), heureMinPP);
+                    snprintf(strTempo3, sizeof(strTempo3), "%s%s", (const char*)FPSTR(STR_PP_FOR), heureMinPP);
                     if(piscineParams[IND_PompePH].valeur != 0) {
                         char minSecPH[24];
                         secondsToMinuteSeconds(piscineParams[IND_PompePH].valeur, minSecPH, sizeof(minSecPH));
                         char temp[64];
-                        snprintf(temp, sizeof(temp), "%s%s", FPSTR(STR_PH_MINUS_FOR), minSecPH);
+                        snprintf(temp, sizeof(temp), "%s%s", (const char*)FPSTR(STR_PH_MINUS_FOR), minSecPH);
                         strcat(strTempo3, temp);
                     }
                     if( (piscineParams[IND_TypePompe3].valeur == PHp) && (piscineParams[IND_PompeALG].valeur != 0) ){
                         char minSecALG[24];
                         secondsToMinuteSeconds(piscineParams[IND_PompeALG].valeur, minSecALG, sizeof(minSecALG));
                         char temp[64];
-                        snprintf(temp, sizeof(temp), "%s%s", FPSTR(STR_PH_PLUS_FOR), minSecALG);
+                        snprintf(temp, sizeof(temp), "%s%s", (const char*)FPSTR(STR_PH_PLUS_FOR), minSecALG);
                         strcat(strTempo3, temp);
                     }
                     if (piscineParams[IND_PompeCL].valeur != 0) {
                         char minSecCL[24];
                         secondsToMinuteSeconds(piscineParams[IND_PompeCL].valeur, minSecCL, sizeof(minSecCL));
                         char temp[64];
-                        snprintf(temp, sizeof(temp), "%s%s", FPSTR(STR_CL_FOR), minSecCL);
+                        snprintf(temp, sizeof(temp), "%s%s", (const char*)FPSTR(STR_CL_FOR), minSecCL);
                         strcat(strTempo3, temp);
                     }
                     jsonRoot["ligne3"] = strTempo3;
@@ -644,8 +644,7 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
         });
         
         // Handler d'upload avec gestion du body (sécurisé par adminPassword)
-        server.on("/upload", HTTP_POST,
-            [this](AsyncWebServerRequest *request) {
+        server.on("/upload", HTTP_POST, [this](AsyncWebServerRequest *request) {
                 // Vérification adminPassword dans POST
                 if (!request->hasParam("adminPassword", true)) {
                     request->send(401, "text/plain", "Upload refusé : adminPassword manquant");
@@ -809,7 +808,7 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
             jsonRoot[FPSTR(STR_JSON_TTL)] = ttl;
             jsonRoot[FPSTR(STR_JSON_ISLOCAL)] = isLocal;  // Informe le frontend
             char welcomeMsg[64];
-            snprintf(welcomeMsg, sizeof(welcomeMsg), "%s%s!", FPSTR(STR_WELCOME), newusername);
+            snprintf(welcomeMsg, sizeof(welcomeMsg), "%s%s!", (const char*)FPSTR(STR_WELCOME), newusername);
             jsonRoot[FPSTR(STR_JSON_MESSAGE)] = welcomeMsg;
             logger.println(FPSTR(STR_LOG_SUCCESS));
         } else {              // bad password or user not found
@@ -1244,8 +1243,12 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
         char sessionID[16];
         bool rtn = false;
 
-        if(request->hasParam("sess",true)){                                     // check the session credentials
+        // Accepter sess en POST (true) OU GET query string (false)
+        if(request->hasParam("sess",true)){                                     // POST body
             request->getParam("sess",true)->value().toCharArray(sessionID,16);      
+            rtn = isSessionValid(sessionID);
+        } else if(request->hasParam("sess",false)){                             // GET query string
+            request->getParam("sess",false)->value().toCharArray(sessionID,16);      
             rtn = isSessionValid(sessionID);
         }
         return rtn;
@@ -1659,22 +1662,47 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
         
         logger.printf("[GRAPH API] Plan request: %s → %s\n", start.c_str(), end.c_str());
         
-        // Parse dates avec helper externe (défini dans logger.cpp)
-        extern time_t parseDateDDMMYYYY(const char* dateStr);
-        time_t t_start = parseDateDDMMYYYY(start.c_str());
-        time_t t_end = parseDateDDMMYYYY(end.c_str());
+        // Parse dates avec helper (défini dans logger.cpp, déclaré logger.h)
+        // IMPORTANT: Copier strings dans buffers locaux pour éviter corruption .c_str()
+        char startBuf[16], endBuf[16];
+        strlcpy(startBuf, start.c_str(), sizeof(startBuf));
+        strlcpy(endBuf, end.c_str(), sizeof(endBuf));
+        
+        time_t t_start = parseDateDDMMYYYY(startBuf);
+        time_t t_end = parseDateDDMMYYYY(endBuf);
         
         // Calcul nombre de jours
         int total_days = ((t_end - t_start) / 86400) + 1;
         
-        logger.printf("[GRAPH API] Parsed: %d days (%ld → %ld)\n", 
-                     total_days, t_start, t_end);
+        logger.printf("[GRAPH API] Parsed: %d days (%lld → %lld)\n", 
+                     total_days, (long long)t_start, (long long)t_end);
         
-        // Réponse minimaliste (client calcule dates lui-même)
-        StaticJsonDocument<256> doc;
+        // Vérifier existence fichiers et construire liste dates disponibles
+        StaticJsonDocument<512> doc;
+        JsonArray availableDates = doc.createNestedArray("dates");
+        int availableCount = 0;
+        
+        for (int i = 0; i < total_days; i++) {
+            time_t currentDay = t_start + (i * 86400);
+            
+            // Construire date DD-MM-YYYY pour cette itération
+            char dateStr[16];
+            snprintf(dateStr, sizeof(dateStr), "%02d-%02d-%d", 
+                     day(currentDay), month(currentDay), year(currentDay));
+            
+            // Vérifier existence fichier via logger
+            LoggerClass::FileInfo info = logger.getFileInfo(dateStr, 1024);
+            
+            if (info.exists) {
+                availableDates.add(dateStr);
+                availableCount++;
+            }
+        }
+        
         doc["start"] = start;
         doc["end"] = end;
         doc["total_days"] = total_days;
+        doc["available_days"] = availableCount;
         
         String response;
         serializeJson(doc, response);
@@ -1684,7 +1712,7 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
         resp->addHeader("Access-Control-Allow-Origin", "*");
         request->send(resp);
         
-        logger.printf("[GRAPH API] Plan sent: %d days\n", total_days);
+        logger.printf("[GRAPH API] Plan sent: %d/%d days available\n", availableCount, total_days);
     }
 
   /*
@@ -2301,9 +2329,9 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
             loaded++;
             slot++;
             
-            time_t expireTime = timecreated + ttl;
-            logger.printf("[SESSION] Chargé session %s (TTL: %lld, expire: %s)\n", 
-                          sessID, (long long)ttl, ctime(&expireTime));
+            // time_t expireTime = timecreated + ttl;
+            // logger.printf("[SESSION] Chargé session %s (TTL: %lld, expire: %s)\n", 
+            //               sessID, (long long)ttl, ctime(&expireTime));
         }
 
         logger.printf("[SESSION] ✅ %d sessions chargées depuis SD\n", loaded);
@@ -2434,11 +2462,58 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
     // Stocker nouvelle session dans slot vide
     for (i=0; i<10; i++){  // 10 sessions max
         if(activeSessions[i].ttl == 0) { // found an empty slot
-        strlcpy(activeSessions[i].sessID, sessID, 16);
-        activeSessions[i].timecreated=now();
-        activeSessions[i].ttl=ttl;
-        flagOK=true;
-        break;
+            strlcpy(activeSessions[i].sessID, sessID, 16);
+            activeSessions[i].timecreated=now();
+            activeSessions[i].ttl=ttl;
+            flagOK=true;
+            break;
+        }
+    }
+    
+    // Si tableau plein (10 sessions), éviction LRU : supprimer session 1 an la plus ancienne
+    if (!flagOK) {
+        const long ONE_YEAR_TTL = 365L * 24 * 60 * 60;  // 1 an en secondes
+        int oldestSlot = -1;
+        time_t oldestTime = LONG_MAX;
+        
+        // Chercher session 1 an la plus ancienne
+        for (i=0; i<10; i++){
+            if (activeSessions[i].ttl >= ONE_YEAR_TTL) {  // Session longue durée
+                if (activeSessions[i].timecreated < oldestTime) {
+                    oldestTime = activeSessions[i].timecreated;
+                    oldestSlot = i;
+                }
+            }
+        }
+        
+        // Si session 1 an trouvée, la supprimer
+        if (oldestSlot != -1) {
+            logger.printf("[SESSION] Éviction LRU: slot %d (créée %lld, TTL=%lld)\n", 
+                         oldestSlot, (long long)activeSessions[oldestSlot].timecreated, (long long)activeSessions[oldestSlot].ttl);
+            
+            // Remplacer par nouvelle session
+            strlcpy(activeSessions[oldestSlot].sessID, sessID, 16);
+            activeSessions[oldestSlot].timecreated=now();
+            activeSessions[oldestSlot].ttl=ttl;
+            flagOK=true;
+        } else {
+            // Fallback: éviction session la plus ancienne (quel que soit TTL)
+            oldestSlot = 0;
+            oldestTime = activeSessions[0].timecreated;
+            for (i=1; i<10; i++){
+                if (activeSessions[i].timecreated < oldestTime) {
+                    oldestTime = activeSessions[i].timecreated;
+                    oldestSlot = i;
+                }
+            }
+            
+            logger.printf("[SESSION] Éviction fallback: slot %d (créée %lld, TTL=%lld)\n", 
+                         oldestSlot, (long long)activeSessions[oldestSlot].timecreated, (long long)activeSessions[oldestSlot].ttl);
+            
+            strlcpy(activeSessions[oldestSlot].sessID, sessID, 16);
+            activeSessions[oldestSlot].timecreated=now();
+            activeSessions[oldestSlot].ttl=ttl;
+            flagOK=true;
         }
     }
     
@@ -2459,11 +2534,11 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebClass::printActiveSessions(){   // to help debug
-        logger.printf("Dump of Active session tab, now is: %lld\n",now());
-        for (uint8_t i=0; i<10;i++){
-            if(activeSessions[i].timecreated == 0) break; // no more to show
-            logger.printf("sessionID: %s, ttl: %lld, timecreated: %lld\n", activeSessions[i].sessID,activeSessions[i].ttl,activeSessions[i].timecreated);
-        }  
+        // logger.printf("Dump of Active session tab, now is: %lld\n",now());
+        // for (uint8_t i=0; i<10;i++){
+        //     if(activeSessions[i].timecreated == 0) break; // no more to show
+        //     logger.printf("sessionID: %s, ttl: %lld, timecreated: %lld\n", activeSessions[i].sessID,activeSessions[i].ttl,activeSessions[i].timecreated);
+        // }  
     }
 
   /*

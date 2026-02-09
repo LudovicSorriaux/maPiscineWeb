@@ -1,5 +1,15 @@
 .ui-mobile .ui-page{background-image:url(../images/texture1.png) !important;}
 
+/* === DYGRAPH AXES LABELS === */
+/* Indices des axes en blanc pour tous les graphiques */
+.dygraph-axis-label,
+.dygraph-axis-label-x,
+.dygraph-axis-label-y,
+.dygraph-axis-label-y2 {
+  fill: #FFFFFF !important;
+  color: #FFFFFF !important;
+}
+
 form .error {
 	color: #f96868;
 	}
@@ -252,6 +262,101 @@ background-color: #333;
   }
 }
 
+/* === STYLES GLOBAUX GRAPH-ZONE (tous modes) === */
+.graph-zone {
+  background: linear-gradient(145deg, rgba(40, 40, 50, 0.9), rgba(20, 20, 30, 0.95));
+  border-radius: 14px;
+  padding: 12px;
+  margin: 0;
+  box-shadow: 
+    0 0 20px rgba(0, 255, 255, 0.45),
+    0 4px 15px rgba(0, 0, 0, 0.6),
+    inset 0 1px 3px rgba(255, 255, 255, 0.1),
+    inset 0 -2px 8px rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(0, 255, 255, 0.35);
+}
+
+.graph-zone-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #00FFFF;
+  margin: 0 0 10px 0;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  text-shadow: 0 0 12px rgba(0, 255, 255, 0.8), 0 0 25px rgba(0, 255, 255, 0.4);
+  cursor: pointer;
+  padding: 8px;
+}
+
+.graph-selector {
+  margin-bottom: 10px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+}
+
+.graph-selector .ui-field-contain {
+  margin: 0;
+  padding: 0;
+}
+
+.graph-selector label {
+  font-size: 13px;
+  color: #00FFFF;
+  margin-bottom: 4px;
+}
+
+.zone-graph-selector {
+  width: 100% !important;
+  margin-top: 4px;
+}
+
+.axis-selector {
+  display: block !important;
+  margin-bottom: 8px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+}
+
+.axis-selector .ui-field-contain {
+  margin: 0;
+  padding: 0;
+}
+
+.axis-selector label {
+  font-size: 13px;
+  color: #00FFFF;
+  margin-bottom: 4px;
+}
+
+.axis-selector-dropdown {
+  width: 100% !important;
+  margin-top: 4px;
+}
+
+/* Bouton validation jQuery Mobile multiple select */
+.ui-selectmenu .ui-header .ui-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: auto !important;
+}
+
+.ui-selectmenu .ui-header .ui-btn .ui-icon-delete:before {
+  content: "\2713" !important; /* Check Unicode */
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.ui-selectmenu .ui-header .ui-btn:after {
+  content: "Valider";
+  margin-left: 24px;
+  font-size: 14px;
+  color: #00FFFF;
+}
+
 /* Tablette portrait (768px-1023px portrait) */
 @media (min-width: 768px) and (max-width: 1023px) and (orientation: portrait) {
   .ui-page { 
@@ -330,38 +435,483 @@ background-color: #333;
     flex-wrap: wrap !important;
   }
   
-  /* === RESPONSIVE GRAPHS LAYOUT === */
-  /* Mobile portrait : graph unique visible */
+  /* Tablette portrait: 2 zones visibles (zone-1 et zone-2) */
+  #graph-zone-1,
+  #graph-zone-2 {
+    display: block !important;
+  }
+  
+  #graph-zone-3 {
+    display: none !important;
+  }
+  
+  /* Grid 2 colonnes flex (zone-1 et zone-2) */
   #graph-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     width: 100%;
+    height: calc(100vh - 140px);
   }
   
-  #graph-mobile {
-    display: block;
+  #graph-zone-1,
+  #graph-zone-2 {
+    flex: 1;
+    min-height: 0;
   }
   
-  #graphs-desktop {
-    display: none;
+  .graph-content {
+    width: 100%;
+    height: calc(100% - 140px);
   }
   
   .graph-canvas {
     width: 100%;
-    height: 400px;
+    height: calc(100% - 40px);
+    min-height: 200px;
   }
   
   .graph-legend {
-    font-size: 13px;
+    font-size: 11px;
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
+    color: #fff;
   }
 }
 
-/* Tablette paysage / Desktop (1024px+ landscape) */
-@media (min-width: 1024px) and (orientation: landscape) {
+/* === MOBILE PORTRAIT (<768px portrait) === */
+@media (max-width: 767px) and (orientation: portrait) {
+  /* Mobile portrait : zone-1 seule visible */
+  #graph-zone-1 {
+    display: block !important;
+  }
+  
+  #graph-zone-2,
+  #graph-zone-3 {
+    display: none !important;
+  }
+  
+  #graph-container {
+    width: calc(100% - 16px);
+    height: calc(100vh - 150px); /* Augmenté pour remplir écran */
+    margin: 8px;
+    padding: 0;
+  }
+  
+  #graph-zone-1 {
+    width: 100%;
+    height: 100%;
+  }
+  
+  .graph-content {
+    width: 100%;
+    height: calc(100% - 180px); /* Plus d'espace pour titre + graph-selector + axis-selector */
+  }
+  
+  .graph-canvas {
+    width: 100%;
+    height: 100%; /* Utiliser tout l'espace disponible dans graph-content */
+    min-height: 350px; /* Augmenté pour bien remplir écran portrait */
+  }
+  
+  .graph-legend {
+    font-size: 11px;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+    color: #fff;
+  }
+}
+
+/* === MOBILE PAYSAGE (orientation landscape, <768px) === */
+@media (max-width: 767px) and (orientation: landscape) {
+  /* Zones 1 et 2 visibles, zone 3 masquée */
+  #graph-zone-1,
+  #graph-zone-2 {
+    display: block !important;
+  }
+  
+  #graph-zone-3 {
+    display: none !important;
+  }
+  
+  /* Grid 2 colonnes strictement égales - chaque zone 50% largeur */
+  #graph-container {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    margin-top: 4px;
+    width: 100%;
+    height: auto; /* Hauteur automatique pour scroll */
+    min-height: calc(100vh - 100px); /* Minimum = hauteur écran */
+    overflow-y: auto; /* Scroll vertical si nécessaire */
+  }
+  
+  #graph-zone-1,
+  #graph-zone-2 {
+    width: 100%;
+    min-height: calc(100vh - 120px); /* Hauteur minimum = presque plein écran */
+    height: auto; /* Hauteur automatique selon contenu */
+  }
+  
+  .graph-zone {
+    background: linear-gradient(145deg, rgba(40, 40, 50, 0.9), rgba(20, 20, 30, 0.95));
+    border-radius: 12px;
+    padding: 6px;
+    margin: 0;
+    box-shadow: 
+      0 0 18px rgba(0, 255, 255, 0.45),
+      0 4px 12px rgba(0, 0, 0, 0.6),
+      inset 0 1px 3px rgba(255, 255, 255, 0.1),
+      inset 0 -2px 6px rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(0, 255, 255, 0.35);
+  }
+  
+  .graph-zone-title {
+    font-size: 14px;
+    font-weight: bold;
+    color: #00FFFF;
+    margin: 0 0 6px 0;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    cursor: pointer;
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.8), 0 0 20px rgba(0, 255, 255, 0.4);
+  }
+  
+  /* Sélecteur de graphe dans header collapsible */
+  .graph-selector {
+    margin-bottom: 8px;
+  }
+  
+  .zone-graph-selector {
+    width: 100%;
+    padding: 6px;
+    font-size: 13px;
+    background: rgba(0, 0, 0, 0.5);
+    color: #00FFFF;
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    border-radius: 6px;
+  }
+  
+  /* Axis selector visible en mobile paysage */
+  .axis-selector {
+    display: block !important;
+    margin-bottom: 6px;
+    padding: 4px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 6px;
+  }
+  
+  .axis-selector label {
+    font-size: 11px;
+    color: #00FFFF;
+  }
+  
+  .axis-selector-dropdown {
+    width: 100% !important;
+  }
+  
+  /* Graph selector visible au clic titre */
+  .graph-selector {
+    margin-bottom: 8px;
+  }
+  
+  .graph-content {
+    width: 100%;\n    height: calc(100% - 60px);
+  }
+  
+  .graph-canvas {
+    height: calc(100% - 60px);
+    min-height: 200px;
+    margin-top: 6px;
+  }
+  
+  .graph-canvas canvas {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  }
+  
+  .graph-zone-title {
+    font-size: 13px;
+    font-weight: bold;
+    color: #00FFFF;
+    margin: 0 0 6px 0;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+    cursor: pointer;  /* Cliquable pour sélecteur graphe */
+    padding: 3px;
+  }
+  
+  /* Graphique pleine hauteur disponible */
+  .graph-canvas {
+    width: 100%;
+    height: calc(100% - 60px) !important;  /* Hauteur relative à zone parente */
+  }
+  
+  .graph-legend {
+    font-size: 9px !important;
+    margin-bottom: 4px;
+  }
+  
+  .axis-selector {
+    margin-bottom: 5px;
+    font-size: 10px;
+    display: block !important;
+  }
+  
+  /* Sélecteur de graphe - masqué par défaut, affiché au clic sur titre */
+  .graph-selector {
+    margin-bottom: 6px;
+    font-size: 10px;
+    display: none;
+  }
+}
+
+/* === TABLETTE PORTRAIT (768px-1023px portrait) === */
+@media (min-width: 768px) and (max-width: 1023px) and (orientation: portrait) {
+  /* Zones 1 et 2 visibles, zone 3 masquée */
+  #graph-zone-1,
+  #graph-zone-2 {
+    display: block !important;
+  }
+  
+  #graph-zone-3 {
+    display: none !important;
+  }
+  
+  /* Disposition verticale - 2 zones empilées 50% hauteur chacune */
+  #graph-container {
+    display: flex !important;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 6px;
+    width: 100%;
+    height: calc(100vh - 180px);
+  }
+  
+  #graph-zone-1,
+  #graph-zone-2 {
+    width: 100%;
+    flex: 1;
+  }
+  
+  .graph-zone {
+    background: linear-gradient(145deg, rgba(40, 40, 50, 0.9), rgba(20, 20, 30, 0.95));
+    border-radius: 14px;
+    padding: 8px;
+    margin: 0;
+    box-shadow: 
+      0 0 25px rgba(0, 255, 255, 0.5),
+      0 6px 20px rgba(0, 0, 0, 0.7),
+      inset 0 2px 5px rgba(255, 255, 255, 0.12),
+      inset 0 -3px 10px rgba(0, 0, 0, 0.45);
+    border: 2px solid rgba(0, 255, 255, 0.35);
+  }
+  
+  .graph-zone-title {
+    font-size: 15px;
+    font-weight: bold;
+    color: #00FFFF;
+    margin: 0 0 8px 0;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1.6px;
+    text-shadow: 0 0 12px rgba(0, 255, 255, 0.85), 0 0 25px rgba(0, 255, 255, 0.45);
+    cursor: pointer;  /* Cliquable pour sélecteur graphe */
+  }
+  
+  .graph-canvas {
+    width: 100%;
+    height: calc(100% - 70px) !important;  /* Hauteur relative à zone parente flex */
+  }
+  
+  .graph-legend {
+    font-size: 11px !important;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+  
+  .axis-selector {
+    margin-bottom: 6px;
+    font-size: 11px;
+    display: block !important;
+  }
+  
+  /* Sélecteur de graphe - masqué par défaut, affiché au clic sur titre */
+  .graph-selector {
+    margin-bottom: 8px;
+    font-size: 11px;
+    display: none;
+  }
+}
+
+/* === TABLETTE PAYSAGE (768px-1279px landscape) === */
+@media (min-width: 768px) and (max-width: 1279px) and (orientation: landscape) {
+  /* Zones 1 et 2 visibles, zone 3 masquée */
+  #graph-zone-1,
+  #graph-zone-2 {
+    display: block !important;
+  }
+  
+  #graph-zone-3 {
+    display: none !important;
+  }
+  
+  /* Grid 2 colonnes strictement égales - chaque zone 50% largeur */
+  #graph-container {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-top: 6px;
+    width: 100%;
+    height: calc(100vh - 140px);
+  }
+  
+  #graph-zone-1,
+  #graph-zone-2 {
+    width: 100%;
+    height: 100%;
+  }
+  
+  .graph-zone {
+    background: linear-gradient(145deg, rgba(40, 40, 50, 0.9), rgba(20, 20, 30, 0.95));
+    border-radius: 14px;
+    padding: 8px;
+    margin: 0;
+    box-shadow: 
+      0 0 25px rgba(0, 255, 255, 0.5),
+      0 6px 20px rgba(0, 0, 0, 0.7),
+      inset 0 2px 5px rgba(255, 255, 255, 0.12),
+      inset 0 -3px 10px rgba(0, 0, 0, 0.45);
+    border: 2px solid rgba(0, 255, 255, 0.35);
+  }
+  
+  .graph-zone-title {
+    font-size: 14px;
+    font-weight: bold;
+    color: #00FFFF;
+    margin: 0 0 8px 0;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1.6px;
+    text-shadow: 0 0 12px rgba(0, 255, 255, 0.85), 0 0 25px rgba(0, 255, 255, 0.45);
+    cursor: pointer;  /* Cliquable pour sélecteur graphe */
+    padding: 6px;
+  }
+  
+  /* Graphiques adaptés aux dimensions tablette paysage - hauteur réduite */
+  .graph-canvas {
+    width: 100%;
+    height: calc(100vh - 240px) !important;
+  }
+  
+  .graph-legend {
+    font-size: 10px !important;
+    margin-bottom: 6px;
+    color: #fff;
+  }
+  
+  .axis-selector {
+    margin-bottom: 8px;
+    font-size: 11px;
+    display: block !important;
+  }
+  
+  /* Sélecteur de graphe - masqué par défaut, affiché au clic sur titre */
+  .graph-selector {
+    margin-bottom: 10px;
+    font-size: 11px;
+    display: none;
+  }
+}
+
+/* === DESKTOP / GRAND ÉCRAN (1280px+ landscape OU 1440px+) === */
+@media (min-width: 1280px) and (orientation: landscape), (min-width: 1440px) {
+  /* 3 zones visibles */
+  #graph-zone-1,
+  #graph-zone-2,
+  #graph-zone-3 {
+    display: block !important;
+  }
+  
+  /* Grid 3 colonnes strictement égales - chaque zone 33.33% largeur */
+  #graph-container {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-top: 4px;
+    width: 100%;
+    height: calc(100vh - 160px);
+  }
+  
+  #graph-zone-1,
+  #graph-zone-2,
+  #graph-zone-3 {
+    width: 100%;
+    height: 100%;
+  }
+  
+  .graph-zone {
+    background: linear-gradient(145deg, rgba(45, 45, 60, 0.95), rgba(25, 25, 35, 0.98));
+    border-radius: 14px;
+    padding: 6px;
+    margin: 0;
+    box-shadow: 
+      0 0 35px rgba(0, 255, 255, 0.65),
+      0 8px 25px rgba(0, 0, 0, 0.75),
+      inset 0 3px 6px rgba(255, 255, 255, 0.15),
+      inset 0 -4px 12px rgba(0, 0, 0, 0.5);
+    border: 3px solid rgba(0, 255, 255, 0.45);
+  }
+  
+  .graph-zone-title {
+    font-size: 14px;
+    font-weight: bold;
+    color: #00FFFF;
+    margin: 0 0 6px 0;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1.8px;
+    text-shadow: 
+      0 0 15px rgba(0, 255, 255, 0.9), 
+      0 0 30px rgba(0, 255, 255, 0.5), 
+      0 0 45px rgba(0, 255, 255, 0.25);
+    cursor: default;  /* Non cliquable en desktop */
+    padding: 4px;
+  }
+  
+  /* Graphiques adaptés aux grands écrans - HAUTEUR MAXIMALE */
+  .graph-canvas {
+    width: 100%;
+    height: calc(100% - 80px) !important;  /* Hauteur relative à zone parente */
+  }
+  
+  .graph-legend {
+    font-size: 11px !important;
+    margin-bottom: 8px;
+    color: #fff;
+  }
+  
+  .axis-selector {
+    margin-bottom: 8px;
+    font-size: 11px;
+    display: block;  /* Toujours visible en desktop */
+  }
+  
+  /* Sélecteur de graphe - complètement masqué en desktop (3 graphes visibles) */
+  .graph-selector {
+    display: none !important;
+  }
+  
+  /* Styles desktop existants */
   .ui-page { 
-    max-width: 1200px !important; 
+    max-width: 1400px !important; 
     margin: 0 auto !important; 
   }
   .ui-content { 
@@ -491,33 +1041,43 @@ background-color: #333;
   }
   
   /* === PAGE GRAPHS DESKTOP === */
-  /* Masquer graph mobile, afficher 3 graphs desktop */
-  #graph-mobile {
+  /* Masquer sélecteur de graphique (desktop affiche 3 graphes fixes) */
+  #graphSelector-wrapper {
     display: none !important;
   }
   
-  #graphs-desktop {
+  /* Afficher les 3 zones graphiques en grille horizontale */
+  #graph-container {
     display: grid !important;
     grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
+    gap: 25px;
     margin-top: 20px;
   }
   
-  .graph-section {
-    background: rgba(255,255,255,0.05);
-    border-radius: 8px;
-    padding: 15px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  .graph-zone {
+    display: block !important;
+    background: rgba(30, 30, 30, 0.7);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: inset 0 3px 12px rgba(0,0,0,0.6), 0 6px 20px rgba(0,0,0,0.5);
+    border: 2px solid rgba(255,255,255,0.2);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
   
-  .graph-title {
+  .graph-zone:hover {
+    transform: translateY(-3px);
+    box-shadow: inset 0 3px 12px rgba(0,0,0,0.6), 0 8px 25px rgba(0,255,255,0.3);
+  }
+  
+  .graph-zone-title {
     font-size: 16px;
     font-weight: bold;
     color: #00FFFF;
-    margin: 0 0 10px 0;
+    margin: 0 0 12px 0;
     text-align: center;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
+    text-shadow: 0 0 15px rgba(0,255,255,0.7);
   }
   
   .graph-canvas {
@@ -530,12 +1090,13 @@ background-color: #333;
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     min-height: 30px;
+    color: #fff;
   }
   
   #pagePiscineGraphs #graphMainPage {
-    max-width: 1400px !important;
+    max-width: 1600px !important;
     margin: 0 auto !important;
   }
 }

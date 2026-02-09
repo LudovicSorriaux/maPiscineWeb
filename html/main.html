@@ -60,6 +60,7 @@
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <!-- dygraph -->
 	<script src="https://unpkg.com/dygraphs@2.2.0/dist/dygraph.min.js"></script>
+	<script src="https://unpkg.com/dygraphs@2.2.0/src/extras/synchronizer.js"></script>
 	<link rel="stylesheet" href="https://unpkg.com/dygraphs@2.2.0/dist/dygraph.min.css">
 <!-- debuger -->
 	<script src="https://cdn.jsdelivr.net/gh/arschmitz/jquery-mobile-event-debugger@v0.0.4/jquery.mobile.event.debugger.js"></script>
@@ -1336,87 +1337,120 @@
 		</div>
 		
 		<div role="main" id="graphMainPage" class="ui-content" data-inset="false" style="font-size:14px">
-			<!-- Contrôles communs -->
+			<!-- Sélecteur de période (commun à tous modes) -->
 			<div class="ui-field-contain">
-				<label for="daterange" class="select smallLabel">Periode:</label> <input type="text" name="daterange" id="daterange" value="01/01/2018 - 01/15/2018" class="single">
+				<label for="daterange" class="select smallLabel">Periode:</label> 
+				<input type="text" name="daterange" id="daterange" value="01/01/2018 - 01/15/2018" class="single">
 			</div>
 			
-			<!-- Container responsive pour graphiques -->
+			<!-- Container responsive pour zones graphiques -->
 			<div id="graph-container">
-				<!-- Mobile portrait : graph unique multiaxes -->
-				<div id="graph-mobile" class="graph-wrapper">
-					<div class="ui-field-contain">
-						<label for="selectItems" class="smallLabel">Courbes:</label> 
-						<select name="selectItems" id="selectItems" multiple="multiple" data-native-menu="false" data-mini="true" style="width:80%">
-							<option>Choose options</option>
-							<option value="0" selected="selected">TempEau</option>
-							<option value="1" selected="selected">TempAir</option>
-							<option value="2">TempPAC</option>
-							<option value="3">TempInt</option>
-							<option value="4" selected="selected">PHVal</option>
-							<option value="5">RedoxVal</option>
-							<option value="6">CLVal</option>
-							<option value="7">PompePH</option>
-							<option value="8">PompeCL</option>
-							<option value="9">PompeALG</option>
-							<option value="10" selected="selected">PP</option>
-							<option value="11">PAC</option>
-							<option value="12" selected="selected">Auto</option>
-						</select>
+				<!-- Zone fixe 1 (toujours visible) -->
+				<div class="graph-zone" id="graph-zone-1" data-graph-type="chemistry">
+					<!-- Titre cliquable -->
+					<h3 class="graph-zone-title">Chimie de l'eau</h3>
+					<!-- Sélecteur de graphe (affiché au clic sur titre mobile/tablette) -->
+					<div class="graph-selector" style="display:none;">
+						<div class="ui-field-contain">
+							<label for="graphSelector1" class="select smallLabel">Changer graphique:</label>
+							<select name="graphSelector1" class="zone-graph-selector" data-zone="1" data-mini="true">
+								<option value="chemistry" selected>Chimie</option>
+								<option value="temperature">Températures</option>
+								<option value="equipment">Équipements</option>
+							</select>
+						</div>
 					</div>
-					<div id="legend-mobile" class="graph-legend"></div>
-					<div id="graph1" class="graph-canvas"></div>
+					<!-- Contenu graphique (populé dynamiquement par JS) -->
+					<div class="graph-content"></div>
 				</div>
 				
-				<!-- Desktop/Tablette : 3 graphiques séparés -->
-				<div id="graphs-desktop" class="graph-wrapper">
-					<!-- Graphe 1 : Chimie (pH, Redox, Pompes) -->
-					<div class="graph-section">
-						<h3 class="graph-title">Chimie de l'eau</h3>
+				<!-- Zone fixe 2 (tablette/desktop) -->
+				<div class="graph-zone" id="graph-zone-2" data-graph-type="temperature">
+					<h3 class="graph-zone-title">Températures</h3>
+					<div class="graph-selector" style="display:none;">
 						<div class="ui-field-contain">
-							<label for="selectChemistry" class="smallLabel">Courbes:</label> 
-							<select name="selectChemistry" id="selectChemistry" multiple="multiple" data-native-menu="false" data-mini="true" style="width:80%">
-								<option value="0" selected="selected">PHVal</option>
-								<option value="1" selected="selected">RedoxVal</option>
-								<option value="2" selected="selected">PompePH</option>
-								<option value="3" selected="selected">PompeCL</option>
-								<option value="4" selected="selected">PompeALG</option>
+							<label for="graphSelector2" class="select smallLabel">Changer graphique:</label>
+							<select name="graphSelector2" class="zone-graph-selector" data-zone="2" data-mini="true">
+								<option value="chemistry">Chimie</option>
+								<option value="temperature" selected>Températures</option>
+								<option value="equipment">Équipements</option>
 							</select>
 						</div>
-						<div id="legend-chemistry" class="graph-legend"></div>
-						<div id="graph-chemistry" class="graph-canvas"></div>
 					</div>
-					
-					<!-- Graphe 2 : Températures -->
-					<div class="graph-section">
-						<h3 class="graph-title">Températures</h3>
+					<div class="graph-content"></div>
+				</div>
+				
+				<!-- Zone fixe 3 (desktop uniquement) -->
+				<div class="graph-zone" id="graph-zone-3" data-graph-type="equipment">
+					<h3 class="graph-zone-title">Équipements</h3>
+					<div class="graph-selector" style="display:none;">
 						<div class="ui-field-contain">
-							<label for="selectTemperature" class="smallLabel">Courbes:</label> 
-							<select name="selectTemperature" id="selectTemperature" multiple="multiple" data-native-menu="false" data-mini="true" style="width:80%">
-								<option value="0" selected="selected">TempEau</option>
-								<option value="1" selected="selected">TempAir</option>
-								<option value="2">TempPAC</option>
-								<option value="3">TempInt</option>
+							<label for="graphSelector3" class="select smallLabel">Changer graphique:</label>
+							<select name="graphSelector3" class="zone-graph-selector" data-zone="3" data-mini="true">
+								<option value="chemistry">Chimie</option>
+								<option value="temperature">Températures</option>
+								<option value="equipment" selected>Équipements</option>
 							</select>
 						</div>
-						<div id="legend-temperature" class="graph-legend"></div>
-						<div id="graph-temperature" class="graph-canvas"></div>
 					</div>
-					
-					<!-- Graphe 3 : Équipements -->
-					<div class="graph-section">
-						<h3 class="graph-title">Équipements</h3>
-						<div class="ui-field-contain">
-							<label for="selectEquipment" class="smallLabel">Courbes:</label> 
-							<select name="selectEquipment" id="selectEquipment" multiple="multiple" data-native-menu="false" data-mini="true" style="width:80%">
-								<option value="0" selected="selected">PP</option>
-								<option value="1" selected="selected">PAC</option>
-								<option value="2" selected="selected">Auto</option>
-							</select>
-						</div>
-						<div id="legend-equipment" class="graph-legend"></div>
-						<div id="graph-equipment" class="graph-canvas"></div>
+					<div class="graph-content"></div>
+				</div>
+			</div>
+			
+			<!-- Templates graphiques (masqués, clonés par JS) -->
+			<div id="graph-templates" style="display: none;">
+				<!-- Template Chimie -->
+				<div id="template-chemistry" class="graph-template">
+					<div class="ui-field-contain axis-selector">
+						<label for="selectChemistry" class="smallLabel">Courbes:</label> 
+						<select name="selectChemistry" class="axis-selector-dropdown" data-graph="chemistry" multiple="multiple" data-native-menu="false" data-mini="true" style="width:80%">
+							<option value="PHVal" selected="selected">PHVal</option>
+							<option value="RedoxVal" selected="selected">RedoxVal</option>
+							<option value="PompePH">PompePH</option>
+							<option value="PompeCL">PompeCL</option>
+							<option value="PompeALG">PompeALG</option>
+						</select>
 					</div>
+					<div class="graph-legend" data-legend="chemistry"></div>
+					<div class="graph-canvas" data-canvas="chemistry"></div>
+				</div>
+				
+				<!-- Template Températures -->
+				<div id="template-temperature" class="graph-template">
+					<div class="ui-field-contain axis-selector">
+						<label for="selectTemperature" class="smallLabel">Courbes:</label> 
+						<select name="selectTemperature" class="axis-selector-dropdown" data-graph="temperature" multiple="multiple" data-native-menu="false" data-mini="true" style="width:80%">
+							<option value="TempEau" selected="selected">TempEau</option>
+							<option value="TempAir" selected="selected">TempAir</option>
+							<option value="TempPAC" selected="selected">TempPAC</option>
+							<option value="TempInt" selected="selected">TempInt</option>
+							<option value="PAC">PAC</option>
+							<option value="PP">PP</option>
+							<option value="PHVal">PHVal</option>
+						</select>
+					</div>
+					<div class="graph-legend" data-legend="temperature"></div>
+					<div class="graph-canvas" data-canvas="temperature"></div>
+				</div>
+				
+				<!-- Template Équipements -->
+				<div id="template-equipment" class="graph-template">
+					<div class="ui-field-contain axis-selector">
+						<label for="selectEquipment" class="smallLabel">Courbes:</label> 
+						<select name="selectEquipment" class="axis-selector-dropdown" data-graph="equipment" multiple="multiple" data-native-menu="false" data-mini="true" style="width:80%">
+							<option value="PP" selected="selected">PP</option>
+							<option value="PAC" selected="selected">PAC</option>
+							<option value="PompePH" selected="selected">PompePH</option>
+							<option value="PompeCL" selected="selected">PompeCL</option>
+							<option value="Auto">Auto</option>
+							<option value="PompeALG">PompeALG</option>
+							<option value="TempPAC">TempPAC</option>
+							<option value="TempEau">TempEau</option>
+							<option value="PHVal">PHVal</option>
+						</select>
+					</div>
+					<div class="graph-legend" data-legend="equipment"></div>
+					<div class="graph-canvas" data-canvas="equipment"></div>
 				</div>
 			</div>
 		</div>

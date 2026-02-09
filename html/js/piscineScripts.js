@@ -814,7 +814,7 @@ const DYGRAPH_CONFIG = {
 		Auto: {axis: "y"}
 	},
 	axes: {
-		y: {valueRange: [0, 10], axisLabelColor: "#FF00FF"},
+		y: {valueRange: [0, 10], axisLabelColor: "#FFFFFF"},
 		y2: {valueRange: [10, 40], axisLabelColor: "#FFFFFF"}
 	},
 	ylabel: "On/Off",
@@ -846,8 +846,8 @@ const DYGRAPH_CHEMISTRY_CONFIG = {
 		PompeALG: {axis: "y1", stepPlot: true, fillGraph: true, color: "#6FFF00", fillAlpha: 0.15, strokeWidth: 1.5}
 	},
 	axes: {
-		y1: {valueRange: [3, 10], axisLabelColor: "#00FFFF", axisLabelWidth: 50, pixelsPerLabel: 30},
-		y2: {valueRange: [150, 1050], axisLabelColor: "#FF00FF", axisLabelWidth: 50, independentTicks: true, pixelsPerLabel: 30}
+		y1: {valueRange: [3, 10], axisLabelColor: "#FFFFFF", axisLabelWidth: 50, pixelsPerLabel: 30},
+		y2: {valueRange: [150, 1050], axisLabelColor: "#FFFFFF", axisLabelWidth: 50, independentTicks: true, pixelsPerLabel: 30}
 	},
 	ylabel: "pH / Pompes",
 	y2label: "Redox (mV)",
@@ -871,7 +871,7 @@ const DYGRAPH_TEMPERATURE_CONFIG = {
 		TempInt: {axis: "y", color: "#FFFF00", strokeWidth: 2}
 	},
 	axes: {
-		y: {valueRange: [0, 55], axisLabelColor: "#FF0000", pixelsPerLabel: 30}
+		y: {valueRange: [0, 55], axisLabelColor: "#FFFFFF", pixelsPerLabel: 30}
 	},
 	ylabel: "Température (°C)",
 	rollPeriod: 2,
@@ -964,8 +964,43 @@ function csvToArray(csvText) {
 		dynamicTyping: false  // On parse manuellement pour les dates
 	});
 	
-	return result.data.map(row => {
-		row[0] = dayjs(row[0], "DD/MM/YY HH:mm:ss").toDate();
+	let validRows = 0;
+	let skippedHeaders = 0;
+	let skippedInvalid = 0;
+	
+	// FIX: Filtrer les lignes invalides (headers, mauvais format, nb colonnes incorrect)
+	const dataRows = result.data.filter(row => {
+		// Skip si première colonne est exactement "date" (header CSV)
+		if (row[0] === "date") {
+			skippedHeaders++;
+			return false;
+		}
+		
+		// Skip si ligne vide ou mauvais nombre de colonnes (doit être exactement 14)
+		if (!row[0] || row.length !== 14) {
+			skippedInvalid++;
+			return false;
+		}
+		
+		// Validation format date (doit correspondre à D-M-YYYY H:m:s)
+		// Format ESP8266 corrigé: "8-2-2026 20:15:30" (pas de zéros initiaux)
+		const dateRegex = /^\d{1,2}-\d{1,2}-\d{4} \d{1,2}:\d{1,2}:\d{1,2}$/;
+		if (!dateRegex.test(row[0])) {
+			skippedInvalid++;
+			return false;
+		}
+		
+		validRows++;
+		return true;
+	});
+	
+	console.log(`✅ Parsing: ${validRows} lignes valides`);
+	
+	return dataRows.map(row => {
+		// Parse date avec format ESP8266 corrigé: "D-M-YYYY H:m:s"
+		row[0] = dayjs(row[0], "D-M-YYYY H:m:s").toDate();
+		
+		// Parse valeurs numériques
 		for(let i = 1; i < row.length; i++) {
 			row[i] = parseFloat(row[i]);
 		}
@@ -973,10 +1008,118 @@ function csvToArray(csvText) {
 	});
 }
 
+const template = {
+	chemistry: `
+					<div class="ui-field-contain axis-selector">
+						<label for="selectChemistry" class="smallLabel">Courbes:</label> 
+						<select name="selectChemistry" class="axis-selector-dropdown" data-graph="chemistry" multiple="multiple" data-native-menu="false" data-mini="true" style="width:80%">
+							<option value="PHVal" selected="selected">PHVal</option>
+							<option value="RedoxVal" selected="selected">RedoxVal</option>
+							<option value="PompePH">PompePH</option>
+							<option value="PompeCL">PompeCL</option>
+							<option value="PompeALG">PompeALG</option>
+						</select>
+					</div>
+					<div class="graph-legend" data-legend="chemistry"></div>
+					<div class="graph-canvas" data-canvas="chemistry"></div>
+				`,
+	temperature: `
+					<div class="ui-field-contain axis-selector">
+						<label for="selectTemperature" class="smallLabel">Courbes:</label> 
+						<select name="selectTemperature" class="axis-selector-dropdown" data-graph="temperature" multiple="multiple" data-native-menu="false" data-mini="true" style="width:80%">
+							<option value="TempEau" selected="selected">TempEau</option>
+							<option value="TempAir" selected="selected">TempAir</option>
+							<option value="TempPAC" selected="selected">TempPAC</option>
+							<option value="TempInt" selected="selected">TempInt</option>
+							<option value="PAC">PAC</option>
+							<option value="PP">PP</option>
+							<option value="PHVal">PHVal</option>
+						</select>
+					</div>
+					<div class="graph-legend" data-legend="temperature"></div>
+					<div class="graph-canvas" data-canvas="temperature"></div>
+				`,
+	equipment: `
+					<div class="ui-field-contain axis-selector">
+						<label for="selectEquipment" class="smallLabel">Courbes:</label> 
+						<select name="selectEquipment" class="axis-selector-dropdown" data-graph="equipment" multiple="multiple" data-native-menu="false" data-mini="true" style="width:80%">
+							<option value="PP" selected="selected">PP</option>
+							<option value="PAC" selected="selected">PAC</option>
+							<option value="PompePH" selected="selected">PompePH</option>
+							<option value="PompeCL" selected="selected">PompeCL</option>
+							<option value="Auto">Auto</option>
+							<option value="PompeALG">PompeALG</option>
+							<option value="TempPAC">TempPAC</option>
+							<option value="TempEau">TempEau</option>
+							<option value="PHVal">PHVal</option>
+						</select>
+					</div>
+					<div class="graph-legend" data-legend="equipment"></div>
+					<div class="graph-canvas" data-canvas="equipment"></div>
+				`
+};
+
+/// Fonction helper : Peupler une zone graphique avec un template
+function populateGraphZone(zoneId, graphType) {
+	var $zone = $('#graph-zone-' + zoneId);
+	var $content = $zone.find('.graph-content');
+	var $template = template[graphType];	// Variable globale contenant le template HTML
+	
+	if ($template.length === 0) {
+		console.error("Template not found: template_" + graphType);
+		return;
+	}
+			
+	// Vider complètement et injecter nouveau template
+	$content.empty();
+	$content.html($template);
+	$content.enhanceWithin(); 	
+	
+	// Mettre à jour attribut data-graph-type
+	$zone.attr('data-graph-type', graphType);
+	
+	// Mettre à jour titre
+	var titles = {
+		'chemistry': 'Chimie de l\'eau',
+		'temperature': 'Températures',
+		'equipment': 'Équipements'
+	};
+	$zone.find('.graph-zone-title').text(titles[graphType] || graphType);
+	
+	// Mettre à jour la valeur du sélecteur de graphe dans cette zone
+	var $zoneSelector = $zone.find('.zone-graph-selector');
+	if ($zoneSelector.length > 0) {
+		$zoneSelector.val(graphType);
+		// Refresh selectmenu jQuery Mobile si initialisé
+		if ($zoneSelector.data('mobile-selectmenu')) {
+			$zoneSelector.selectmenu('refresh');
+		}
+	}
+/*	
+	// Initialiser les selectmenu jQuery Mobile dans le contenu cloné
+	setTimeout(function() {
+		$content.find('select').each(function() {
+			var $select = $(this);
+			// Vérifier si déjà initialisé (éviter double init)
+			if (!$select.data('mobile-selectmenu') && !$select.parent().hasClass('ui-select')) {
+				try {
+					$select.selectmenu();
+				} catch(e) {
+					console.warn('Selectmenu init error:', e);
+				}
+			}
+		});
+	}, 100);
+*/
+}
+
 // Fonction de création des graphiques selon le mode
 function createGraphs(data, forceMode, mobileSelectedGraph) {
 	var mode = forceMode || currentMode || getGraphMode();
 	currentMode = mode;
+	
+	// Stocker données pour usage ultérieur (recreateGraphInZone)
+	window.currentGraphData = data;
 	
 	console.log("Creating graphs in mode: " + mode);
 	
@@ -1014,85 +1157,64 @@ function createGraphs(data, forceMode, mobileSelectedGraph) {
 	};
 	
 	if (mode === 'mobile') {
-		// Mode mobile: 1 seul graphe sélectionnable
-		var graphType = mobileSelectedGraph || $('#graphSelector').val() || 'all';
+		// Mode mobile : zone-1 visible, peupler avec graphique sélectionné
+		var selectedGraph = mobileSelectedGraph || $('#graph-zone-1').attr('data-graph-type') || 'chemistry';
 		
-		if (graphType === 'all') {
-			// Graphe multiaxes par défaut
-			var config = Object.assign({}, DYGRAPH_CONFIG, commonCallbacks, {
-				labelsDiv: document.getElementById("legend-mobile"),
-				dateWindow: [startDate.toDate(), endDate.toDate()],
-				interactionModel: Dygraph.defaultInteractionModel
-			});
-			charts.mobile = new Dygraph($("#graph1")[0], data, config);
-		} else {
-			// Graphe spécialisé (chemistry/temperature/equipment)
-			var graphData, graphConfig, legendId;
-			
-			if (graphType === 'chemistry') {
-				graphData = extractChemistryData(data);
-				graphConfig = DYGRAPH_CHEMISTRY_CONFIG;
-				legendId = "legend-mobile";
-			} else if (graphType === 'temperature') {
-				graphData = extractTemperatureData(data);
-				graphConfig = DYGRAPH_TEMPERATURE_CONFIG;
-				legendId = "legend-mobile";
-			} else if (graphType === 'equipment') {
-				graphData = applyEquipmentOffset(data);
-				graphConfig = DYGRAPH_EQUIPMENT_CONFIG;
-				legendId = "legend-mobile";
-			}
-			
-			var config = Object.assign({}, graphConfig, commonCallbacks, {
-				labelsDiv: document.getElementById(legendId),
-				dateWindow: [startDate.toDate(), endDate.toDate()],
-				interactionModel: Dygraph.defaultInteractionModel
-			});
-			charts.mobile = new Dygraph($("#graph1")[0], graphData, config);
+		// Masquer zones 2 et 3
+		$('#graph-zone-2, #graph-zone-3').hide();
+		$('#graph-zone-1').show();
+		
+		// Peupler zone-1 avec template du graphique sélectionné
+		populateGraphZone(1, selectedGraph);
+		
+		// Mettre à jour sélecteur de graphe zone-1
+		var $zoneSelector = $('#graph-zone-1 .zone-graph-selector');
+		$zoneSelector.val(selectedGraph);
+		if ($zoneSelector.data('mobile-selectmenu')) {
+			$zoneSelector.selectmenu('refresh');
 		}
 		
-	} else if (mode === 'tablet') {
-		// Mode tablette: 2 graphes sélectionnables
-		var graphs = selectedGraphs.tablet || ['chemistry', 'temperature'];
-		var graphInstances = [];
+		// Créer graphique dans zone-1
+		var graphData, graphConfig, canvasSelector, legendSelector;
 		
-		graphs.forEach(function(graphType, idx) {
-			var elementId = idx === 0 ? "graph-chemistry" : "graph-temperature";
-			var legendId = idx === 0 ? "legend-chemistry" : "legend-temperature";
-			var graphData, graphConfig;
-			
-			if (graphType === 'chemistry') {
-				graphData = extractChemistryData(data);
-				graphConfig = DYGRAPH_CHEMISTRY_CONFIG;
-			} else if (graphType === 'temperature') {
-				graphData = extractTemperatureData(data);
-				graphConfig = DYGRAPH_TEMPERATURE_CONFIG;
-			} else if (graphType === 'equipment') {
-				graphData = applyEquipmentOffset(data);
-				graphConfig = DYGRAPH_EQUIPMENT_CONFIG;
-			}
-			
-			var config = Object.assign({}, graphConfig, commonCallbacks, {
-				labelsDiv: document.getElementById(legendId),
-				dateWindow: [startDate.toDate(), endDate.toDate()],
-				interactionModel: Dygraph.defaultInteractionModel
-			});
-			
-			charts[graphType] = new Dygraph($("#" + elementId)[0], graphData, config);
-			graphInstances.push(charts[graphType]);
+		if (selectedGraph === 'chemistry') {
+			graphData = extractChemistryData(data);
+			graphConfig = DYGRAPH_CHEMISTRY_CONFIG;
+		} else if (selectedGraph === 'temperature') {
+			graphData = extractTemperatureData(data);
+			graphConfig = DYGRAPH_TEMPERATURE_CONFIG;
+		} else if (selectedGraph === 'equipment') {
+			graphData = applyEquipmentOffset(data);
+			graphConfig = DYGRAPH_EQUIPMENT_CONFIG;
+		}
+		
+		// Canvas et legend sont dans zone-1 après populate
+		canvasSelector = '#graph-zone-1 [data-canvas="' + selectedGraph + '"]';
+		legendSelector = '#graph-zone-1 [data-legend="' + selectedGraph + '"]';
+		
+		var config = Object.assign({}, graphConfig, commonCallbacks, {
+			labelsDiv: document.querySelector(legendSelector),
+			dateWindow: [startDate.toDate(), endDate.toDate()],
+			interactionModel: Dygraph.defaultInteractionModel
 		});
 		
-		// Synchroniser les 2 graphes
-		if (graphInstances.length === 2) {
-			Dygraph.synchronize(graphInstances, {selection: true, zoom: true});
-		}
+		charts[selectedGraph] = new Dygraph($(canvasSelector)[0], graphData, config);
 		
-	} else if (mode === 'desktop') {
-		// Mode desktop: 3 graphes fixes
+	} else if (mode === 'tablet') {
+		// Mode tablette : zones 1 et 2 visibles (chemistry + temperature par défaut)
+		$('#graph-zone-1, #graph-zone-2').show();
+		$('#graph-zone-3').hide();
+		
+		// Peupler zones avec templates (récupérer data-graph-type actuel ou par défaut)
+		var zone1Type = $('#graph-zone-1').attr('data-graph-type') || 'chemistry';
+		var zone2Type = $('#graph-zone-2').attr('data-graph-type') || 'temperature';
+		
+		populateGraphZone(1, zone1Type);
+		populateGraphZone(2, zone2Type);
+		
 		var graphConfigs = [
-			{type: 'chemistry', elementId: 'graph-chemistry', legendId: 'legend-chemistry'},
-			{type: 'temperature', elementId: 'graph-temperature', legendId: 'legend-temperature'},
-			{type: 'equipment', elementId: 'graph-equipment', legendId: 'legend-equipment'}
+			{zoneId: 1, type: zone1Type},
+			{zoneId: 2, type: zone2Type}
 		];
 		
 		var graphInstances = [];
@@ -1111,13 +1233,67 @@ function createGraphs(data, forceMode, mobileSelectedGraph) {
 				graphConfig = DYGRAPH_EQUIPMENT_CONFIG;
 			}
 			
+			var canvasSelector = '#graph-zone-' + cfg.zoneId + ' [data-canvas="' + cfg.type + '"]';
+			var legendSelector = '#graph-zone-' + cfg.zoneId + ' [data-legend="' + cfg.type + '"]';
+			
 			var config = Object.assign({}, graphConfig, commonCallbacks, {
-				labelsDiv: document.getElementById(cfg.legendId),
+				labelsDiv: document.querySelector(legendSelector),
 				dateWindow: [startDate.toDate(), endDate.toDate()],
 				interactionModel: Dygraph.defaultInteractionModel
 			});
 			
-			charts[cfg.type] = new Dygraph($("#" + cfg.elementId)[0], graphData, config);
+			charts[cfg.type] = new Dygraph($(canvasSelector)[0], graphData, config);
+			graphInstances.push(charts[cfg.type]);
+		});
+		
+		// Synchroniser les 2 graphes
+		Dygraph.synchronize(graphInstances, {selection: true, zoom: true});
+		
+	} else if (mode === 'desktop') {
+		// Mode desktop : 3 zones visibles (chemistry + temperature + equipment par défaut)
+		$('#graph-zone-1, #graph-zone-2, #graph-zone-3').show();
+		
+		// Peupler zones avec templates (récupérer data-graph-type actuel ou par défaut)
+		var zone1Type = $('#graph-zone-1').attr('data-graph-type') || 'chemistry';
+		var zone2Type = $('#graph-zone-2').attr('data-graph-type') || 'temperature';
+		var zone3Type = $('#graph-zone-3').attr('data-graph-type') || 'equipment';
+		
+		populateGraphZone(1, zone1Type);
+		populateGraphZone(2, zone2Type);
+		populateGraphZone(3, zone3Type);
+		
+		var graphConfigs = [
+			{zoneId: 1, type: zone1Type},
+			{zoneId: 2, type: zone2Type},
+			{zoneId: 3, type: zone3Type}
+		];
+		
+		var graphInstances = [];
+		
+		graphConfigs.forEach(function(cfg) {
+			var graphData, graphConfig;
+			
+			if (cfg.type === 'chemistry') {
+				graphData = extractChemistryData(data);
+				graphConfig = DYGRAPH_CHEMISTRY_CONFIG;
+			} else if (cfg.type === 'temperature') {
+				graphData = extractTemperatureData(data);
+				graphConfig = DYGRAPH_TEMPERATURE_CONFIG;
+			} else if (cfg.type === 'equipment') {
+				graphData = applyEquipmentOffset(data);
+				graphConfig = DYGRAPH_EQUIPMENT_CONFIG;
+			}
+			
+			var canvasSelector = '#graph-zone-' + cfg.zoneId + ' [data-canvas="' + cfg.type + '"]';
+			var legendSelector = '#graph-zone-' + cfg.zoneId + ' [data-legend="' + cfg.type + '"]';
+			
+			var config = Object.assign({}, graphConfig, commonCallbacks, {
+				labelsDiv: document.querySelector(legendSelector),
+				dateWindow: [startDate.toDate(), endDate.toDate()],
+				interactionModel: Dygraph.defaultInteractionModel
+			});
+			
+			charts[cfg.type] = new Dygraph($(canvasSelector)[0], graphData, config);
 			graphInstances.push(charts[cfg.type]);
 		});
 		
@@ -1129,59 +1305,214 @@ function createGraphs(data, forceMode, mobileSelectedGraph) {
 	}
 	
 	console.log("Graphs created successfully");
+	
+
+
+	// Délégation d'événement : handler 'change' sur .axis-selector-dropdown, même méthode que pour le sélecteur de graphe
+	$("#pagePiscineGraphs").on("change", ".axis-selector-dropdown", function(event) {
+		console.log("✅ [delegated change] Axis selector changed", event, this.value);
+		handleAxisChange($(this));
+	});
+}
+
+// Attacher event handlers change sur axis-selectors (selon doc jQuery Mobile)
+function attachAxisSelectorHandlers() {
+	// Détacher anciens handlers pour éviter doublons
+	$("select.axis-selector-dropdown").off();
+
+	// Handler sur le widget jQuery Mobile généré
+	$("select.axis-selector-dropdown").each(function(idx, el) {
+		var $widget = $(el).selectmenu("widget");
+		$widget.off("change.axisWidget");
+		$widget.on("change.axisWidget", function(event) {
+			console.log("🟢 [widget change] Axis selector widget changed", event, el.value);
+			handleAxisChange($(el));
+		});
+	});
+
+	console.log("📌 Axis selector handlers attached (widget change)", $("select.axis-selector-dropdown").length, "selects");
+}
+
+// Fonction helper pour gérer changement axes
+function handleAxisChange($select) {
+	var graphType = $select.attr('data-graph');
+	var selected = $select.val() || [];
+	
+	console.log("✅ Axis selector changed:", graphType, selected);
+	
+	if (!charts[graphType]) {
+		console.warn("Chart not found:", graphType);
+		return;
+	}
+	
+	var def = GRAPH_DEFINITIONS[graphType];
+	if (!def) {
+		console.warn("No definition for graph:", graphType);
+		return;
+	}
+	
+	var allAxes = def.primaryAxes.concat(def.optionalAxes);
+	
+	// Mettre à jour visibility
+	allAxes.forEach(function(axisName, idx){
+		var isVisible = selected.includes(axisName);
+		charts[graphType].setVisibility(idx, isVisible);
+	});
+	
+	console.log("✅ Updated", allAxes.length, "axes");
 }
 
 // Initialiser les sélecteurs d'axes avec valeurs par défaut (desktop)
 function initializeAxisSelectors() {
 	// Chimie: PHVal, RedoxVal, TempEau sélectionnés par défaut
 	var chemistryDefaults = ["PHVal", "RedoxVal", "TempEau"];
-	$("#selectChemistry").val(chemistryDefaults).selectmenu('refresh');
+	$(".axis-selector-dropdown[data-graph='chemistry']").val(chemistryDefaults);
 	
 	// Température: tous sélectionnés par défaut
 	var temperatureDefaults = ["TempEau", "TempAir", "TempPAC", "TempInt"];
-	$("#selectTemperature").val(temperatureDefaults).selectmenu('refresh');
+	$(".axis-selector-dropdown[data-graph='temperature']").val(temperatureDefaults);
 	
 	// Équipements: PP, PAC, PompePH, PompeCL par défaut
 	var equipmentDefaults = ["PP", "PAC", "PompePH", "PompeCL"];
-	$("#selectEquipment").val(equipmentDefaults).selectmenu('refresh');
+	$(".axis-selector-dropdown[data-graph='equipment']").val(equipmentDefaults);
+	
+	// Réinitialiser les event handlers pour sélecteurs de zones
+	initGraphEventHandlers();
+}
+
+// Initialiser les event handlers pour sélecteurs de zones graphiques
+function initGraphEventHandlers() {
+	// Supprimer anciens handlers pour éviter doublons
+	$(".zone-graph-selector").off("change");
+	$(".graph-zone-title").off("click");
+	
+	// Clic sur titre : toggle sélecteur de graphe (mobile/tablette uniquement)
+	$(".graph-zone-title").on("click", function(){
+		var mode = currentMode || getGraphMode();
+		
+		// Desktop : titre non cliquable
+		if (mode === 'desktop') {
+			return;
+		}
+		
+		// Mobile/Tablette : toggle sélecteur
+		var $zone = $(this).closest(".graph-zone");
+		var $selector = $zone.find(".graph-selector");
+		
+		if ($selector.length > 0) {
+			$selector.slideToggle(200);
+		}
+	});
+	
+	// Event handler sélecteur de zone (changement de graphique dans une zone)
+	$(".zone-graph-selector").on("change", function(){
+		var zoneId = $(this).data('zone');
+		var graphType = $(this).val();
+		
+		console.log("Zone " + zoneId + " -> graph type: " + graphType);
+		
+		// Masquer sélecteur après sélection
+		$(this).closest('.graph-selector').slideUp(200);
+		
+		// Peupler zone avec nouveau template
+		populateGraphZone(zoneId, graphType);
+		
+		// Recréer graphique dans cette zone
+		recreateGraphInZone(zoneId, graphType);
+	});
+}
+
+// Recréer un graphique dans une zone spécifique
+function recreateGraphInZone(zoneId, graphType) {
+	// Détruire ancien graphique si existe
+	if (charts[graphType]) {
+		if (typeof charts[graphType].destroy === 'function') {
+			charts[graphType].destroy();
+		}
+		charts[graphType] = null;
+	}
+	
+	// Récupérer données
+	if (!window.currentGraphData) {
+		console.warn("No graph data available, skipping recreate");
+		return;
+	}
+	
+	var graphData, graphConfig;
+	var startDate = dayjs().subtract(2, "days").startOf("day");
+	var endDate = dayjs();
+	
+	if (graphType === 'chemistry') {
+		graphData = extractChemistryData(window.currentGraphData);
+		graphConfig = DYGRAPH_CHEMISTRY_CONFIG;
+	} else if (graphType === 'temperature') {
+		graphData = extractTemperatureData(window.currentGraphData);
+		graphConfig = DYGRAPH_TEMPERATURE_CONFIG;
+	} else if (graphType === 'equipment') {
+		graphData = applyEquipmentOffset(window.currentGraphData);
+		graphConfig = DYGRAPH_EQUIPMENT_CONFIG;
+	}
+	
+	var canvasSelector = '#graph-zone-' + zoneId + ' [data-canvas="' + graphType + '"]';
+	var legendSelector = '#graph-zone-' + zoneId + ' [data-legend="' + graphType + '"]';
+	
+	var config = Object.assign({}, graphConfig, {
+		labelsDiv: document.querySelector(legendSelector),
+		dateWindow: [startDate.toDate(), endDate.toDate()],
+		interactionModel: Dygraph.defaultInteractionModel
+	});
+	
+	charts[graphType] = new Dygraph($(canvasSelector)[0], graphData, config);
+	
+	console.log("Recreated graph '" + graphType + "' in zone " + zoneId);
+}
+
+// Fonction appelée après changement de période (daterange picker)
+function updateGraphsDateRange(startDate, endDate) {
+	console.log("Updating graphs date range: " + startDate.format('DD/MMM/YY') + " to " + endDate.format('DD/MMM/YY'));
+	
+	Object.keys(charts).forEach(function(key) {
+		if (charts[key] && typeof charts[key].updateOptions === 'function') {
+			charts[key].updateOptions({
+				dateWindow: [startDate.toDate(), endDate.toDate()]
+			});
+		}
+	});
 }
 
 // Mettre à jour les données des graphiques existants
 function updateGraphsData(data) {
 	var mode = currentMode || getGraphMode();
 	
-	if (mode === 'mobile' && charts.mobile) {
-		var graphType = $('#graphSelector').val() || 'all';
-		var graphData = data;
+	if (mode === 'mobile') {
+		// Mobile : mettre à jour le graphique de la zone actuellement visible
+		var selectedGraph = $('#graph-zone-1').attr('data-graph-type') || 'chemistry';
 		
-		if (graphType === 'chemistry') {
-			graphData = extractChemistryData(data);
-		} else if (graphType === 'temperature') {
-			graphData = extractTemperatureData(data);
-		} else if (graphType === 'equipment') {
-			graphData = applyEquipmentOffset(data);
+		if (charts[selectedGraph]) {
+			var graphData;
+			
+			if (selectedGraph === 'chemistry') {
+				graphData = extractChemistryData(data);
+			} else if (selectedGraph === 'temperature') {
+				graphData = extractTemperatureData(data);
+			} else if (selectedGraph === 'equipment') {
+				graphData = applyEquipmentOffset(data);
+			}
+			
+			charts[selectedGraph].updateOptions({file: graphData});
 		}
 		
-		charts.mobile.updateOptions({file: graphData});
-		
 	} else if (mode === 'tablet') {
-		var graphs = selectedGraphs.tablet || ['chemistry', 'temperature'];
-		
-		graphs.forEach(function(graphType) {
-			if (charts[graphType]) {
-				var graphData;
-				if (graphType === 'chemistry') {
-					graphData = extractChemistryData(data);
-				} else if (graphType === 'temperature') {
-					graphData = extractTemperatureData(data);
-				} else if (graphType === 'equipment') {
-					graphData = applyEquipmentOffset(data);
-				}
-				charts[graphType].updateOptions({file: graphData});
-			}
-		});
+		// Tablette : mettre à jour chemistry + temperature
+		if (charts.chemistry) {
+			charts.chemistry.updateOptions({file: extractChemistryData(data)});
+		}
+		if (charts.temperature) {
+			charts.temperature.updateOptions({file: extractTemperatureData(data)});
+		}
 		
 	} else if (mode === 'desktop') {
+		// Desktop : mettre à jour les 3 graphiques
 		if (charts.chemistry) {
 			charts.chemistry.updateOptions({file: extractChemistryData(data)});
 		}
@@ -1331,6 +1662,14 @@ function hideGraphProgress() {
  * @returns {Promise<Array>} Données CSV parsées
  */
 async function fetchDataChunked(debut, fin) {
+	// PROTECTION: Bloquer re-chargement si déjà en cours (évite navigation jQuery Mobile)
+	if (window.chunkLoadingInProgress) {
+		console.log("⚠️ [CHUNKED API] Chargement déjà en cours, skip...");
+		return [];
+	}
+	
+	window.chunkLoadingInProgress = true;
+	
 	const datas = [];
 	const start = dayjs(debut);
 	const end = dayjs(fin);
@@ -1349,21 +1688,15 @@ async function fetchDataChunked(debut, fin) {
 		});
 		
 		const totalDays = planResponse.total_days;
+		const availableDays = planResponse.available_days || 0;
+		const dates = planResponse.dates || [];
 		
-		console.log(`📋 Plan reçu: ${totalDays} jours à charger`);
+		console.log(`📋 Plan reçu: ${availableDays}/${totalDays} jours disponibles`);
 		
-		if (totalDays === 0) {
+		if (dates.length === 0) {
 			hideGraphProgress();
-			showToast("Aucune donnée disponible", 'warning');
+			showToast("Aucune donnée disponible pour cette période", 'warning');
 			return datas;
-		}
-		
-		// Générer liste dates côté client (évite boucle serveur)
-		const dates = [];
-		let current = start;
-		for (let i = 0; i < totalDays; i++) {
-			dates.push(current.format("DD-MM-YYYY"));
-			current = current.add(1, 'day');
 		}
 		
 		let totalChunks = 0;
@@ -1401,7 +1734,11 @@ async function fetchDataChunked(debut, fin) {
 		// Étape 3 : Charger chunks fichier par fichier
 		let allData = "";
 		
-		for (const fileInfo of fileInfos) {
+		console.log(`🔄 Début chargement chunks : ${fileInfos.length} fichiers, ${totalChunks} chunks total`);
+		
+		for (let fileIdx = 0; fileIdx < fileInfos.length; fileIdx++) {
+			const fileInfo = fileInfos[fileIdx];
+			
 			for (let chunkIndex = 0; chunkIndex < fileInfo.chunks; chunkIndex++) {
 				const percentComplete = 10 + Math.round((loadedChunks / totalChunks) * 85);  // 10% → 95%
 				updateGraphProgress(
@@ -1410,32 +1747,52 @@ async function fetchDataChunked(debut, fin) {
 					`Chargement ${fileInfo.date}... (${loadedChunks + 1}/${totalChunks})`
 				);
 				
-				// Charger chunk (~100ms, WDT safe)
-				const chunkData = await $.ajax({
-					type: "GET",
-					url: "/api/graph/chunk",
-					data: "sess=" + sessID + "&date=" + fileInfo.date + "&index=" + chunkIndex + "&size=1024",
-					dataType: "text"
+				try {
+					// Charger chunk (~100ms, WDT safe)
+					const chunkData = await $.ajax({
+						type: "GET",
+						url: "/api/graph/chunk",
+						data: "sess=" + sessID + "&date=" + fileInfo.date + "&index=" + chunkIndex + "&size=1024",
+						dataType: "text",
+					timeout: 10000  // Timeout 10s
 				});
+				
+				// Vérifier que réponse est CSV valide (pas message d'erreur)
+				if (chunkData.startsWith("404:") || chunkData.startsWith("400:") || chunkData.startsWith("500:")) {
+					loadedChunks++;
+					continue;  // Skip chunk invalide
+				}
+				
+				// FIX: Skip header CSV dans premier chunk de chaque fichier (sauf tout premier fichier)
+				if (chunkIndex === 0 && fileIdx > 0 && chunkData.startsWith("date;")) {
+					// Retirer première ligne (header dupliqué)
+					const firstLineEnd = chunkData.indexOf('\n');
+					if (firstLineEnd !== -1) {
+						chunkData = chunkData.substring(firstLineEnd + 1);
+					}
+				}
 				
 				allData += chunkData;
 				loadedChunks++;
-				
-				console.log(`  ✅ Chunk ${chunkIndex + 1}/${fileInfo.chunks} de ${fileInfo.date} chargé (${chunkData.length} bytes)`);
+			} catch (error) {
+				loadedChunks++;
+				// Continue avec chunk suivant
 			}
 		}
-		
-		// Étape 4 : Parser données
-		updateGraphProgress(95, 100, "Traitement données...");
-		
-		const parsedData = csvToArray(allData.trim());
-		datas.push(...parsedData);
-		
-		updateGraphProgress(100, 100, "Terminé !");
+	}
+	
+	// Étape 4 : Parser données
+	updateGraphProgress(95, 100, "Traitement données...");
+	
+	const parsedData = csvToArray(allData.trim());
+	
+	datas.push(...parsedData);
+	
+	updateGraphProgress(100, 100, "Terminé !");
 		
 		setTimeout(hideGraphProgress, 500);
 		
-		showToast(`✅ ${totalDays} jours chargés (${totalChunks} chunks)`, 'success');
+		showToast(`✅ ${availableDays} jours chargés (${totalChunks} chunks)`, 'success');
 		
 		console.log(`✅ [CHUNKED API] Success: ${datas.length} lignes chargées`);
 		
@@ -1444,7 +1801,15 @@ async function fetchDataChunked(debut, fin) {
 		console.error("[CHUNKED API ERROR]", e);
 		showToast("Échec chargement données", 'error');
 		onPageError(e);
+		
+		// Débloquer immédiatement en cas d'erreur
+		window.chunkLoadingInProgress = false;
 	}
+	
+	// PROTECTION: Bloquer re-chargement automatique pendant 2s (évite navigation jQuery Mobile parasite)
+	setTimeout(function() {
+		window.chunkLoadingInProgress = false;
+	}, 2000);
 	
 	return datas;
 }
@@ -3827,53 +4192,25 @@ function getNewData(debut, fin) {
 			}
 		});
 
-		// Event handlers pour sélecteurs d'axes (desktop)
-		["selectChemistry", "selectTemperature", "selectEquipment"].forEach(function(selectorId){
-			$("#" + selectorId).on("change", function(){
-				var graphType = selectorId.replace("select", "").toLowerCase();
-				var selected = $(this).val() || [];
-				if (charts[graphType]) {
-					var def = GRAPH_DEFINITIONS[graphType];
-					var allAxes = def.primaryAxes.concat(def.optionalAxes);
-					allAxes.forEach(function(axisName, idx){
-						charts[graphType].setVisibility(idx, selected.includes(axisName));
-					});
-				}
-			});
-		});
-
-		// Event handlers sélecteurs de graphes (mobile/tablette)
-		$("#graphSelector").on("change", function(){
-			var selectedGraph = $(this).val();
-			console.log("Mobile: graphe sélectionné = " + selectedGraph);
-			// Recharger les données pour ce graphe
-			var startDate = dayjs().subtract(2, "days").startOf("day");
-			var endDate = dayjs();
-			fetchDataRange(startDate, endDate).then(function(data){
-				createGraphs(data, 'mobile', selectedGraph);
-			});
-		});
-
-		$("#graphSelector1, #graphSelector2").on("change", function(){
-			var graph1 = $("#graphSelector1").val();
-			var graph2 = $("#graphSelector2").val();
+		// Event handlers pour sélecteurs d'axes (tous modes)
+		$(document).on("change", ".axis-selector-dropdown", function(){
+			var graphType = $(this).attr('data-graph');
+			var selected = $(this).val() || [];
 			
-			// Validation: les deux graphes doivent être différents
-			if (graph1 === graph2) {
-				alert("Veuillez sélectionner deux graphes différents");
-				return;
+			if (charts[graphType]) {
+				var def = GRAPH_DEFINITIONS[graphType];
+				var allAxes = def.primaryAxes.concat(def.optionalAxes);
+				allAxes.forEach(function(axisName, idx){
+					charts[graphType].setVisibility(idx, selected.includes(axisName));
+				});
 			}
-			
-			selectedGraphs.tablet = [graph1, graph2];
-			console.log("Tablette: graphes sélectionnés = " + selectedGraphs.tablet.join(", "));
-			
-			// Recharger les données
-			var startDate = dayjs().subtract(2, "days").startOf("day");
-			var endDate = dayjs();
-			fetchDataRange(startDate, endDate).then(function(data){
-				createGraphs(data, 'tablet');
-			});
 		});
+
+		// Initialiser event handlers titres et sélecteurs de graphe
+		initGraphEventHandlers();
+
+	// Event handlers obsolètes supprimés - utiliser zone-graph-selector géré par initGraphEventHandlers
+		// Ancien code #graphSelector (mobile portrait) et #graphSelector1/2 (tablette) n'existent plus dans HTML
 
 		// Gestion resize/orientation
 		$(window).on('resize orientationchange', function(){
@@ -4754,11 +5091,16 @@ function adaptPanels() {
 
 // Redimensionner Dygraph selon layout
 function resizeDygraphIfNeeded() {
-  if ($('#pagePiscineGraphs').hasClass('ui-page-active') && typeof chart !== 'undefined' && chart !== null) {
+  if ($('#pagePiscineGraphs').hasClass('ui-page-active') && typeof charts !== 'undefined') {
     setTimeout(function() {
-      chart.resize();
+      // Redimensionner tous les graphiques actifs
+      Object.keys(charts).forEach(function(key) {
+        if (charts[key] && typeof charts[key].resize === 'function') {
+          charts[key].resize();
+        }
+      });
       if (debug) {
-        console.log('[RESPONSIVE] Dygraph redimensionné pour layout: ' + currentLayout);
+        console.log('[RESPONSIVE] Dygraphs redimensionnés pour layout: ' + currentLayout);
       }
     }, 100);
   }

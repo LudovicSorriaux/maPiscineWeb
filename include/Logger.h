@@ -20,6 +20,8 @@
 #include <TimeLib.h>
 #include <pgmspace.h>
 
+// Helper: Parse date DD-MM-YYYY vers time_t (calcul manuel, pas de NTP requis)
+time_t parseDateDDMMYYYY(const char* dateStr);
 
 class LoggerClass : public Print {
     public :

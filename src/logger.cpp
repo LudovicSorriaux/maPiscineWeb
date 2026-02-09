@@ -21,7 +21,10 @@
  */
 time_t parseDateDDMMYYYY(const char* dateStr) {
     int d, m, y;
-    if (sscanf(dateStr, "%d-%d-%d", &d, &m, &y) != 3) {
+    int parsed = sscanf(dateStr, "%d-%d-%d", &d, &m, &y);
+    
+    if (parsed != 3) {
+        Serial.printf("[ERROR parseDateDDMMYYYY] Failed to parse '%s'\n", dateStr);
         return 0;  // Échec parsing
     }
     
@@ -49,7 +52,9 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
     // Ajouter jours du mois
     days += d - 1;
     
-    return days * 86400;  // Convertir jours → secondes
+    time_t result = days * 86400;  // Convertir jours → secondes
+    
+    return result;
 }
 
 /**
@@ -86,7 +91,11 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
           if (!SD.exists(directory)) {
             SD.mkdir(directory);
           }
-          snprintf(directory, 50, "/log/%d/logs/%s", year(), monthStr(month()));
+          // FIX PROGMEM: snprintf() ESP8266 NE lit PAS Flash → copie RAM obligatoire
+          char monthBuf[16];
+          strncpy(monthBuf, monthStr(month()), sizeof(monthBuf) - 1);
+          monthBuf[sizeof(monthBuf) - 1] = '\0';
+          snprintf(directory, 50, "/log/%d/logs/%s", year(), monthBuf);
           if (!SD.exists(directory)) {
             SD.mkdir(directory);
           }
@@ -107,10 +116,10 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
         if(++ramCheckCounter >= 600) {
           ramCheckCounter = 0;
           uint32_t freeHeap = ESP.getFreeHeap();
-          printf("[RAM] Surveillance périodique - Free heap: %d bytes (%.1f%%)\n", 
+          Serial1.printf("[RAM] Surveillance périodique - Free heap: %d bytes (%.1f%%)\n", 
                  freeHeap, (freeHeap * 100.0) / 81920);
           if(freeHeap < 15000) {
-            printf("[RAM] ⚠️ ALERTE : RAM faible (< 15 KB) - Risque instabilité !\n");
+            Serial1.printf("[RAM] ⚠️ ALERTE : RAM faible (< 15 KB) - Risque instabilité !\n");
           }
         }
 
@@ -132,9 +141,8 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
 
         if(dayOfWeek(now()) != today){
           // RAM monitoring : Nouveau jour (création fichiers log - opération mémoire intensive)
-          printf("[RAM] Nouveau jour détecté - Free heap avant création logs: %d bytes\n", ESP.getFreeHeap());
-          
-          logFileName = String("/log/") + year() + "/logs/" + monthStr(month()) + "/" + dayShortStr(day()) + "-" + day() + ".log";;
+          Serial1.printf("[RAM] Nouveau jour détecté - Free heap avant création logs: %d bytes\n", ESP.getFreeHeap());
+          logFileName = String("/log/") + year() + "/logs/" + monthStr(month()) + "/" + dayShortStr(dayOfWeek((now()))) + "-" + day() + ".log";;
           printf("[LOGGER] New LogFileName : %s\n",logFileName.c_str());
           logFile = SD.open(logFileName.c_str(),FILE_WRITE);
           if(logFile){
@@ -142,7 +150,7 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
             logFile.flush();
             logFile.close();
           }
-          logMoyFileName = String("/log/") + year() + "/logs/" + monthStr(month()) + "/" + dayShortStr(day()) + "-" + day() + "-Moy.log";
+          logMoyFileName = String("/log/") + year() + "/logs/" + monthStr(month()) + "/" + dayShortStr(dayOfWeek(now())) + "-" + day() + "-Moy.log";
           printf("[LOGGER] New logMoyFileName : %s\n",logMoyFileName.c_str());
           logMoyFile = SD.open(logMoyFileName.c_str(), FILE_WRITE);
           if(logMoyFile){
@@ -153,7 +161,7 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
           today = dayOfWeek(now());
         }
 
-        if(hour() != lasthour){                                   // calcul des moyennes
+        if(hour() != lasthour){                                      // calcul des moyennes
           logMoyFile = SD.open(logMoyFileName.c_str(), FILE_WRITE);
           if(logMoyFile){
             printDate(theDate,sizeof(theDate));
@@ -281,7 +289,7 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
         }
         
         snprintf(fileName, 80, "/Log/%d/Logs/%s/%s-%d-Moy.log", 
-                 (year(tCurr)+1970), monthStr(month(tCurr)), dayShortStr(tCurr), day(tCurr));
+                 year(tCurr), monthStr(month(tCurr)), dayShortStr(dayOfWeek(tCurr)), day(tCurr));
         
         // FIX WDT: SD.exists() cause WDT reset (parcourt arborescence FAT)
         // Tentative ouverture directe, skip si échec (fichier absent)
@@ -457,8 +465,12 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
         if(alertFile){
             // Mon,2 10:51:46 mDNS responder started: http://mapiscine.local
           if(!printStarted) {
+            // FIX PROGMEM: Copier dayShortStr() en RAM avant snprintf
+            char dayBuf[8];
+            strncpy(dayBuf, dayShortStr(day()), sizeof(dayBuf) - 1);
+            dayBuf[sizeof(dayBuf) - 1] = '\0';
             snprintf(message, 128, "%s,%d %d:%d:%d%s", 
-                     dayShortStr(day()), day(), hour(), minute(), second(), logmessage);
+                     dayBuf, day(), hour(), minute(), second(), logmessage);
             printStarted = true;
           } else {
             strncpy(message, logmessage, 127);
@@ -488,7 +500,7 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
     void LoggerClass::printDate(char *date,uint8_t length){
     
         snprintf(date, length, "%d-%d-%d %d:%d:%d", 
-                 day(), month(), year()+1970, hour(), minute(), second());
+                 day(), month(), year(), hour(), minute(), second());
     }
 
   /*
@@ -561,7 +573,7 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
     String LoggerClass::getLogFileByDate(time_t date){
       String fileName;
 
-      fileName = String("/Log/") + (year(date)+1970) + "/Logs/" + monthStr(month(date)) + "/" + dayShortStr(date) + "-" + day(date) + ".log";;
+      fileName = String("/Log/") + year(date) + "/Logs/" + monthStr(month(date)) + "/" + dayShortStr(dayOfWeek(date)) + "-" + day(date) + ".log";;
         return fileName;
     }
 
@@ -580,11 +592,19 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
         // Parse date DD-MM-YYYY avec helper
         time_t fileTime = parseDateDDMMYYYY(date);
         
-        // Construire chemin fichier
+        // Construire chemin fichier (format réel: /log/YYYY/logs/MonthFull/DayShort-DD-Moy.log)
+        // FIX PROGMEM: snprintf() ESP8266 NE lit PAS Flash → copie RAM obligatoire
+        char monthBuf[16], dayBuf[8];
+        strncpy(monthBuf, monthStr(month(fileTime)), sizeof(monthBuf) - 1);
+        monthBuf[sizeof(monthBuf) - 1] = '\0';
+        strncpy(dayBuf, dayShortStr(dayOfWeek(fileTime)), sizeof(dayBuf) - 1);
+        dayBuf[sizeof(dayBuf) - 1] = '\0';
+        
         char fileName[80];
-        snprintf(fileName, 80, "/Log/%d/Logs/%s/%s-%d-Moy.log", 
-                 (year(fileTime)+1970), monthStr(month(fileTime)), 
-                 dayShortStr(fileTime), day(fileTime));
+        snprintf(fileName, 80, "/log/%d/logs/%s/%s-%d-Moy.log", 
+                 year(fileTime), monthBuf, dayBuf, day(fileTime));
+        
+        Serial1.printf("[LOGGER getFileInfo] Date: %s → Cherche: %s\n", date, fileName);
         
         // Vérifier existence + taille
         File logFile = SD.open(fileName, FILE_READ);
@@ -593,6 +613,9 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
             info.size = logFile.size();
             info.chunks = (info.size + chunkSize - 1) / chunkSize;  // ceil division
             logFile.close();
+            Serial1.printf("[LOGGER getFileInfo] ✅ Trouvé: %s (%d bytes, %d chunks)\n", fileName, info.size, info.chunks);
+        } else {
+            Serial1.printf("[LOGGER getFileInfo] ❌ Non trouvé: %s\n", fileName);
         }
         
         return info;
@@ -609,11 +632,17 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
         // Parse date DD-MM-YYYY avec helper
         time_t fileTime = parseDateDDMMYYYY(date);
         
-        // Construire chemin fichier
+        // Construire chemin fichier (format réel: /log/YYYY/logs/MonthFull/DayShort-DD-Moy.log)
+        // FIX PROGMEM: snprintf() ESP8266 NE lit PAS Flash → copie RAM obligatoire
+        char monthBuf[16], dayBuf[8];
+        strncpy(monthBuf, monthStr(month(fileTime)), sizeof(monthBuf) - 1);
+        monthBuf[sizeof(monthBuf) - 1] = '\0';
+        strncpy(dayBuf, dayShortStr(dayOfWeek(fileTime)), sizeof(dayBuf) - 1);
+        dayBuf[sizeof(dayBuf) - 1] = '\0';
+        
         char fileName[80];
-        snprintf(fileName, 80, "/Log/%d/Logs/%s/%s-%d-Moy.log", 
-                 (year(fileTime)+1970), monthStr(month(fileTime)), 
-                 dayShortStr(fileTime), day(fileTime));
+        snprintf(fileName, 80, "/log/%d/logs/%s/%s-%d-Moy.log", 
+                 year(fileTime), monthBuf, dayBuf, day(fileTime));
         
         // Ouvrir fichier
         File logFile = SD.open(fileName, FILE_READ);
@@ -623,8 +652,15 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
         
         // Seek position chunk
         uint32_t position = chunkIndex * chunkSize;
-        if (position >= logFile.size()) {
+        uint32_t fileSize = logFile.size();
+        
+        Serial1.printf("[LOGGER fetchChunk] File: %s, size: %d, chunk %d, position: %d\n", 
+                      fileName, fileSize, chunkIndex, position);
+        
+        if (position >= fileSize) {
             logFile.close();
+            Serial1.printf("[LOGGER fetchChunk] ❌ Position %d >= size %d → chunk hors limites\n", 
+                          position, fileSize);
             return 0;  // Chunk hors limites
         }
         
@@ -633,6 +669,9 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
         // Lire chunk (opération rapide: 1024B max = ~100ms)
         size_t bytesRead = logFile.readBytes(buffer, chunkSize);
         logFile.close();
+        
+        Serial1.printf("[LOGGER fetchChunk] ✅ Lu %d bytes depuis position %d\n", 
+                      bytesRead, position);
         
         return bytesRead;
     }

@@ -42,7 +42,7 @@ const pump = require('pump');
 
 /* Clean destination folder */
 gulp.task('clean', function() {
-    return del(['data/*']);
+    return del(['data/**/*']);
 });
 
 /* Copy static files */
