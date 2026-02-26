@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dygraphs Sync Responsive</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.1.0/dygraph.min.css" />
+
+<style>
+  /* RESET & BASE */
+  body { margin: 0; padding: 20px; font-family: sans-serif; background: #f4f4f4; }
+  
+  /* CONTENEUR GLOBAL */
+  .dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Espace entre les deux graphes */
+    max-width: 100%;
+    margin: 0 auto;
+    background: white;
+    padding: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+
+  /* STYLE DES CONTENEURS DE GRAPHE 
+     On ne met pas de width/height ici, on laisse les media queries décider.
+     Position relative est vitale pour Dygraphs.
+  */
+  .chart-container {
+    width: 100%;
+    position: relative;
+  }
+
+  /* --- MEDIA QUERIES (La demande "Taille fixe variable") --- */
+
+  /* CAS 1 : PORTRAIT (Mobile / Tablette verticale) */
+  @media (orientation: portrait) {
+    .dashboard { width: 95%; } /* Le conteneur prend presque toute la largeur */
+    .chart-container {
+      height: 250px; /* Graphes plus "carrés" pour être lisibles sur mobile */
+    }
+  }
+
+  /* CAS 2 : PAYSAGE (Desktop / Tablette horizontale) */
+  @media (orientation: landscape) {
+    .dashboard { width: 900px; } /* Largeur fixe imposée en paysage */
+    .chart-container {
+      height: 300px; /* Graphes panoramiques */
+    }
+  }
+
+  /* OPTIMISATION VISUELLE */
+  .dygraph-legend {
+    background: rgba(255, 255, 255, 0.8) !important;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    left: 60px !important; /* Décalage pour ne pas couvrir l'axe Y */
+    top: 10px !important;
+  }
+</style>
+</head>
+<body>
+
+<div class="dashboard">
+  <div id="graph-top" class="chart-container"></div>
+  
+  <div id="graph-bottom" class="chart-container"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.1.0/dygraph.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.1.0/extras/synchronizer.js"></script>
+
+<script>
+  // 1. GÉNÉRATION DE DONNÉES FICTIVES
+  // On crée 1000 points de données
+  const data = [];
+  const t = new Date();
+  for (let i = 0; i < 1000; i++) {
+    const x = new Date(t.getTime() + i * 1000 * 60);
+    const y1 = Math.sin(i / 50) + Math.random() * 0.5; // Série A
+    const y2 = Math.cos(i / 50) * 100 + Math.random() * 10; // Série B (échelle différente)
+    data.push([x, y1, y2]);
+  }
+
+  // 2. CONFIGURATION COMMUNE (Pour éviter la répétition)
+  const commonOptions = {
+    legend: 'always',
+    animatedZooms: true,
+    
+    // --- OPTIMISATION DE L'ESPACE ---
+    // Cette valeur doit être identique sur les deux pour l'alignement vertical !
+    yAxisLabelWidth: 50, 
+    
+    // Réduire les marges autour du graphe
+    axisLabelFontSize: 12,
+    gridLineColor: '#eee',
+    
+    // Remplissage sous la courbe pour le look
+    fillGraph: true,
+  };
+
+  // 3. CRÉATION DES GRAPHES
+  
+  // Graphe du HAUT : Pas de sélecteur
+  const g1 = new Dygraph(document.getElementById("graph-top"), data, {
+    ...commonOptions,
+    labels: ['Date', 'Pression (Bar)', 'Inutilisé'], // On ignore la 3ème colonne ici
+    visibility: [true, false], // On affiche seulement y1
+    colors: ['#007bff'], // Bleu
+    
+    // Petite astuce : on peut masquer l'axe X du haut pour coller les graphes
+    // drawXAxis: false 
+  });
+
+  // Graphe du BAS : Avec Range Selector
+  const g2 = new Dygraph(document.getElementById("graph-bottom"), data, {
+    ...commonOptions,
+    labels: ['Date', 'Inutilisé', 'Température (°C)'], 
+    visibility: [false, true], // On affiche seulement y2
+    colors: ['#28a745'], // Vert
+    
+    // Configuration du Range Selector optimisé
+    showRangeSelector: true,
+    rangeSelectorHeight: 30, // Compact (min ~30px)
+    rangeSelectorPlotStrokeColor: '#28a745',
+    rangeSelectorPlotFillColor: 'rgba(40, 167, 69, 0.3)'
+  });
+
+  // 4. SYNCHRONISATION
+  // C'est ici que les deux graphes deviennent liés
+  const sync = Dygraph.synchronize(g1, g2, {
+    selection: true, // Le curseur rouge suit sur les deux
+    zoom: true,      // Le zoom suit sur les deux
+    range: true      // Le range selector pilote les deux
+  });
+
+  // 5. GESTION DU RESPONSIVE (CRITIQUE)
+  // Utilisation de ResizeObserver pour surveiller le conteneur parent
+  // C'est plus performant que window.onresize
+  const resizeObserver = new ResizeObserver(entries => {
+    // On utilise requestAnimationFrame pour éviter de surcharger le navigateur
+    window.requestAnimationFrame(() => {
+      g1.resize();
+      g2.resize();
+    });
+  });
+
+  // On observe le wrapper global
+  resizeObserver.observe(document.querySelector('.dashboard'));
+
+</script>
+</body>
+</html>

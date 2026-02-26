@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>test dygraph prototype — propre</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.2.1/dygraph.min.css" />
+  <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css" />
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial;
+      background:#09090a;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+    .dashboard-card{
+      /* No fixed widths/heights here: JS will compute exact dimensions
+         to match the application's dynamic layout requirements. */
+      margin:0 auto;
+      /* Dark card to match the graph dark theme */
+      border-radius:8px;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      align-items:stretch;
+      box-sizing:border-box;
+      width:100%;
+      /* small bottom padding to keep a gap from the viewport bottom */
+      padding-bottom:8px;
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+
+    /* Make the main content fill the remaining space inside the card and avoid scrolling */
+    #graphMainPage {
+      /* Height is computed in JS as: viewport - header. Keep flex behavior
+         but do not hardcode pixel values here. */
+      flex: 1 1 auto;
+      min-height: 0; /* allow flex child to shrink */
+      overflow: hidden; /* no internal scroll — content must fit */
+      box-sizing: border-box;
+      padding: 10px;
+      width:100%;
+    }
+    .charts-wrapper{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      flex:1;
+      align-items:stretch;
+    }
+    .graph-zone{
+      border-radius: 12px;
+      padding: 6px;
+      border: 2px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.02);
+      display:flex;
+      flex-direction:column;
+      flex:1 1 0;
+      min-height:0; /* allow children to shrink inside flex */
+    }
+    /* Graph content area should have a black background; canvas and dygraph
+       internal canvases inherit this so the drawn axes and grid appear on black. */
+   /* Dygraph range selector styling (handles and selection window) */
+    .dygraph-rangesel-zoomhandle {
+      background: rgba(255,255,255,0.12) !important;
+      border: 1px solid rgba(255,255,255,0.22) !important;
+      box-shadow: 0 0 6px rgba(0,0,0,0.6) inset;
+      /* Increase handle hit area and visual height for touch */
+      height: 35px !important;
+      width: 20px !important;
+      border-radius: 4px !important;
+    }
+    .dygraph-rangesel-zoomwindow {
+      background: rgba(255,255,255,0.06) !important;
+      border: 1px solid rgba(255,255,255,0.06) !important;
+    }
+    .dygraph-rangesel {
+      background: transparent !important;
+      /* Ensure the range selector container reserves enough vertical space */
+      height: 40px !important;
+    }
+    /* Legend (labelsDiv) and zone title in white */
+    .graph-legend{
+      color: #fff;
+      background: transparent;
+      padding: 4px 6px;
+      font-size: 12px;
+      /* Stabilise la hauteur de la légende : empêcher le retour à la
+        ligne (ellipsis) et réserver une min-height basée sur mesures
+        (24px observés lors des recalculs). Ceci évite que l'apparition
+        du texte change la hauteur du canvas. */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-height: 24px;
+      box-sizing: border-box;
+    }
+    .graph-zone-title{ color: #fff; }
+    .graph-zone-title{
+      text-align:center;
+      margin:0;
+      padding:6px 0;
+      font-size:15px;
+      cursor:pointer;
+    }
+    .graph-selector{
+      display:none;
+    }
+    .graph-content{
+      position:relative;
+      flex:1 1 0;
+      min-height:0; /* essential for flex children to shrink properly */
+      display:flex;
+      flex-direction:column;
+    }
+    .graph-canvas{
+      display:block;
+      width:100%;
+      height:100%;
+      flex:1 1 0;
+    }
+    /* Ensure dygraph inner elements and any axis-label DOM nodes are visible on dark bg */
+    .graph-content{ color:#fff; }
+    .dygraph-axis-label, .dygraph-axis-label-y, .dygraph-axis-label-x, .dygraph-axis, .dygraph-tick-label { color: #fff !important; }
+    .axis-selector .axis-selector-dropdown{
+      display:none;
+    }
+    .axis-selector.open .axis-selector-dropdown{
+      display:inline-block;
+    }
+    /* Override jQuery Mobile rule that adds vertical margins to .ui-field-contain.
+       jQM has: @media (min-width:28em) { .ui-field-contain { margin:1em 0 }}
+       That margin reduces the effective content height and breaks our
+       computed canvas heights on tablet/landscape. We limit the override
+       to this page to avoid changing global jQM behaviour. */
+    #pagePiscineGraphs .ui-field-contain, #pagePiscineGraphs .ui-mobile fieldset.ui-field-contain {
+      margin: 0 !important;
+    }
+    @media (max-width:700px) and (orientation:portrait){
+      #graph-zone-2,#graph-zone-3{ display:none!important }
+    }
+    @media (min-width:900px) and (orientation:landscape){
+      .charts-wrapper{ flex-direction:row }
+      .graph-zone{ flex:1 }
+    }
+    
+  </style>
+</head>
+<body>
+
+<div data-role="page" id="pagePiscineGraphs" data-theme="b" nextleft="#pagePiscinePrincipale" nextright="#pagePiscineDebug">
+  <!-- Menu Panel (profile, about, logoff -->
+  <div data-role="panel" id="optionsPiscineManager" data-display="reveal" data-position="right" data-theme="b">
+    <ul data-role="listview">
+      <li><a href="#about-dlg" class="ui-btn ui-shadow ui-corner-all ui-icon-info ui-btn-icon-right">About maPiscine</a></li>
+      <hr class="inset">
+      <li><a href="#logoff-dlg" id="logoff" class="ui-btn ui-shadow ui-corner-all ui-icon-action ui-btn-icon-right">Logoff</a></li>
+      <li><a href="#pageUserProfile" id="profile" class="ui-btn ui-shadow ui-corner-all ui-icon-user ui-btn-icon-right">User Profile</a></li>
+      <hr class="inset">
+      <li><a href="#pageRegisterLogin" id="addUsr" class="ui-btn ui-shadow ui-corner-all ui-icon-plus ui-btn-icon-right">Add User</a></li>
+      <li><a href="#pageDeleteUser" id="deleteUsr" class="ui-btn ui-shadow ui-corner-all ui-icon-delete ui-btn-icon-right">Delete Users</a></li>
+      <li><a href="#pageChangeAdminPW" id="adminUsrPasswd" class="ui-btn ui-shadow ui-corner-all ui-icon-lock ui-btn-icon-right">Admin Passwd</a></li>
+      <hr class="inset">
+      <li><a href="#" data-rel="close" class="ui-btn ui-shadow ui-corner-all ui-icon-back ui-btn-icon-right">Close panel</a></li>
+    </ul>
+  </div> <!-- Menu panel -->
+
+  <div data-role="header" data-position="fixed" id="graphHeader" data-theme="b">
+    <a href="#leftpanel" data-icon="bars" class="ui-btn-left">Pages</a>
+    <h1 class="myh1">Piscine Manager</h1>
+    <a href="#optionsPiscineManager" data-icon="gear" class="ui-btn-right">Options</a>
+  </div>
+  <div role="main" id="graphMainPage" class="ui-content">
+    <div class="ui-field-contain" id="graphSelectControls" style="margin-bottom:8px;padding:0;display:flex;align-items:center;gap:8px">
+      <label for="daterange" class="select smallLabel" style="margin:0">Periode:</label>
+      <input id="daterange" name="daterange" class="single" value="01/01/2018 - 01/15/2018" style="flex:1" />
+    </div>
+    <div class="dashboard-card">
+      <div id="graph-container" class="charts-wrapper">
+        <div class="graph-zone" id="graph-zone-1" data-graph-type="chemistry">
+          <div class="graph-selector">
+            <div class="ui-field-contain">
+              <label class="select smallLabel">Graphique:</label>
+              <select name="graphSelector1" class="zone-graph-selector" data-zone="1">
+                <option value="chemistry" selected>Chimie</option>
+                <option value="temperature">Températures</option>
+                <option value="equipment">Équipements</option>
+              </select>
+            </div>
+          </div>
+          <h3 class="graph-zone-title">Chimie de l'eau</h3>
+          <div class="graph-content"></div>
+        </div>
+        <div class="graph-zone" id="graph-zone-2" data-graph-type="temperature">
+          <div class="graph-selector">
+            <div class="ui-field-contain">
+              <label class="select smallLabel">Graphique:</label>
+              <select name="graphSelector2" class="zone-graph-selector" data-zone="2">
+                <option value="chemistry">Chimie</option>
+                <option value="temperature" selected>Températures</option>
+                <option value="equipment">Équipements</option>
+              </select>
+            </div>
+          </div>
+          <h3 class="graph-zone-title">Températures</h3>
+          <div class="graph-content"></div>
+        </div>
+        <div class="graph-zone" id="graph-zone-3" data-graph-type="equipment">
+          <div class="graph-selector">
+            <div class="ui-field-contain">
+              <label class="select smallLabel">Graphique:</label>
+              <select name="graphSelector3" class="zone-graph-selector" data-zone="3">
+                <option value="chemistry">Chimie</option>
+                <option value="temperature">Températures</option>
+                <option value="equipment" selected>Équipements</option>
+              </select>
+            </div>
+          </div>
+          <h3 class="graph-zone-title">Équipements</h3>
+          <div class="graph-content"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+<script src="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.2.1/dygraph.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.2.1/extras/synchronizer.min.js"></script>
+
+<script>
+  // --- 0. NOTE --
+  // Ce fichier de test a été adapté pour préparer l'intégration
+  // dans l'application (jQuery Mobile + calcul dynamique des hauteurs
+  // selon les media queries de l'app). L'initialisation se fait dans
+  // `initCharts()` et est déclenchée sur `pagebeforeshow`.
+
+  // --- 1. GÉNÉRATION DE DONNÉES (2 Séries distinctes) ---
+  const data = [];
+  const t = new Date();
+  for (let i = 0; i < 500; i++) {
+    const x = new Date(t.getTime() + i * 1000 * 60);
+    // Série A : Pression (valeurs ~ 10-20)
+    const y1 = 10 + Math.sin(i / 20) * 5 + Math.random(); 
+    // Série B : Température (valeurs ~ 200-300)
+    const y2 = 200 + Math.cos(i / 20) * 50 + Math.random() * 10;
+    data.push([x, y1, y2]);
+  }
+
+  // --- 2. CONFIGURATION COMMUNE OPTIMISÉE ---
+  // Helper: formateur d'étiquettes Y limité à ~4 caractères
+  // L'objectif : éviter que Dygraph réserve un large gutter pour de très
+  // grands nombres — dans notre cas nous avons au plus 4 chiffres utiles.
+  function formatYAxisLabelLimit4(v) {
+    try {
+      if (v === null || v === undefined || Number.isNaN(v)) return '';
+      // arrondir les petites valeurs avec 2 décimales, sinon afficher entier
+      const absV = Math.abs(v);
+      if (absV < 1000) {
+        // garder 2 décimales pour petites valeurs (ex. 12.34)
+        const s = Number(v).toFixed(2);
+        // supprime les zéros inutiles
+        return s.replace(/\.00$/, '').replace(/\.(\d)0$/, '.$1');
+      }
+      // pour valeurs entre 1k et 9999 => afficher entier (max 4 chiffres)
+      if (absV < 10000) return String(Math.round(v));
+      // au delà, utiliser un suffixe compact (k, M) pour conserver 4 caractères
+      if (absV < 1e6) return (v / 1000).toFixed(2).replace(/\.00$/, '') + 'k';
+      return (v / 1e6).toFixed(2).replace(/\.00$/, '') + 'M';
+    } catch (e) { return String(v); }
+  }
+
+  const commonOptions = {
+    legend: 'always',
+    animatedZooms: true,
+    // Use dark theme colors for dygraphs: black background, white labels
+    backgroundColor: '#000000',
+    gridLineColor: '#444',
+    axisLineColor: '#ffffff',
+    // Slightly smaller labels to reduce reserved axis space
+    axisLabelFontSize: 11,
+    axisLabelColor: '#ffffff',
+    // Styles to apply to the labelsDiv (legend) that dygraph writes into
+    labelsDivStyles: { color: '#ffffff', backgroundColor: 'transparent' },
+    // Range selector defaults for dark theme (can be overridden per-graph)
+    rangeSelectorPlotStrokeColor: '#ffffff',
+    rangeSelectorPlotFillColor: 'rgba(255,255,255,0.10)',
+    rangeSelectorHeight: 30,
+    // Per-axis overrides to ensure axis lines/ticks/labels are white on dark bg
+    axes: {
+      x: { axisLabelColor: '#ffffff', axisLineColor: '#ffffff', gridLineColor: '#444' },
+      y: { axisLabelColor: '#ffffff', axisLineColor: '#ffffff', gridLineColor: '#444' }
+    },
+    
+    // --- C'est ici que la magie de l'alignement opère ---
+    // Limit the width reserved for Y-axis labels (px). Small value reduces left gutter.
+    // We keep a modest fixed width but rely on a label formatter to ensure
+    // tick labels don't force a larger gutter. Adjust if labels get clipped.
+    yAxisLabelWidth: 28,
+
+    // Formatteur de valeurs pour la légende (2 décimales)
+    valueFormatter: (val) => {
+      try { if (val === null || val === undefined || Number.isNaN(val)) return ''; return Number(val).toFixed(2); } catch(e){ return String(val); }
+    },
+
+    // Apply per-axis label formatter to keep tick labels compact on the Y axis
+    axes: {
+      x: { axisLabelColor: '#ffffff', axisLineColor: '#ffffff', gridLineColor: '#444' },
+      y: {
+        axisLabelColor: '#ffffff',
+        axisLineColor: '#ffffff',
+        gridLineColor: '#444',
+        axisLabelFormatter: formatYAxisLabelLimit4,
+        valueFormatter: function(v) { return formatYAxisLabelLimit4(v); }
+      }
+    },
+
+    // Interaction
+    highlightCircleSize: 4,
+    strokeWidth: 2,
+  };
+
+  // Logging: removed in-page diagnostic panel writes; use console only.
+  window.debug = true;
+
+  // Synchronizer: statically included via header (dygraph 2.2.1 + extras/synchronizer.min.js)
+  // Dynamic loader and shim removed — plugin should be available from the header includes.
+
+  // createAttempt used to avoid infinite rapid retries when canvases are missing
+  let createAttempt = 0;
+
+  // --- 3. INITIALISATION & FONCTIONS D'AIDE ---
+
+  let g1 = null, g2 = null, g3 = null, sync = null;
+  let resizeObserver = null;
+
+  // Legacy is* helpers removed: responsive detection centralized in getGraphMode()
+
+  // Copier getGraphMode de l'application pour conserver la même détection responsive
+  function getGraphMode() {
+    var mqDesktopLandscape = window.matchMedia('(min-width: 1101px) and (orientation: landscape)');
+    var mqDesktopPortrait = window.matchMedia('(min-height: 1101px) and (orientation: portrait)');
+    var mqTabletPortrait = window.matchMedia('(min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (orientation: portrait)');
+    var mqTabletLandscape = window.matchMedia('(min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (orientation: landscape)');
+    var mqMobilePortrait = window.matchMedia('(max-width: 700px) and (orientation: portrait)');
+    var mqMobileLandscape = window.matchMedia('(max-height: 700px) and (orientation: landscape)');
+
+    var variant = null;
+    if (mqDesktopLandscape.matches) {
+      variant = 'desktop-landscape';
+    } else if (mqDesktopPortrait.matches) {
+      variant = 'desktop-portrait';
+    } else if (mqTabletLandscape.matches) {
+      variant = 'tablet-landscape';
+    } else if (mqTabletPortrait.matches) {
+      variant = 'tablet-portrait';
+    } else if (mqMobileLandscape.matches) {
+      variant = 'mobile-landscape';
+    } else if (mqMobilePortrait.matches) {
+      variant = 'mobile-portrait';
+    } else {
+      var width = window.innerWidth;
+      var isLandscape = window.innerWidth > window.innerHeight;
+      if (width < 768) variant = isLandscape ? 'mobile-landscape' : 'mobile-portrait';
+      else if (width < 1024 || !isLandscape) variant = isLandscape ? 'tablet-landscape' : 'tablet-portrait';
+      else variant = isLandscape ? 'desktop-landscape' : 'desktop-portrait';
+    }
+
+    if (window.debug) console.log('[RESPONSIVE] getGraphMode ->', variant);
+    return variant;
+  }
+
+  // Templates minimalistes repris de l'application pour injection
+  const template = {
+    chemistry: `
+          <div class="ui-field-contain axis-selector">
+            <label for="selectChemistry" class="smallLabel">Courbes:</label>
+            <select name="selectChemistry" class="axis-selector-dropdown" data-graph="chemistry" multiple data-native-menu="false" data-mini="true" style="width:80%">
+              <option value="PHVal" selected>PHVal</option>
+              <option value="RedoxVal" selected>RedoxVal</option>
+              <option value="PompePH">PompePH</option>
+              <option value="PompeCL">PompeCL</option>
+              <option value="PompeALG">PompeALG</option>
+            </select>
+          </div>
+          <div class="graph-legend" data-legend="chemistry"></div>
+          <div class="graph-canvas" data-canvas="chemistry"></div>
+        `,
+    temperature: `
+          <div class="ui-field-contain axis-selector">
+            <label for="selectTemperature" class="smallLabel">Courbes:</label>
+            <select name="selectTemperature" class="axis-selector-dropdown" data-graph="temperature" multiple data-native-menu="false" data-mini="true" style="width:80%">
+              <option value="TempEau" selected>TempEau</option>
+              <option value="TempAir" selected>TempAir</option>
+              <option value="TempPAC" selected>TempPAC</option>
+              <option value="TempInt" selected>TempInt</option>
+              <option value="PAC">PAC</option>
+              <option value="PP">PP</option>
+              <option value="PHVal">PHVal</option>
+            </select>
+          </div>
+          <div class="graph-legend" data-legend="temperature"></div>
+          <div class="graph-canvas" data-canvas="temperature"></div>
+        `,
+    equipment: `
+          <div class="ui-field-contain axis-selector">
+            <label for="selectEquipment" class="smallLabel">Courbes:</label>
+            <select name="selectEquipment" class="axis-selector-dropdown" data-graph="equipment" multiple data-native-menu="false" data-mini="true" style="width:80%">
+              <option value="PP" selected>PP</option>
+              <option value="PAC" selected>PAC</option>
+              <option value="PompePH">PompePH</option>
+              <option value="PompeCL">PompeCL</option>
+              <option value="Auto">Auto</option>
+              <option value="PompeALG">PompeALG</option>
+              <option value="TempPAC">TempPAC</option>
+              <option value="TempEau">TempEau</option>
+              <option value="PHVal">PHVal</option>
+            </select>
+          </div>
+          <div class="graph-legend" data-legend="equipment"></div>
+          <div class="graph-canvas" data-canvas="equipment"></div>
+        `
+  };
+
+  // Copier populateGraphZone (simplifiée pour prototype)
+  function populateGraphZone(zoneId, graphType) {
+    var $zone = $('#graph-zone-' + zoneId);
+    var $content = $zone.find('.graph-content');
+    var $template = template[graphType];
+    if (!$template) {
+      console.error('[ERROR] Template not found for', graphType);
+      return;
+    }
+    console.log('[TEST-DIAG] populateGraphZone', zoneId, graphType);
+    $content.empty();
+    $content.html($template);
+    try { console.log('[TEST-DIAG] injected html for zone', zoneId, 'hasAxis?', $content.find('.axis-selector').length); } catch(e){}
+    // Enhance selects if jQuery Mobile present — do this first because it may
+    // replace the <select> with generated UI that we must then hide.
+    try { $content.enhanceWithin(); } catch(e) {}
+    // After enhancement, ensure the axis-selector dropdown is hidden by default.
+    try {
+      // hide built dropdown and original select
+      $content.find('.axis-selector-dropdown').each(function(i, el) {
+        try { $(el).hide(); el.style.setProperty('display', 'none', 'important'); } catch(e){}
+      });
+      // hide the label that accompanies the axis selector (e.g. "Courbes:")
+      $content.find('.axis-selector').find('label, .smallLabel').each(function(i, el){ try{ $(el).hide(); el.style.setProperty('display','none','important'); }catch(e){} });
+      // also hide any jQM generated selectmenu widgets inside
+      $content.find('.ui-selectmenu, .ui-select').each(function(i, el) { try { $(el).hide(); el.style.setProperty('display', 'none', 'important'); } catch(e){} });
+      $content.find('.axis-selector').removeClass('open');
+      // ensure the top-level graph selector (above content) is hidden too
+      $content.closest('.graph-zone').find('.graph-selector').hide();
+    } catch (e) {}
+    $zone.attr('data-graph-type', graphType);
+    var titles = { 'chemistry': "Chimie de l'eau", 'temperature': 'Températures', 'equipment': 'Équipements' };
+    $zone.find('.graph-zone-title').text(titles[graphType] || graphType);
+    var $zoneSelector = $zone.find('.zone-graph-selector');
+    if ($zoneSelector.length > 0) {
+      $zoneSelector.val(graphType);
+      try { if ($zoneSelector.data('mobile-selectmenu')) $zoneSelector.selectmenu('refresh'); } catch(e) {}
+    }
+  }
+
+  // Determine the desired layout based on the canonical getGraphMode mapping
+  function determineLayout() {
+    const mode = getGraphMode();
+    switch (mode) {
+      case 'mobile-portrait': return { count: 1, orientation: 'column' };
+      case 'mobile-landscape': return { count: 2, orientation: 'row' };
+      case 'tablet-portrait': return { count: 2, orientation: 'column' };
+      case 'tablet-landscape': return { count: 2, orientation: 'row' };
+      case 'desktop-landscape': return { count: 3, orientation: 'row' };
+      case 'desktop-portrait': return { count: 3, orientation: 'column' };
+      default: return { count: 2, orientation: 'column' };
+    }
+  }
+
+  // Calcule dynamiquement les hauteurs comme dans l'app (media queries alignées)
+  function applyChartHeights() {
+    const card = document.querySelector('.dashboard-card');
+    if (!card) return;
+    // Quick-change detection: avoid reapplying styles if nothing meaningful changed.
+    try {
+      const rect = card.getBoundingClientRect();
+      const layout = determineLayout();
+      // Compute heights of header and selector controls so key changes when chrome size changes
+      const viewportH = window.innerHeight || document.documentElement.clientHeight || 800;
+      const header = document.getElementById('graphHeader');
+      const headerH = header ? header.offsetHeight : 45;
+      const selControls = document.getElementById('graphSelectControls');
+      const selControlsH = selControls ? selControls.offsetHeight : 0;
+      // compute a lightweight key representing current measured state
+      const key = `${Math.round(rect.width)}x${Math.round(rect.height)}|vh:${Math.round(viewportH)}|hdr:${headerH}|selctrl:${selControlsH}|sel:${document.querySelectorAll('.graph-selector').length}|layout:${layout.count}-${layout.orientation}`;
+      if (window.__lastApplyChartKey === key) {
+        // no meaningful change, skip to avoid observer-triggered loop
+        if (window.debug) console.log('[TEST-DIAG] applyChartHeights skipped (no change) ->', key);
+        return;
+      }
+      window.__lastApplyChartKey = key;
+    } catch (e) {
+      // ignore cache errors and continue
+    }
+
+    // Compute viewport and header heights
+    const viewportH = window.innerHeight || document.documentElement.clientHeight || 800;
+    const headerEl = document.getElementById('graphHeader');
+    const headerH = headerEl ? headerEl.offsetHeight : 0;
+
+    // Set graphMainPage height = viewport - header (no fixed pixels in CSS)
+    try {
+      const gm = document.getElementById('graphMainPage');
+      if (gm) gm.style.height = Math.max(120, viewportH - headerH) + 'px';
+      console.log('[TEST-DIAG] Set graphMainPage height to', gm ? gm.style.height : 'N/A'); 
+    } catch (e) {}
+
+    // Now compute space inside graphMainPage for dashboard-card: subtract selector controls + padding
+    const selEl = document.getElementById('graphSelectControls');
+    const selH = selEl ? selEl.offsetHeight : 0;
+    const gm = document.getElementById('graphMainPage');
+    let gmPadding = 0;
+    try {
+      if (gm) {
+        const cs = getComputedStyle(gm);
+        gmPadding = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+      }
+    } catch (e) { gmPadding = 0; }
+
+    // available vertical space for the dashboard card (graphMainPage minus selector controls and padding)
+    let totalH = Math.max(120, (gm ? gm.clientHeight : viewportH) - selH - gmPadding - 30 /* extra gap */);
+    console.log('[TEST-DIAG] Computed totalH for dashboard card:', totalH);
+
+    // clamp to a safe maximum to avoid runaway values
+    try {
+      const maxTotal = Math.max(200, viewportH - 20);
+      if (totalH > maxTotal) totalH = maxTotal;
+    } catch (e) {}
+
+    // Apply explicit height to the card so calculations are deterministic
+    try {
+      const cardHeight = Math.max(80, Math.floor(totalH));
+      card.style.height = cardHeight + 'px';
+      totalH = card.clientHeight;
+    } catch (e) {}
+
+    // Available height subtracts internal selectors total (no legend-bar in this layout)
+    const vGap = 10; // vertical spacing in px between chrome and content
+    const avail = Math.max(100, totalH - vGap);
+
+    // --- New: compute sizes for graph-container, graph-zone, graph-content and graph-canvas ---
+    try {
+      const graphContainer = document.getElementById('graph-container');
+      // graph-container should fill the dashboard-card inner area
+      try {
+        // subtract card paddings to compute inner height
+        const ccs = getComputedStyle(card);
+        const padTop = parseFloat(ccs.paddingTop) || 0;
+        const padBottom = parseFloat(ccs.paddingBottom) || 0;
+        const innerCardH = Math.max(0, card.clientHeight - padTop - padBottom);
+        if (graphContainer) {
+          graphContainer.style.height = innerCardH + 'px';
+        }
+        if (window.debug) console.log('[TEST-DIAG] innerCard sizing', { padTop, padBottom, innerCardH, graphContainerHeight: graphContainer ? graphContainer.style.height : null });
+      } catch (e) {}
+
+      // Determine all zones (ordered) and decide which to show according to layout
+      const zones = Array.from(document.querySelectorAll('.graph-zone'));
+      const layoutNow = determineLayout();
+      const toShowCount = layoutNow.count || 1;
+      // Ensure graph-zone wrappers are shown/hidden according to desired count.
+      // Use inline styles so JS controls visibility regardless of CSS rules
+      zones.forEach((z, idx) => {
+        try {
+          if (idx < toShowCount) {
+            z.style.display = 'flex';
+          } else {
+            z.style.display = 'none';
+          }
+        } catch (e) {}
+      });
+      const visibleZones = zones.filter(z => z && (z.offsetParent !== null));
+      const visibleCount = visibleZones.length || 1;
+      if (window.debug) console.log('[TEST-DIAG] visible zones', { zones: zones.map(z=>z.id), visibleZones: visibleZones.map(z=>z.id), visibleCount });
+
+      // For each zone we need: zone height, content height (zone - title), canvas height (content - legend)
+      // Use the layout computed above (layoutNow) — avoid referencing an
+      // `orientation` variable that isn't yet defined in this scope.
+      if (layoutNow.orientation === 'row') {
+        // Row: zones arranged horizontally; zone height = innerCardH (already set on container)
+        const ccs = getComputedStyle(card);
+        const padTop = parseFloat(ccs.paddingTop) || 0;
+        const padBottom = parseFloat(ccs.paddingBottom) || 0;
+        const zoneH = Math.max(80, card.clientHeight - padTop - padBottom - 0);
+        visibleZones.forEach(z => {
+          try {
+            z.style.height = zoneH + 'px';
+            const title = z.querySelector('.graph-zone-title');
+            const titleH = title ? title.offsetHeight : 0;
+            const content = z.querySelector('.graph-content');
+            if (content) {
+              const contentH = Math.max(40, zoneH - titleH - 0);
+              content.style.height = contentH + 'px';
+              const legend = content.querySelector('.graph-legend');
+              const legendH = legend ? legend.offsetHeight : 0;
+              // Defer canvas sizing to the containers distribution step to avoid
+              // conflicting assignments between different calculation paths.
+              if (window.debug) console.log('[TEST-DIAG] row zone', { id: z.id, zoneH, titleH, contentH, legendH });
+            }
+          } catch (e) {}
+        });
+      } else {
+        // Column: split vertical avail among visible zones
+        const totalGapV = Math.max(0, (visibleCount - 1) * vGap);
+        const ccs = getComputedStyle(card);
+        const padTop = parseFloat(ccs.paddingTop) || 0;
+        const padBottom = parseFloat(ccs.paddingBottom) || 0;
+        const usableH = Math.max(120, card.clientHeight - padTop - padBottom - totalGapV);
+        const perZone = Math.floor(usableH / visibleCount);
+        visibleZones.forEach((z, idx) => {
+          try {
+            const zoneH = (idx === visibleCount - 1) ? Math.max(40, usableH - perZone * (visibleCount - 1)) : perZone;
+            z.style.height = zoneH + 'px';
+            const title = z.querySelector('.graph-zone-title');
+            const titleH = title ? title.offsetHeight : 0;
+            const content = z.querySelector('.graph-content');
+            if (content) {
+              const contentH = Math.max(32, zoneH - titleH - 0);
+              content.style.height = contentH + 'px';
+              // Defer canvas sizing to the containers distribution step.
+              if (window.debug) console.log('[TEST-DIAG] col zone', { id: z.id, idx, zoneH, titleH, contentH });
+            }
+          } catch (e) {}
+        });
+      }
+    } catch (e) { /* non-fatal sizing */ }
+
+    const layout = determineLayout();
+    const count = layout.count;
+    const orientation = layout.orientation; // 'row' or 'column'
+
+    try {
+      console.log('[TEST-DIAG] applyChartHeights totalH, selectorsTotal, avail ->', totalH, selectorsTotal, avail, 'layout:', layout);
+      const els = [document.querySelector('#graph-zone-1 .graph-content'), document.querySelector('#graph-zone-2 .graph-content'), document.querySelector('#graph-zone-3 .graph-content')];
+      els.forEach((el, i) => {
+        try { if (el) console.log('[TEST-DIAG] zone', i+1, 'contentRect', el.getBoundingClientRect()); } catch(e){}
+      });
+    } catch(e){}
+
+    const containers = [
+      document.querySelector('#graph-zone-1 .graph-canvas'),
+      document.querySelector('#graph-zone-2 .graph-canvas'),
+      document.querySelector('#graph-zone-3 .graph-canvas')
+    ];
+
+    // apply wrapper direction
+    const wrapper = document.querySelector('.charts-wrapper');
+    if (wrapper) wrapper.style.flexDirection = (orientation === 'row') ? 'row' : 'column';
+
+    // Compute wrapper gap in px (use computed style, fallback to 8)
+    let gapPx = 8;
+    try {
+      if (wrapper) {
+        const csw = getComputedStyle(wrapper);
+        const gapVal = csw && (csw.gap || csw.columnGap || csw.rowGap);
+        if (gapVal && gapVal.endsWith && gapVal.endsWith('px')) gapPx = parseFloat(gapVal);
+      }
+    } catch (e) { gapPx = 8; }
+
+    // Compute available width inside card (subtract card paddings)
+    let cardInnerW = card.clientWidth;
+    try {
+      const ccs = getComputedStyle(card);
+      const padL = parseFloat(ccs.paddingLeft) || 0;
+      const padR = parseFloat(ccs.paddingRight) || 0;
+      cardInnerW = Math.max(80, card.clientWidth - padL - padR);
+    } catch (e) { cardInnerW = card.clientWidth; }
+    if (window.debug) console.log('[TEST-DIAG] card inner width calc', { cardClientW: card.clientWidth, cardInnerW });
+
+    // If row: distribute width equally among visible containers and set heights from avail
+    if (orientation === 'row') {
+      const totalGap = Math.max(0, (count - 1) * gapPx);
+      const availWidth = Math.max(80, cardInnerW - totalGap);
+      const colW = Math.floor(availWidth / count);
+      const rowHeightPx = Math.max(80, avail);
+      if (window.debug) console.log('[TEST-DIAG] row layout widths', { gapPx, totalGap, availWidth, colW, rowHeightPx, count });
+      containers.forEach((el, idx) => {
+        if (!el) return;
+        if (idx < count) {
+          el.style.display = 'block';
+          el.style.width = colW + 'px';
+          // derive canvas height from its .graph-content parent minus legend height
+          try {
+            const parent = el.closest('.graph-content');
+            const legend = parent ? parent.querySelector('.graph-legend') : null;
+            const legendH = legend ? Math.round(legend.getBoundingClientRect().height) : 0;
+            const parentRectH = parent ? Math.round(parent.getBoundingClientRect().height) : rowHeightPx;
+            // Use bounding rect heights (subpixel) to be consistent between measurements
+            const canvasH = Math.max(24, parentRectH - legendH);
+            el.style.boxSizing = 'border-box';
+            el.style.height = canvasH + 'px';
+          } catch (e) {
+            el.style.height = rowHeightPx + 'px';
+          }
+        } else {
+          el.style.display = 'none';
+          el.style.width = '0px';
+          el.style.height = '0px';
+        }
+      });
+    } else {
+      // column: full width, split vertical space
+      const heights = [];
+      if (count === 1) heights.push(avail);
+      else if (count === 2) heights.push(Math.floor(avail * 0.5), Math.floor(avail * 0.5));
+      else if (count === 3) {
+        const part = Math.floor(avail / 3);
+        heights.push(part, part, avail - part * 2);
+      }
+      containers.forEach((el, idx) => {
+        if (!el) return;
+        if (idx < count) {
+          el.style.display = 'block';
+          el.style.width = '100%';
+          try {
+            const parent = el.closest('.graph-content');
+            const legend = parent ? parent.querySelector('.graph-legend') : null;
+            const legendH = legend ? Math.round(legend.getBoundingClientRect().height) : 0;
+            const parentRectH = parent ? Math.round(parent.getBoundingClientRect().height) : heights[idx];
+            const canvasH = Math.max(24, parentRectH - legendH);
+            el.style.boxSizing = 'border-box';
+            el.style.height = canvasH + 'px';
+          } catch (e) {
+            el.style.height = heights[idx] + 'px';
+          }
+        } else {
+          el.style.display = 'none';
+          el.style.width = '100%';
+          el.style.height = '0px';
+        }
+      });
+    }
+
+    // Resize dygraphs that exist
+    // Apply authoritative metrics returned by collectLayoutMetrics(). The
+    // collector will return a saved snapshot when present or compute-and-save
+    // metrics when none exist.
+    try {
+      const metrics = collectLayoutMetrics();
+      const byName = {};
+      (metrics || []).forEach(m => { if (m && m.element) byName[m.element] = m; });
+      try { if (byName['dashboard-card'] && byName['dashboard-card'].rectH) card.style.height = (byName['dashboard-card'].rectH + 'px'); } catch(e){}
+      try { const gc = document.getElementById('graph-container'); if (gc && byName['graph-container'] && byName['graph-container'].rectH) gc.style.height = (byName['graph-container'].rectH + 'px'); } catch(e){}
+      for (let i=1;i<=3;i++) {
+        try {
+          const zoneId = `graph-zone-${i}`;
+          const zoneEl = document.getElementById(zoneId);
+          if (!zoneEl) continue;
+          const zEntry = byName[zoneId];
+          const cEntry = byName[`${zoneId} .graph-content`];
+          const canvasEntry = byName[`${zoneId} .graph-canvas`];
+          if (zEntry && zEntry.rectH) zoneEl.style.height = zEntry.rectH + 'px';
+          const content = zoneEl.querySelector('.graph-content');
+          if (content && cEntry && cEntry.rectH) content.style.height = cEntry.rectH + 'px';
+          const canvas = zoneEl.querySelector('.graph-canvas');
+          if (canvas && canvasEntry) {
+            if (canvasEntry.rectW) canvas.style.width = canvasEntry.rectW + 'px';
+            if (canvasEntry.rectH) canvas.style.height = canvasEntry.rectH + 'px';
+            try { canvas.dataset.initialExpected = String(canvasEntry.rectH || 0); } catch(e){}
+            try { const legend = zoneEl.querySelector('.graph-legend'); const ltxt = legend ? (legend.innerText || '').trim().replace(/\s+/g,' ') : ''; canvas.dataset.initialLegend = ltxt.slice(0,120); } catch(e){}
+          }
+        } catch(e){}
+      }
+    } catch (e) { if (window.debug) console.warn('[TEST-DIAG] apply collected metrics failed', e); }
+
+    [g1, g2, g3].forEach(g => { if (g) try { g.resize(); } catch (e) {} });
+
+    // Ensure the range selector is owned by the last-visible graph
+    try { applyRangeSelectorToLastVisible(); } catch (e) { /* non-fatal */ }
+
+    // Detailed layout size logging (table) — run unconditionally to aid debugging.
+    try { logLayoutSizes(); } catch (e) {}
+
+    // Extra stabilization pass: after dygraph may have inserted/changed inline
+    // elements (range selector etc.), re-evaluate canvas heights and correct
+    // small differences to keep rect/client/offset heights stable.
+    setTimeout(() => {
+      try {
+        const containers2 = [
+          document.querySelector('#graph-zone-1 .graph-canvas'),
+          document.querySelector('#graph-zone-2 .graph-canvas'),
+          document.querySelector('#graph-zone-3 .graph-canvas')
+        ];
+        containers2.forEach((el) => {
+          if (!el || el.offsetParent === null) return;
+          const parent = el.closest('.graph-content');
+          const legend = parent ? parent.querySelector('.graph-legend') : null;
+          const legendH = legend ? Math.round(legend.getBoundingClientRect().height) : 0;
+          const parentRectH = parent ? Math.round(parent.getBoundingClientRect().height) : 0;
+          const computedExpected = Math.max(24, parentRectH - legendH);
+          const actual = Math.round(el.getBoundingClientRect().height || 0);
+
+          // Persist initial expected canvas height so subsequent recalculs do
+          // not change the canvas when only legend text appears/disappears.
+          // Store in dataset the first expected value observed for this canvas.
+          try {
+            if (!el.dataset.initialExpected) {
+              el.dataset.initialExpected = String(computedExpected);
+              // also remember legend snippet to detect content changes
+              const ltxt = legend ? (legend.innerText || '').trim().replace(/\s+/g,' ') : '';
+              el.dataset.initialLegend = ltxt.slice(0,120);
+              if (window.debug) console.log('[TEST-DIAG] storing initialExpected for', el.id, { initialExpected: el.dataset.initialExpected, initialLegend: el.dataset.initialLegend });
+            }
+          } catch (e) {}
+
+          // Decide the authoritative expected height to apply:
+          // - If legend content hasn't changed since initial capture, prefer the
+          //   stored initialExpected to avoid canvas growth caused by transient
+          //   layout changes (range selector insertion, inline DOM tweaks).
+          let expected = computedExpected;
+          try {
+            const stored = el.dataset.initialExpected ? parseInt(el.dataset.initialExpected, 10) : null;
+            const storedLegend = el.dataset.initialLegend || '';
+            const curLegend = legend ? (legend.innerText || '').trim().replace(/\s+/g,' ') : '';
+            if (stored !== null && storedLegend === (curLegend || '').slice(0,120)) {
+              // Legend unchanged — keep initial expected to maintain stability
+              expected = stored;
+              if (window.debug) console.log('[TEST-DIAG] preserving initial canvas height for', el.id, { stored, curLegend });
+            }
+          } catch (e) {}
+
+          if (Math.abs(actual - expected) > 2) {
+            el.style.boxSizing = 'border-box';
+            el.style.height = expected + 'px';
+            try { if (window.debug) console.log('[TEST-DIAG] corrected canvas height', el, { expected, actual }); } catch(e){}
+            // trigger dygraph resize if instance attached
+            try { if (el.id === 'graph-canvas-1' && g1) g1.resize(); if (el.id === 'graph-canvas-2' && g2) g2.resize(); if (el.id === 'graph-canvas-3' && g3) g3.resize(); } catch(e){}
+          }
+        });
+        try { logLayoutSizes(); } catch (e) {}
+        // If a pending snapshot was requested earlier, now that stabilization
+        // finished we create the authoritative snapshot from stable DOM sizes.
+        try {
+          if (window.__pendingSaveSnapshot) {
+            const isLandscapeNow = (window.innerWidth > window.innerHeight);
+            const orientationKeyNow = isLandscapeNow ? 'landscape' : 'portrait';
+            if (window.__pendingSaveSnapshot[orientationKeyNow] && !window.__savedLayoutSizes[orientationKeyNow]) {
+              try {
+                const cardEl = document.querySelector('.dashboard-card');
+                const graphContainerEl = document.getElementById('graph-container');
+                const wrapperEl = document.querySelector('.charts-wrapper');
+                          // Save numeric sizes (numbers in px) instead of strings like '123px'.
+                          const snap = { ts: Date.now(), cardHeight: cardEl ? Math.round((cardEl.getBoundingClientRect().height || 0)) : null, graphContainerHeight: graphContainerEl ? Math.round((graphContainerEl.getBoundingClientRect().height || 0)) : null, wrapperFlexDirection: wrapperEl ? wrapperEl.style.flexDirection : null, zones: [] };
+                const zonesAll = Array.from(document.querySelectorAll('.graph-zone'));
+                zonesAll.forEach((z) => {
+                  try {
+                              const content = z.querySelector('.graph-content');
+                              const canvas = z.querySelector('.graph-canvas');
+                              // use actual measured rects to store authoritative numeric values
+                              const zoneH = Math.round(z.getBoundingClientRect().height || 0);
+                              const contentH = content ? Math.round(content.getBoundingClientRect().height || 0) : null;
+                              const canvasW = canvas ? Math.round((canvas.getBoundingClientRect().width || 0)) : null;
+                              const canvasH = canvas ? Math.round((canvas.getBoundingClientRect().height || 0)) : null;
+                              snap.zones.push({ id: z.id, zoneStyleHeight: zoneH, contentStyleHeight: contentH, canvasStyle: canvas ? { width: canvasW, height: canvasH } : null });
+                              if (canvas) {
+                                const h = Math.round(canvas.getBoundingClientRect().height || 0);
+                                canvas.dataset.initialExpected = String(h);
+                                const legend = z.querySelector('.graph-legend');
+                                const ltxt = legend ? (legend.innerText || '').trim().replace(/\s+/g,' ') : '';
+                                canvas.dataset.initialLegend = ltxt.slice(0,120);
+                              }
+                  } catch (e) {}
+                });
+                window.__savedLayoutSizes = window.__savedLayoutSizes || { portrait: null, landscape: null };
+                window.__savedLayoutSizes[orientationKeyNow] = snap;
+                // clear pending flag for this orientation
+                window.__pendingSaveSnapshot[orientationKeyNow] = false;
+                if (window.debug) console.log('[TEST-DIAG] saved initial layout (post-stabilize) for', orientationKeyNow, snap);
+              } catch (e) { if (window.debug) console.warn('[TEST-DIAG] finalize snapshot failed', e); }
+            }
+          }
+        } catch (e) {}
+      } catch (e) {}
+    }, 120);
+  }
+
+  // Schedule applyChartHeights with debounce to avoid rapid observer-triggered loops
+  function scheduleApplyChartHeights() {
+    if (window.__applyCHTimeout) return;
+    window.__applyCHTimeout = setTimeout(() => {
+      window.__applyCHTimeout = null;
+      try { applyChartHeights(); } catch (e) { if (window.debug) console.log('[TEST-DIAG] scheduleApplyChartHeights error', e); }
+    }, 120);
+  }
+
+    // Collect layout metrics (rect/client/offset) for relevant elements and
+  // return a normalized array suitable for logging or snapshotting.
+  function collectLayoutMetrics() {
+    // If a saved snapshot exists for the current orientation, return it
+    // converted to the same table shape that callers expect.
+    const isLandscapeNow = (window.innerWidth > window.innerHeight);
+    const orientationKeyNow = isLandscapeNow ? 'landscape' : 'portrait';
+    try {
+      window.__savedLayoutSizes = window.__savedLayoutSizes || { portrait: null, landscape: null };
+      const saved = window.__savedLayoutSizes[orientationKeyNow];
+      if (saved) {
+        // Saved snapshot format now uses plain numeric values (px numbers),
+        // not strings with a "px" suffix. This simplifies parsing and
+        // avoids unnecessary string gymnastics.
+        const table = [];
+        // dashboard-card
+        const cardH = saved.cardHeight ? Number(saved.cardHeight) || 0 : 0;
+        table.push({ element: 'dashboard-card', exists: true, rectW: 0, rectH: cardH, clientW: 0, clientH: cardH, offsetW: 0, offsetH: cardH });
+        const gcH = saved.graphContainerHeight ? Number(saved.graphContainerHeight) || 0 : 0;
+        table.push({ element: 'graph-container', exists: true, rectW: 0, rectH: gcH, clientW: 0, clientH: gcH, offsetW: 0, offsetH: gcH });
+        (saved.zones || []).forEach((zs, idx) => {
+          const zoneId = `graph-zone-${idx+1}`;
+          const zoneH = typeof zs.zoneStyleHeight === 'number' ? zs.zoneStyleHeight : (zs.zoneStyleHeight ? Number(zs.zoneStyleHeight) || 0 : 0);
+          const contentH = typeof zs.contentStyleHeight === 'number' ? zs.contentStyleHeight : (zs.contentStyleHeight ? Number(zs.contentStyleHeight) || 0 : 0);
+          const canvasW = (zs.canvasStyle && typeof zs.canvasStyle.width === 'number') ? zs.canvasStyle.width : ((zs.canvasStyle && zs.canvasStyle.width) ? Number(zs.canvasStyle.width) || 0 : 0);
+          const canvasH = (zs.canvasStyle && typeof zs.canvasStyle.height === 'number') ? zs.canvasStyle.height : ((zs.canvasStyle && zs.canvasStyle.height) ? Number(zs.canvasStyle.height) || 0 : 0);
+          table.push({ element: zoneId, exists: true, rectW: 0, rectH: zoneH, clientW: 0, clientH: zoneH, offsetW: 0, offsetH: zoneH });
+          table.push({ element: `${zoneId} .graph-content`, exists: true, rectW: 0, rectH: contentH, clientW: 0, clientH: contentH, offsetW: 0, offsetH: contentH });
+          table.push({ element: `${zoneId} .graph-legend`, exists: true, rectW: 0, rectH: 0, clientW: 0, clientH: 0, offsetW: 0, offsetH: 0 });
+          table.push({ element: `${zoneId} .graph-canvas`, exists: true, rectW: canvasW, rectH: canvasH, clientW: canvasW, clientH: canvasH, offsetW: canvasW, offsetH: canvasH });
+        });
+        if (window.debug) console.log('[TEST-DIAG] collectLayoutMetrics loaded layout from snapshot for', orientationKeyNow, saved);              
+        return table;
+      }
+    } catch (e) { if (window.debug) console.warn('[TEST-DIAG] collectLayoutMetrics: reading saved snapshot failed', e); }
+
+    // No snapshot: compute metrics live and save a snapshot for future calls.
+    const rows = [];
+    const card = document.querySelector('.dashboard-card');
+    const graphContainer = document.getElementById('graph-container');
+    function sizeFor(el, name) {
+      if (!el) return { element: name, exists: false };
+      const r = el.getBoundingClientRect();
+      return {
+        element: name,
+        exists: true,
+        rectWidth: Math.round(r.width),
+        rectHeight: Math.round(r.height),
+        clientWidth: Math.round(el.clientWidth || 0),
+        clientHeight: Math.round(el.clientHeight || 0),
+        offsetWidth: Math.round(el.offsetWidth || 0),
+        offsetHeight: Math.round(el.offsetHeight || 0)
+      };
+    }
+
+    rows.push(sizeFor(card, 'dashboard-card'));
+    rows.push(sizeFor(graphContainer, 'graph-container'));
+
+    const zones = Array.from(document.querySelectorAll('.graph-zone'));
+    zones.forEach((z, idx) => {
+      rows.push(sizeFor(z, `graph-zone-${idx+1}`));
+      const content = z.querySelector('.graph-content');
+      rows.push(sizeFor(content, `graph-zone-${idx+1} .graph-content`));
+      const legendEl = z.querySelector('.graph-legend');
+      rows.push(sizeFor(legendEl, `graph-zone-${idx+1} .graph-legend`));
+      const canvas = z.querySelector('.graph-canvas');
+      rows.push(sizeFor(canvas, `graph-zone-${idx+1} .graph-canvas`));
+    });
+
+    const table = rows.map(r => ({
+      element: r.element,
+      exists: r.exists || false,
+      rectW: r.rectWidth || 0,
+      rectH: r.rectHeight || 0,
+      clientW: r.clientWidth || 0,
+      clientH: r.clientHeight || 0,
+      offsetW: r.offsetWidth || 0,
+      offsetH: r.offsetHeight || 0
+    }));
+    if (window.debug) console.log('[TEST-DIAG] collectLayoutMetrics computed live metrics (no auto-save) for', orientationKeyNow, table);
+    // Do NOT auto-save here. Snapshot will be created by the
+    // post-stabilization finalize block in `applyChartHeights()` to ensure
+    // recorded values reflect the stabilized DOM after dygraph/range-selector
+    // mutations.
+    return table;
+  }
+
+  // Save a snapshot for the current orientation if absent, using the
+  // authoritative metrics previously collected.
+  function saveSnapshotIfAbsent(metrics) {
+    try {
+      const isLandscapeNow = (window.innerWidth > window.innerHeight);
+      const orientationKeyNow = isLandscapeNow ? 'landscape' : 'portrait';
+      window.__savedLayoutSizes = window.__savedLayoutSizes || { portrait: null, landscape: null };
+      if (window.__savedLayoutSizes[orientationKeyNow]) return; // already saved
+
+      const snap = { ts: Date.now(), cardHeight: null, graphContainerHeight: null, wrapperFlexDirection: null, zones: [] };
+      // helper to lookup metric by element name
+      const byName = {};
+      metrics.forEach(m => { byName[m.element] = m; });
+      try { if (byName['dashboard-card']) snap.cardHeight = (byName['dashboard-card'].rectH || 0) + 'px'; } catch(e) {}
+      try { if (byName['graph-container']) snap.graphContainerHeight = (byName['graph-container'].rectH || 0) + 'px'; } catch(e) {}
+      const wrapperEl = document.querySelector('.charts-wrapper');
+      snap.wrapperFlexDirection = wrapperEl ? getComputedStyle(wrapperEl).flexDirection : null;
+
+      for (let i = 1; i <= 3; i++) {
+        const zoneName = `graph-zone-${i}`;
+        const contentName = `${zoneName} .graph-content`;
+        const canvasName = `${zoneName} .graph-canvas`;
+        const zoneEntry = byName[zoneName];
+        const contentEntry = byName[contentName];
+        const canvasEntry = byName[canvasName];
+        const zoneSnap = {
+          id: zoneName,
+          // store numeric values (px numbers) instead of strings
+          zoneStyleHeight: zoneEntry ? zoneEntry.rectH : null,
+          contentStyleHeight: contentEntry ? contentEntry.rectH : null,
+          canvasStyle: canvasEntry ? { width: canvasEntry.rectW, height: canvasEntry.rectH } : null
+        };
+        snap.zones.push(zoneSnap);
+        // attach dataset on canvas nodes so stabilization/pass will see them
+        try {
+          const zoneEl = document.getElementById(zoneName);
+          if (zoneEl) {
+            const canvas = zoneEl.querySelector('.graph-canvas');
+            const legend = zoneEl.querySelector('.graph-legend');
+            if (canvas && canvasEntry) {
+              canvas.dataset.initialExpected = String(canvasEntry.rectH || 0);
+              const ltxt = legend ? (legend.innerText || '').trim().replace(/\s+/g,' ') : '';
+              canvas.dataset.initialLegend = ltxt.slice(0,120);
+            }
+          }
+        } catch (e) {}
+      }
+
+      window.__savedLayoutSizes[orientationKeyNow] = snap;
+      if (window.debug) console.log('[TEST-DIAG] saved initial layout (via collectLayoutMetrics) for', orientationKeyNow, snap);
+    } catch (e) { if (window.debug) console.warn('[TEST-DIAG] saveSnapshotIfAbsent failed', e); }
+  }
+
+  // Log a compact table of layout sizes for debugging.
+  // Usage: set `window.__log_layout_sizes = true` in the console and trigger a resize/orientationchange.
+  function logLayoutSizes() {
+    try {
+      const table = collectLayoutMetrics();
+      // Transpose the table so that metrics (rectW, rectH, ...) are rows
+      // and elements are columns — easier to compare rectW/rectH across items.
+      const metrics = ['rectW', 'rectH', 'clientW', 'clientH', 'offsetW', 'offsetH'];
+      const transpose = {};
+      metrics.forEach(m => { transpose[m] = {}; });
+      function normalizeElementName(name) {
+        if (!name) return 'unknown';
+        const m = name.match(/^graph-zone-(\d+)\s+\.graph-([\w-]+)$/);
+        if (m) return `${m[1]}/${m[2]}`;
+        const m2 = name.match(/^graph-zone-(\d+)$/);
+        if (m2) return `${m2[1]}`;
+        return name.replace(/^graph-/, '');
+      }
+      table.forEach(entry => {
+        const rawName = entry.element || 'unknown';
+        const name = normalizeElementName(rawName);
+        metrics.forEach(m => { transpose[m][name] = entry[m]; });
+      });
+      console.log('[TEST-DIAG] Layout sizes (transposed): rows=metrics, columns=elements');
+      console.table(transpose);
+      return table;
+    } catch (e) { console.warn('[TEST-DIAG] logLayoutSizes failed', e); return null; }
+  }
+
+
+  // Assign the range selector to the last visible graph and disable on others
+  function applyRangeSelectorToLastVisible() {
+    // debounce guard to avoid scheduling applyChartHeights repeatedly
+    if (!window.__lastRangeApply) window.__lastRangeApply = 0;
+    const now = Date.now();
+    // if called too frequently, skip to avoid infinite re-scheduling
+    if (now - window.__lastRangeApply < 500) return;
+    window.__lastRangeApply = now;
+
+    const layout = determineLayout();
+    const mode = getGraphMode();
+    const orientation = layout.orientation;
+    const count = layout.count;
+
+    // Compute desired selector map per graph index [g1,g2,g3]
+    const selectors = [false, false, false];
+    if (orientation === 'row') {
+      // landscape: one selector per visible graph
+      for (let i = 0; i < count; i++) selectors[i] = true;
+    } else {
+      // portrait: mobile -> zone1, tablet -> zone2, desktop -> zone3
+      if (mode === 'mobile-portrait') selectors[0] = true;
+      else if (mode === 'tablet-portrait') selectors[1] = true;
+      else /* desktop-portrait or fallback */ selectors[2] = true;
+    }
+
+    const graphs = [g1, g2, g3];
+    graphs.forEach((g, idx) => {
+      if (!g) return;
+      const should = !!selectors[idx];
+      try {
+        g.updateOptions({ showRangeSelector: should, animatedZooms: should ? false : commonOptions.animatedZooms });
+        g.resize();
+      } catch (e) { console.warn('[WARN] applyRangeSelector failed', e); }
+    });
+
+    // Rebuild synchronizer to ensure it syncs the currently present graphs
+    try {
+      if (sync) {
+        try { if (typeof sync.detach === 'function') sync.detach(); } catch (e) {}
+        try { if (typeof sync.destroy === 'function') sync.destroy(); } catch (e) {}
+        sync = null;
+      }
+      if (typeof Dygraph !== 'undefined' && typeof Dygraph.synchronize === 'function') {
+        // pass only existing graph instances; synchronize X only (no Y range)
+        const args = graphs.filter(g => !!g);
+        if (args.length > 0) sync = Dygraph.synchronize(...args, { selection: true, zoom: true, range: false });
+      }
+    } catch (e) { console.warn('[WARN] synchronize rebuild failed', e); }
+
+    // Force an extra reapply to counter dygraph inline style races (single scheduled)
+    setTimeout(() => { applyChartHeights(); enableHandlePointerFixes(); }, 220);
+  }
+
+  function createOrUpdateGraphs() {
+    // Debounce / anti-burst guard to avoid rapid repeated invocations
+    try {
+      const now = Date.now();
+      if (!window.__lastCreateGraphs) window.__lastCreateGraphs = 0;
+      if (now - window.__lastCreateGraphs < 500) {
+        if (window.debug) console.log('[TEST-DIAG] createOrUpdateGraphs skipped (debounce)');
+        return;
+      }
+      window.__lastCreateGraphs = now;
+
+      // simple burst detector: if called >8 times in 5s, bail out
+      if (!window.__createGraphsBurst) window.__createGraphsBurst = { count: 0, start: now };
+      if (now - window.__createGraphsBurst.start < 5000) {
+        window.__createGraphsBurst.count += 1;
+      } else {
+        window.__createGraphsBurst = { count: 1, start: now };
+      }
+      if (window.__createGraphsBurst.count > 8) {
+        console.log('[TEST-DIAG] createOrUpdateGraphs aborting due to burst');
+        return;
+      }
+    } catch (e) { /* non-fatal */ }
+    // Populate each zone (ensures .graph-canvas exists) and set IDs
+    for (let i = 1; i <= 3; i++) {
+      const $sel = $('#graph-zone-' + i + ' .zone-graph-selector');
+      const graphType = ($sel.length ? $sel.val() : $('#graph-zone-' + i).attr('data-graph-type')) || 'chemistry';
+      populateGraphZone(i, graphType);
+      const $canvas = $('#graph-zone-' + i).find('.graph-canvas');
+      if ($canvas.length) $canvas.attr('id', 'graph-canvas-' + i).css({ position: 'relative', width: '100%', height: '100%' });
+    }
+
+    // Create graphs if missing (create per-zone g1/g2/g3)
+    // Decide which graphs should have range selectors based on current layout/mode
+    const layoutNow = determineLayout();
+    const modeNow = getGraphMode();
+    const orientationNow = layoutNow.orientation;
+    const countNow = layoutNow.count;
+    // Build selector map per graph index
+    const selectorMap = [false, false, false];
+    if (orientationNow === 'row') {
+      for (let i = 0; i < countNow; i++) selectorMap[i] = true;
+    } else {
+      if (modeNow === 'mobile-portrait') selectorMap[0] = true;
+      else if (modeNow === 'tablet-portrait') selectorMap[1] = true;
+      else selectorMap[2] = true; // desktop-portrait fallback
+    }
+    const el1 = document.getElementById('graph-canvas-1');
+    if (!g1 && el1) {
+      g1 = new Dygraph(el1, data, {
+        ...commonOptions,
+        labels: ['Temps', 'Pression (Bar)', 'Inutilisé'],
+        visibility: [true, false],
+        colors: ['#4AA3FF'],
+        fillGraph: true,
+        drawXAxis: false,
+        // enable range selector according to selector map
+        showRangeSelector: !!selectorMap[0],
+        animatedZooms: selectorMap[0] ? false : commonOptions.animatedZooms,
+        axisLabelColor: '#ffffff',
+        axisLineColor: '#ffffff',
+        axes: { x: { axisLabelColor: '#ffffff', axisLineColor: '#ffffff' }, y: { axisLabelColor: '#ffffff', axisLineColor: '#ffffff' } },
+        labelsDiv: document.querySelector('#graph-zone-1 .graph-legend'),
+        labelsSeparateLines: false,
+      });
+      try { console.log('[TEST-DIAG] g1 created', g1); } catch(e){}
+    } else if (!el1) {
+      console.log('[TEST-DIAG] graph-canvas-1 not found'); 
+    }
+
+    const el2 = document.getElementById('graph-canvas-2');
+    if (!g2 && el2) {
+      const opts2 = {
+        ...commonOptions,
+        labels: ['Temps', 'Inutilisé', 'Température (°C)'],
+        visibility: [false, true],
+        colors: ['#FF6B6B'],
+        // Range selector according to selector map
+        showRangeSelector: !!selectorMap[1],
+        animatedZooms: selectorMap[1] ? false : commonOptions.animatedZooms,
+        rangeSelectorHeight: 30,
+        rangeSelectorPlotStrokeColor: '#ffffff',
+        rangeSelectorPlotFillColor: 'rgba(255,255,255,0.12)',
+        axisLabelColor: '#ffffff',
+        axisLineColor: '#ffffff',
+        axes: { x: { axisLabelColor: '#ffffff', axisLineColor: '#ffffff' }, y: { axisLabelColor: '#ffffff', axisLineColor: '#ffffff' } },
+        labelsDiv: document.querySelector('#graph-zone-2 .graph-legend'),
+        labelsSeparateLines: false,
+      };
+      // Only add zoomCallback fallback if synchronizer is not available
+      if (typeof Dygraph === 'undefined' || typeof Dygraph.synchronize !== 'function') {
+        opts2.zoomCallback = function(minX, maxX) {
+          try {
+            if (g1) {
+              g1.updateOptions({ dateWindow: [minX, maxX] });
+              g1.resize();
+            }
+          } catch (e) { console.warn('[WARN] zoomCallback sync failed', e); }
+        };
+      }
+      g2 = new Dygraph(el2, data, opts2);
+      try { 
+        console.log('[TEST-DIAG] g2 created', g2); 
+      } catch(e){}
+    } else if (!el2) { 
+      console.log('[TEST-DIAG] graph-canvas-2 not found'); 
+    }
+
+    const el3 = document.getElementById('graph-canvas-3');
+    if (!g3 && el3) {
+      const opts3 = {
+        ...commonOptions,
+        labels: ['Temps', 'Pression (Bar)', 'Température (°C)'],
+        visibility: [true, true],
+        colors: ['#4AA3FF', '#FF6B6B'],
+        // Range selector according to selector map
+        showRangeSelector: !!selectorMap[2],
+        animatedZooms: selectorMap[2] ? false : commonOptions.animatedZooms,
+        rangeSelectorHeight: 30,
+        axisLabelColor: '#ffffff',
+        axisLineColor: '#ffffff',
+        axes: { x: { axisLabelColor: '#ffffff', axisLineColor: '#ffffff' }, y: { axisLabelColor: '#ffffff', axisLineColor: '#ffffff' } },
+        labelsDiv: document.querySelector('#graph-zone-3 .graph-legend'),
+        labelsSeparateLines: false,
+      };
+      if (typeof Dygraph === 'undefined' || typeof Dygraph.synchronize !== 'function') {
+        opts3.zoomCallback = function(minX, maxX) {
+          try {
+            if (g1) g1.updateOptions({ dateWindow: [minX, maxX] });
+            if (g2) g2.updateOptions({ dateWindow: [minX, maxX] });
+          } catch (e) { console.warn('[WARN] zoomCallback g3 sync failed', e); }
+        };
+      }
+      g3 = new Dygraph(el3, data, opts3);
+      try { console.log('[TEST-DIAG] g3 created', g3); } catch(e){}
+    } else if (!el3) { console.log('[TEST-DIAG] graph-canvas-3 not found'); }
+
+    // Synchronize interaction (hover/selection/zoom). The zoomCallback above
+    // acts as a robust fallback for dateWindow propagation when the range widget
+    // exists only on one graph.
+    try {
+      // synchronize across created graphs. The synchronizer accepts multiple graphs,
+      // but options come last. Some builds may not provide the extras synchronizer,
+      // so check its existence first.
+      if (typeof Dygraph !== 'undefined' && typeof Dygraph.synchronize === 'function') {
+        // Only synchronize X/dateWindow and selection/zoom, disable Y-range sync
+        sync = Dygraph.synchronize(g1, g2, g3, { selection: true, zoom: true, range: false });
+        } else {
+        console.warn('[WARN] Dygraph.synchronize not available, skipping synchronizer');
+      }
+    } catch (e) { console.warn('[WARN] synchronize failed', e); }
+
+    // Instrument updateOptions on graphs to log any changes and prevent
+    // accidental visibility toggles which can cause a series to disappear
+    // when multiple sync mechanisms interact.
+    try {
+      const graphs = [{g: g1, id: 'g1'}, {g: g2, id: 'g2'}, {g: g3, id: 'g3'}];
+      graphs.forEach(obj => {
+        const inst = obj.g;
+        if (!inst || !inst.updateOptions) return;
+        if (inst.__updatePatched) return;
+        try {
+          const orig = inst.updateOptions.bind(inst);
+          inst.updateOptions = function(opts) {
+            try {
+              // Prepare a safe clone to inspect/modify without mutating caller
+              const safe = (opts && typeof opts === 'object') ? Object.assign({}, opts) : opts;
+              // Log a compact JSON representation when possible
+              try {
+                const repr = (safe && typeof safe === 'object') ? JSON.stringify(safe, function(k, v) {
+                  // Represent functions/DOM or large objects succinctly
+                  if (typeof v === 'function') return '[Function]';
+                  if (v instanceof Element) return '[Element]';
+                  return v;
+                }) : String(safe);
+                if (window.debug) console.log('[DY-UPDATE-CALL]', obj.id, repr);
+              } catch (e) { if (window.debug) console.log('[DY-UPDATE-CALL]', obj.id, opts); }
+
+              // Stack logging removed to reduce noise in console
+
+              // Defensive: block attempts to change visibility via updateOptions
+              if (safe && Object.prototype.hasOwnProperty.call(safe, 'visibility')) {
+                try { console.warn('[DY-INTERCEPT] blocking visibility change on', obj.id, safe.visibility); } catch(e){}
+                delete safe.visibility;
+              }
+
+              // Defensive: optionally block valueRange updates which can rescale Y
+              // and cause series to disappear visually during interactive drags.
+              // Set `window.__dy_allowValueRange = true` to opt-in to valueRange updates.
+              if (safe && Object.prototype.hasOwnProperty.call(safe, 'valueRange') && !window.__dy_allowValueRange) {
+                try { console.warn('[DY-INTERCEPT] stripping valueRange on', obj.id, safe.valueRange); } catch(e){}
+                delete safe.valueRange;
+              }
+
+              return orig(safe);
+            } catch (e) { console.warn('[DY-UPDATE-WRAP-ERR]', e); }
+            return orig(opts);
+          };
+          inst.__updatePatched = true;
+        } catch (e) {}
+      });
+    } catch (e) {}
+
+    // Observe card size changes
+    if (resizeObserver) resizeObserver.disconnect();
+    resizeObserver = new ResizeObserver(() => { scheduleApplyChartHeights(); });
+    resizeObserver.observe(document.querySelector('.dashboard-card'));
+
+    // Safeguard: ensure each visible canvas has a sensible min-height so Dygraph
+    // has space to render. This avoids cases where only the legend and the
+    // range-selector are shown because the canvas container collapsed to 0px.
+    try {
+      for (let i = 1; i <= 3; i++) {
+        const c = document.getElementById('graph-canvas-' + i);
+        if (!c) continue;
+        // only adjust visible canvases
+        if (c.offsetParent === null) continue;
+        const parent = c.closest('.graph-content');
+        let desired = 80; // default minimal desirable height
+        try { if (parent) desired = Math.max(desired, Math.floor(parent.clientHeight * 0.6)); } catch(e){}
+        if ((c.clientHeight || 0) < Math.min(40, desired)) {
+          c.style.height = Math.max(40, desired) + 'px';
+          // If a graph instance exists, trigger a resize so dygraph redraws
+          try {
+            if (i === 1 && g1) g1.resize();
+            if (i === 2 && g2) g2.resize();
+            if (i === 3 && g3) g3.resize();
+          } catch (e) {}
+        }
+      }
+    } catch (e) {}
+  }
+
+// Initialize charts safely (callable multiple times)
+  function initCharts() {
+    // Ensure each zone has its content injected so height calculations include selectors/titles
+    for (let i = 1; i <= 3; i++) {
+      const $sel = $('#graph-zone-' + i + ' .zone-graph-selector');
+      const graphType = ($sel.length ? $sel.val() : $('#graph-zone-' + i).attr('data-graph-type')) || 'chemistry';
+      populateGraphZone(i, graphType);
+      const $canvas = $('#graph-zone-' + i).find('.graph-canvas');
+      if ($canvas.length) $canvas.attr('id', 'graph-canvas-' + i).css({ position: 'relative', width: '100%', height: '100%' });
+    }
+
+    // NOTE: do NOT call applyChartHeights synchronously here. Measurements
+    // taken too early (before fonts/jQM enhancements) cause truncated initial
+    // renders. Defer all sizing + graph creation until the full window 'load'
+    // event has fired and after the first paint (RAF).
+    try {
+      const gm = document.getElementById('graphMainPage');
+      const card = document.querySelector('.dashboard-card');
+      console.log('[TEST-DIAG] computed heights (deferred) -> graphMainPage.clientHeight:', gm ? gm.clientHeight : 'null', ', dashboard-card.clientHeight:', card ? card.clientHeight : 'null', ', viewport.innerHeight:', window.innerHeight);
+    } catch (e) { /* non-fatal */ }
+
+    function _initChartsAfterLoad() {
+      requestAnimationFrame(() => {
+        // schedule a pending snapshot for the current orientation. The
+        // stabilization finalize block will perform the authoritative save
+        // after DOM mutations settle (range selector insertion, fonts, etc.).
+        try {
+          window.__pendingSaveSnapshot = window.__pendingSaveSnapshot || { portrait: false, landscape: false };
+          const isLandscapeNow = (window.innerWidth > window.innerHeight);
+          window.__pendingSaveSnapshot[isLandscapeNow ? 'landscape' : 'portrait'] = true;
+          if (window.debug) console.log('[TEST-DIAG] scheduled pending snapshot for', isLandscapeNow ? 'landscape' : 'portrait');
+        } catch (e) {}
+        // Re-apply heights after first paint to get stable measurements
+        try { applyChartHeights(); } catch (e) {}
+        setTimeout(() => { try { applyChartHeights(); } catch (e) {} }, 60);
+
+        // Create graphs after sizing has settled. Slight delay ensures DOM and
+        // styles (including media query-driven visibility) have been applied.
+        setTimeout(() => {
+          // Create graphs directly (synchronizer included statically in header)
+          createOrUpdateGraphs();
+          // ensure handles are pointer-friendly (prevent jQuery Mobile from intercepting)
+          enableHandlePointerFixes();
+          // Extra delayed sizing to catch any late DOM adjustments (fonts, jQM widgets)
+          setTimeout(() => { scheduleApplyChartHeights(); }, 250);
+          setTimeout(() => { scheduleApplyChartHeights(); }, 600);
+        }, 150);
+      });
+    }
+
+    if (document.readyState === 'complete') {
+      // Window already loaded — run immediately after RAF
+      _initChartsAfterLoad();
+    } else {
+      // One-shot load handler then removed
+      const __onLoadInit = function onLoadInit() { window.removeEventListener('load', __onLoadInit); _initChartsAfterLoad(); };
+      window.addEventListener('load', __onLoadInit);
+    }
+      // Attach title click handler to toggle axis selector visibility
+      $(document).off('click', '.graph-zone-title');
+      $(document).on('click', '.graph-zone-title', function(e) {
+        const $zone = $(this).closest('.graph-zone');
+        const $axis = $zone.find('.axis-selector');
+        const $gsel = $zone.find('.graph-selector');
+          if (window.debug) console.log('[TEST-DIAG] title click zone', $zone.attr('id'));
+        // Toggle injected axis-selector (inside graph-content) if present
+        if ($axis.length) {
+          if ($axis.hasClass('open')) {
+            $axis.removeClass('open');
+            $axis.find('.axis-selector-dropdown').stop(true, true).slideUp(150);
+            // hide the label when closing
+            try { $axis.find('label, .smallLabel').hide(); } catch(e){}
+          } else {
+            $axis.addClass('open');
+            $axis.find('.axis-selector-dropdown').stop(true, true).slideDown(150);
+            // show the label when opening
+            try { $axis.find('label, .smallLabel').show(); } catch(e){}
+          }
+        }
+        // Also toggle the graph-type selector that sits above the content
+        if ($gsel.length) {
+          if ($gsel.is(':visible')) $gsel.slideUp(150); else $gsel.slideDown(150);
+        }
+      });
+      // Handle graph type selector changes: re-populate zone and recreate the specific graph
+      $(document).off('change', '.zone-graph-selector');
+      $(document).on('change', '.zone-graph-selector', function(e) {
+        const zone = $(this).data('zone');
+        const graphType = $(this).val();
+        if (window.debug) console.log('[TEST-DIAG] zone selector change', zone, graphType);
+        populateGraphZone(zone, graphType);
+        const $canvas = $('#graph-zone-' + zone).find('.graph-canvas');
+        if ($canvas.length) $canvas.attr('id', 'graph-canvas-' + zone).css({ position: 'relative', width: '100%', height: '100%' });
+        // destroy existing graph if any
+        try {
+          if (zone == 1 && g1) { if (typeof g1.destroy === 'function') g1.destroy(); g1 = null; }
+          if (zone == 2 && g2) { if (typeof g2.destroy === 'function') g2.destroy(); g2 = null; }
+          if (zone == 3 && g3) { if (typeof g3.destroy === 'function') g3.destroy(); g3 = null; }
+        } catch (err) { console.warn('destroy graph failed', err); }
+        applyChartHeights();
+        setTimeout(() => { createOrUpdateGraphs(); }, 60);
+      });
+      // Listen for viewport changes and reapply sizing
+      try {
+        window.addEventListener('resize', () => { scheduleApplyChartHeights(); });
+        window.addEventListener('orientationchange', () => { setTimeout(() => { scheduleApplyChartHeights(); }, 60); });
+        // Also re-apply sizing once the full window load completes (images/fonts/jQM may change layout)
+        window.addEventListener('load', () => { setTimeout(() => { scheduleApplyChartHeights(); }, 80); });
+      } catch (e) {}
+    }
+
+  // Workaround: jQuery Mobile may intercept touch events; ensure range selector handles
+  // receive pointer events and do not propagate to outer handlers. This doesn't
+  // reimplement dragging — it prevents interference so Dygraph's native handlers
+  // can operate. We attach non-passive listeners and try pointer capture where supported.
+    function enableHandlePointerFixes() {
+      // small helper to attach listeners to current handles
+      function attach() {
+        const handles = document.querySelectorAll('.dygraph-rangesel-zoomhandle');
+        handles.forEach(h => {
+          if (h.__handlePatched) return;
+          h.__handlePatched = true;
+          try {
+            h.style.touchAction = 'none';
+            h.style.webkitUserSelect = 'none';
+              h.addEventListener('pointerdown', ev => { console.log('[TEST-DIAG] handle pointerdown', ev); ev.stopPropagation(); ev.preventDefault(); try { h.setPointerCapture(ev.pointerId); } catch(e){} }, { passive: false });
+              h.addEventListener('pointermove', ev => { /* console.log('[TEST-DIAG] handle pointermove'); */ ev.stopPropagation(); }, { passive: false });
+              h.addEventListener('pointerup', ev => { console.log('[TEST-DIAG] handle pointerup'); ev.stopPropagation(); try { h.releasePointerCapture(ev.pointerId); } catch(e){} }, { passive: false });
+              // Touch fallback for older mobile browsers
+              h.addEventListener('touchstart', ev => { console.log('[TEST-DIAG] handle touchstart'); ev.stopPropagation(); }, { passive: false });
+              h.addEventListener('touchmove', ev => { /* console.log('[TEST-DIAG] handle touchmove'); */ ev.stopPropagation(); }, { passive: false });
+          } catch (e) {
+            // non-fatal
+          }
+        });
+      }
+
+    // Attach now and a couple of times later (dygraph may recreate handles)
+    attach();
+    setTimeout(attach, 120);
+    setTimeout(attach, 400);
+    }
+
+  // --- 4. LANCEMENT ---
+  // Support both jQuery Mobile life-cycle and plain page load for convenience
+  $(document).off('click','.graph-zone-title');
+  $(document).on('click','.graph-zone-title',function(e){ 
+    const $zone=$(this).closest('.graph-zone'); 
+    const $axis=$zone.find('.axis-selector'); 
+    const $gsel=$zone.find('.graph-selector'); 
+    console.log('[TEST-DIAG] title click zone',$zone.attr('id')); 
+    if($axis.length){ 
+      if($axis.hasClass('open')){ 
+        $axis.removeClass('open'); 
+        $axis.find('.axis-selector-dropdown').stop(true,true).slideUp(150);
+        try{ $axis.find('label, .smallLabel').hide(); } catch(e){}
+      }else{ 
+        $axis.addClass('open'); 
+        $axis.find('.axis-selector-dropdown').stop(true,true).slideDown(150);
+        try{ $axis.find('label, .smallLabel').show(); } catch(e){}
+      } 
+    } 
+    if($gsel.length){ 
+      if($gsel.is(':visible')) $gsel.slideUp(150); 
+      else $gsel.slideDown(150); 
+    } 
+  });
+
+  $(document).off('change','.zone-graph-selector');
+  $(document).on('change','.zone-graph-selector',function(e){ 
+    const zone=$(this).data('zone'); 
+    const graphType=$(this).val(); 
+    console.log('[TEST-DIAG] zone selector change',zone,graphType); 
+    populateGraphZone(zone,graphType); 
+    const $canvas=$('#graph-zone-'+zone).find('.graph-canvas'); 
+    if($canvas.length) $canvas.attr('id','graph-canvas-'+zone).css({position:'relative',width:'100%',height:'100%'}); 
+    try{ 
+      if(zone==1 && g1){ 
+        if(typeof g1.destroy==='function') g1.destroy(); 
+        g1=null;
+      } 
+      if(zone==2 && g2){ 
+        if(typeof g2.destroy==='function') g2.destroy(); 
+        g2=null;
+      }
+      if(zone==3 && g3){ 
+        if(typeof g3.destroy==='function') g3.destroy(); 
+        g3=null;
+      }
+    }catch(err){ console.warn('destroy graph failed',err); }
+    applyChartHeights();
+    setTimeout(()=>{
+      createOrUpdateGraphs();
+    },60);
+  });
+
+  $(document).on('pagebeforeshow', function(){ console.log('[TEST-DIAG] pagebeforeshow'); initCharts(); });
+  $(document).ready(function(){ console.log('[TEST-DIAG] ready'); initCharts(); });
+
+  // Expose for debugging
+  window.clearSavedLayouts = function() {
+    try {
+      window.__savedLayoutSizes = { portrait: null, landscape: null };
+      console.log('[TEST-DIAG] cleared saved layouts');
+    } catch (e) { console.warn('[TEST-DIAG] clearSavedLayouts failed', e); }
+  };
+
+  window.saveLayoutsNow = function() {
+    try {
+      window.__pendingSaveSnapshot = window.__pendingSaveSnapshot || { portrait: false, landscape: false };
+      const key = (window.innerWidth > window.innerHeight) ? 'landscape' : 'portrait';
+      window.__pendingSaveSnapshot[key] = true;
+      console.log('[TEST-DIAG] marked pending save for', key);
+      // trigger a sizing pass which will finalize the snapshot after stabilization
+      try { applyChartHeights(); } catch (e) { console.warn('[TEST-DIAG] saveLayoutsNow: applyChartHeights failed', e); }
+    } catch (e) { console.warn('[TEST-DIAG] saveLayoutsNow failed', e); }
+  };
+
+  window.__test_charts = { initCharts };
+</script>
+</body>
+</html> 

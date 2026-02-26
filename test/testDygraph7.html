@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>Dashboard Dygraph - Master Navigator</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.2.1/dygraph.min.css" />
+    <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css" />
+    <script src="https://code.jquery.com/jquery-1.11.1.min.js"></script>
+    <script src="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.2.1/dygraph.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.2.1/extras/synchronizer.min.js"></script>
+
+    <style>
+    /* BASE & THEME DARK */
+        html, body { height: 100%; margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
+        .ui-page { background: #000; }
+		
+		/* Style pour le spinner JQM pour qu'il soit bien visible sur fond noir */
+		.ui-loader-verbose {
+		    background: rgba(0, 0, 0, 0.8) !important;
+		    border: 1px solid #00FBFF !important;
+		    color: #00FBFF !important;
+		}
+
+    /* ZONE DES GRAPHIQUES DE DONNÉES */
+		.dashboard-card {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            box-sizing: border-box;
+            padding: 5px;
+        }
+
+        .charts-wrapper {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            gap: 5px;
+        }
+
+    /* ZONE DU NAVIGATEUR FIXE EN BAS */
+        .nav-wrapper {
+            flex: 0 0 55px; /* Hauteur pour le slider */
+			height: 55px;
+			/* On réduit la largeur et on centre avec auto */
+		    width: calc(100% - 40px) !important;		/* width: 100%; */ 
+		    margin: 5px auto 10px auto !important;		/* margin-top: 5px; */
+            background: #111;
+            border-radius: 4px;
+            border: 1px solid #333;
+        }
+
+        .graph-zone {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+            background: #111;
+            border-radius: 4px;
+            border: 1px solid #222;
+        }
+
+		.graph-header-mini {
+		    display: flex;
+		    flex-direction: column; /* Empile le sélecteur et les valeurs */
+		    padding: 5px 10px;
+		    background: #151515;
+		    border-bottom: 1px solid #222;
+		}
+		
+		.header-top-row {
+		    display: flex !important;
+		    justify-content: center; /* Centre le groupe */
+		    align-items: center;
+		    gap: 10px; /* Espace entre les deux boutons */
+		}
+
+		/* Style général des boutons de sélection */
+		.header-top-row .ui-select .ui-btn {
+		}
+		
+		/* Base commune pour les deux types de sélecteurs dans le header */
+		.header-top-row .ui-select .ui-btn {
+		    background: #000 !important;
+		    color: #FFF !important;
+		    border: 1px solid #444 !important;
+		    border-radius: 6px !important;
+		    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 2px 5px rgba(0,0,0,0.8) !important;
+		    font-weight: bold !important;
+		    text-transform: uppercase;
+		    font-size: 11px !important;
+		    min-height: 1.5em;
+		    line-height: 1.5em;
+		    /* On remet un padding suffisant du côté de l'icône (30px environ) */
+		    padding-top: 6px !important;
+		    padding-bottom: 6px !important;
+		}
+
+		/* Si l'icône est à droite (cas du titre) */
+		.header-top-row .ui-btn-icon-right {
+		    padding-right: 35px !important;
+		    padding-left: 10px !important;
+		}
+		
+		/* Si l'icône est à gauche (cas des axes) */
+		.header-top-row .ui-btn-icon-left {
+		    padding-left: 35px !important;
+		    padding-right: 10px !important;
+		}
+
+		/* Masque la bulle de comptage (vignette) sur les sélecteurs d'axes */
+		.axes-container .ui-li-count {
+		    display: none !important;
+		}
+		
+		/* Si JQM génère un badge sur le bouton lui-même */
+		.axes-container .ui-btn .ui-li-count {
+		    display: none !important;
+		}
+		
+		/* On s'assure que le menu multi-choix JQM (la popup) est bien sombre aussi */
+		.ui-selectmenu-list li.ui-screen-hidden { display: none; } /* Cache le placeholder dans la liste */
+
+        .smallLabel { 
+			color: #00FBFF; 
+			font-size: 11px; 
+			font-weight: bold; 
+		}
+		
+		
+        .graph-content { 
+			flex: 1; 
+			position: relative; 
+			width: 100%; 
+		}
+		
+        .graph-canvas { 
+			position: absolute; 
+			top: 0; 
+			left: 0; 
+			right: 0; 
+			bottom: 0; 
+		}
+		
+		.graph-title-button {
+		    background: linear-gradient(180deg, #444 0%, #222 100%); /* Effet relief */
+		    color: #FFFFFF !important; /* FORCE LE BLANC */
+		    text-decoration: none !important;
+		    font-weight: bold;
+		    font-size: 13px;
+		    padding: 4px 15px;
+		    border-radius: 4px;
+		    border: 1px solid #555; /* Bordure claire pour le relief */
+		    box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 4px rgba(0,0,0,0.5);
+		    text-shadow: 0 -1px 0 rgba(0,0,0,0.8);
+		    min-width: 120px;
+		    text-align: center;
+		    display: inline-block;
+		}
+
+		/* Petite flèche vers le bas pour indiquer le menu */
+		.graph-title-button::after {
+		    content: '▼';
+		    font-size: 9px;
+		    margin-left: 8px;
+		    opacity: 0.7;
+		}
+		
+		/* Animation discrète au clic sur le titre */
+		.graph-title-button:active {
+			background: #111;
+		    box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
+		    transform: translateY(1px);
+		}
+			
+	/* Amélioration visuelle des éléments du slider */
+		/* 1. Style des poignées (handles) gauche et droite */
+		.dygraph-rangesel-zoomhandle {
+		    /* Indique visuellement qu'on peut redimensionner horizontalement */
+		    cursor: ew-resize !important;
+		    
+		    /* Augmente la luminosité pour ressortir sur le fond noir */
+		    filter: brightness(1.8) drop-shadow(0px 0px 2px rgba(255,255,255,0.5));
+		    
+		    /* Ajoute un contour net pour la précision sur tablette */
+		    border: 1px solid #ffffff !important;
+		    background-color: #00FBFF !important; /* Force la couleur néon */
+		    
+		    /* IMPORTANT : Empêche la tablette de faire défiler la page 
+		       pendant qu'on manipule le slider */
+		    touch-action: none;
+		}
+		/* 2. Style de la zone de sélection (le rectangle entre les poignées) */
+		.dygraph-rangesel-fgcanvas {
+		    /* Rend la zone sélectionnée plus opaque et donc plus visible */
+		    opacity: 0.85 !important;
+		}
+		
+		/* 3. Style du fond du slider (la zone non sélectionnée) */
+		.dygraph-rangesel-bgcanvas {
+		    /* On garde le fond très sombre pour le contraste */
+		    opacity: 0.2 !important;
+		}
+		/* 4. Affichage des valeurs */
+		.local-status-val {
+		    width: 100%;
+		    font-family: 'Segoe UI', Tahoma, monospace;
+		    font-size: 11px; /* Plus petit pour tenir sur la largeur */
+		    color: #eee;
+		    white-space: nowrap;
+		    overflow: hidden;
+		    text-overflow: ellipsis;
+		    min-height: 14px; /* Évite les sauts de hauteur quand vide */
+			z-index: 10; 
+			text-shadow: none !important;
+		}
+		/* Force les spans à l'intérieur à ignorer le #eee et utiliser leur propre couleur */
+		.local-status-val span {
+		    color: inherit !important; 
+		}
+		
+		.legend-value-item {
+		    text-shadow: none !important; /* Supprime l'ombre JQM */
+			-webkit-font-smoothing: antialiased; /* Rend le texte plus net sur tablette */
+			display: inline-block;
+		    margin-right: 12px;
+		    font-weight: bold;
+		    font-size: 12px;
+		    /* Transition douce pour le changement de chiffres */
+		    transition: color 0.2s ease; 
+		}
+
+		/* Style des labels d'axes pour qu'ils ne mangent pas d'espace */
+		.dygraph-axis-label { font-size: 10px !important; }
+		
+		/* Force le blanc sur le titre au centre */
+		.dygraph-title {
+		    color: #FFFFFF !important;
+		    font-size: 12px !important;
+		    opacity: 1 !important;
+		}
+		
+		/* Force le blanc sur les indices des axes (X et Y) */
+		.dygraph-axis-label {
+		    color: #FFFFFF !important;
+		    font-weight: bold !important;
+		    opacity: 1 !important;
+		}
+		
+		/* Optionnel : couleur des lignes de la grille pour qu'elles restent discrètes */
+		.dygraph-gridline {
+		    border-color: #333333 !important;
+		}
+
+	/* Empêche le scroll du navigateur sur les zones de dessin pour éviter l'erreur Intervention */
+		.graph-canvas, .dygraph-rangesel-fgcanvas, .dygraph-rangesel-zoomhandle {
+		    touch-action: none;
+		}
+        .ui-content { padding: 0 !important; height: 100%; }
+		
+    </style>
+</head>
+<body>
+	
+<div data-role="page" id="graphMainPage">
+    <div data-role="header" id="graphHeader" data-theme="b" style="height:40px; overflow:hidden;">
+        <h1 style="margin: 10px 0;">Dashboard Temps Réel</h1>
+    </div>
+
+    <div role="main" class="ui-content" id="graphContent">
+        
+        <div class="dashboard-card">
+            <div class="charts-wrapper" id="dataChartsArea">
+		        <div id="graph-zone-1" class="graph-zone">
+					<div class="graph-header-mini">
+						<div class="header-top-row">
+						    <div class="title-container">
+						        <select id="graphSelector1" class="zone-graph-selector" data-zone="1" data-native-menu="false" data-theme="b" data-mini="true" data-icon="arrow-d" data-iconpos="right" >
+									<option value="Chimie" selected>Chimie</option>
+					                <option value="Températures">Températures</option>
+					                <option value="Équipements">Équipements</option>
+						        </select>
+						    </div>
+						    <div class="axes-container">
+						        <select id="axesSelector1" class="axes-multi-selector" data-zone="1" multiple="multiple" data-native-menu="false" data-theme="b" data-icon="gear" data-iconpos="left" data-hide-placeholder-menu="true">
+						            <option data-placeholder="true">Axes...</option> 
+									<option value="PH">PH</option>
+						            <option value="CL">Chlore</option>
+						            <option value="TempAir">Temp Air</option>
+						            <option value="TempEau">Temp Eau</option>
+						            <option value="PP">Pression</option>
+						        </select>
+						    </div>
+						</div>							
+					    <div id="status-val-1" class="local-status-val"></div>
+					</div>
+		            <div class="graph-content"><div id="graph-canvas-1" class="graph-canvas"></div></div>
+				</div>
+				
+		        <div id="graph-zone-2" class="graph-zone">
+		            <div class="graph-header-mini">
+						<div class="header-top-row">
+						    <div class="title-container">
+				                <select id="graphSelector2" class="zone-graph-selector" data-zone="2" data-native-menu="false" data-theme="b" data-mini="true" data-icon="arrow-d" data-iconpos="right">
+				                    <option value="Chimie">Chimie</option>
+				                    <option value="Températures" selected>Températures</option>
+				                    <option value="Équipements">Équipements</option>
+				                </select>
+							</div>
+						    <div class="axes-container">
+						        <select id="axesSelector2" class="axes-multi-selector" data-zone="2" multiple="multiple" data-native-menu="false" data-theme="b" data-icon="gear" data-iconpos="left" data-hide-placeholder-menu="true">
+						            <option data-placeholder="true">Axes...</option> 
+									<option value="PH">PH</option>
+						            <option value="CL">Chlore</option>
+						            <option value="TempAir">Temp Air</option>
+						            <option value="TempEau">Temp Eau</option>
+						            <option value="PP">Pression</option>
+						        </select>
+						    </div>
+						</div>
+						<div id="status-val-2" class="local-status-val"></div>
+		            </div>
+		            <div class="graph-content"><div id="graph-canvas-2" class="graph-canvas"></div></div>
+		        </div>
+		
+		        <div id="graph-zone-3" class="graph-zone">
+		            <div class="graph-header-mini">
+						<div class="header-top-row">
+						    <div class="title-container">
+								<select id="graphSelector3" class="zone-graph-selector" data-zone="3" data-native-menu="false" data-theme="b" data-mini="true" data-icon="arrow-d" data-iconpos="right">
+				                    <option value="Chimie">Chimie</option>
+				                    <option value="Températures">Températures</option>
+				                    <option value="Équipements" selected>Équipements</option>
+				                </select>
+							</div>
+						    <div class="axes-container">
+						        <select id="axesSelector3" class="axes-multi-selector" data-zone="3" multiple="multiple" data-native-menu="false" data-theme="b" data-icon="gear" data-iconpos="left" data-hide-placeholder-menu="true">
+						            <option data-placeholder="true">Axes...</option> 
+									<option value="PH">PH</option>
+						            <option value="CL">Chlore</option>
+						            <option value="TempAir">Temp Air</option>
+						            <option value="TempEau">Temp Eau</option>
+						            <option value="PP">Pression</option>
+						        </select>
+						    </div>
+						</div>
+						<div id="status-val-3" class="local-status-val"></div>
+		            </div>
+		            <div class="graph-content"><div id="graph-canvas-3" class="graph-canvas"></div></div>
+		        </div>
+			</div>	
+            <div class="nav-wrapper" id="navZone">
+                <div id="graph-canvas-nav" style="width:100%; height:100%;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * --- 1. ÉTAT GLOBAL ET CONFIGURATION ---
+ */
+let g1 = null, g2 = null, g3 = null, gNav = null;
+let syncHandler = null;
+let isInteracting = false;      
+let interactionTimeout = null; 
+
+const ALL_Graph_LABELS = ["Chimie", "Température", "Équipement"];
+
+// Ordre : 0:Time, 1:S1, 2:S2, 3:S3, 4:S4, 5:S5, 6:Nav
+const ALL_LABELS = ["Time", "PH", "CL", "TempAir", "TempEau", "PP", "Navigation"];
+
+const SERIES_MAPPING = {
+    // 				[S1, S2, S3, S4, S5, Nav] -> Navigation est toujours false ici
+    "Chimie":   [true,  true,  true,  false, false, false], // S1, S2, S3
+    "Températures": [false, false, true,  true,  false, false], // S3, S4
+    "Équipements":   [false, true,  false, false, true,  false]  // S2, S5
+};
+
+const SENSOR_CONFIG = {
+    "PH":       { color: "#FF3B30", unit: "",      label: "pH",       min: 7.0, max: 7.4 },
+    "CL":       { color: "#00FBFF", unit: " mg/l", label: "Chlore",   min: 1.0, max: 2.5 },
+    "TempAir":  { color: "#FFCC00", unit: "°C",    label: "T° Air" }, // Pas de seuil ici
+    "TempEau":  { color: "#4CD964", unit: "°C",    label: "T° Eau",   min: 24,  max: 30 },
+    "PP":       { color: "#5856D6", unit: " bar",  label: "Pression", min: 0.5, max: 1.8 },
+    "Navigation": { color: "#8E8E93", unit: "",    label: "Nav" }
+};
+
+const COLORS = ['#00FBFF', '#FF00FF', '#00FF00', '#FFCC00', '#FF5733', '#888888'];
+
+// Génération des données
+const globalData = (function() {
+    const data = [];
+    const t = new Date();
+    for (let i = 0; i < 500; i++) {
+        const x = new Date(t.getTime() + i * 60000);
+        const s1 = Math.sin(i/20)*2;
+        const s2 = Math.cos(i/15)*1.5;
+        const s3 = Math.sin(i/10)*12;
+        const s4 = Math.random()*10;
+        const s5 = (i % 50 > 25 ? 5 : 0); // Signal carré
+        const yNav = Math.sin(i/10)*40; 
+        
+        data.push([x, s1, s2, s3, s4, s5, yNav]); 
+    }
+    return data;
+})();
+
+/**
+ * --- 2. FONCTIONS UTILITAIRES ---
+ */
+function formatYAxisLabelLimit4(v) {
+    if (v === null || v === undefined || isNaN(v)) return '';
+    const absV = Math.abs(v);
+    if (absV < 1000) return Number(v).toFixed(1);
+    return (v / 1000).toFixed(1) + 'k';
+}
+
+// Fonction helper pour identifier précisément le device
+function getGraphModeBackup() {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const isLandscape = width > height;
+
+    // Breakpoints standards : 768px (iPad Mini/Mobile) et 1100px (iPad Pro/Laptop)
+    if (width < 768) return isLandscape ? 'mobile-landscape' : 'mobile-portrait';
+    if (width < 1100) return isLandscape ? 'tablet-landscape' : 'tablet-portrait';
+    return isLandscape ? 'desktop-landscape' : 'desktop-portrait';
+}
+
+function getGraphMode() {
+    var mqDesktopLandscape = window.matchMedia('(min-width: 1101px) and (orientation: landscape)');
+    var mqDesktopPortrait = window.matchMedia('(min-height: 1101px) and (orientation: portrait)');
+    var mqTabletPortrait = window.matchMedia('(min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (orientation: portrait)');
+    var mqTabletLandscape = window.matchMedia('(min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (orientation: landscape)');
+    var mqMobilePortrait = window.matchMedia('(max-width: 700px) and (orientation: portrait)');
+    var mqMobileLandscape = window.matchMedia('(max-height: 700px) and (orientation: landscape)');
+
+    if (mqDesktopLandscape.matches) return 'desktop-landscape';
+    if (mqDesktopPortrait.matches)  return 'desktop-portrait';
+    if (mqTabletLandscape.matches)  return 'tablet-landscape';
+    if (mqTabletPortrait.matches)   return 'tablet-portrait';
+    if (mqMobileLandscape.matches)  return 'mobile-landscape';
+    if (mqMobilePortrait.matches)   return 'mobile-portrait';
+
+    // Fallback
+    // Breakpoints standards : 768px (iPad Mini/Mobile) et 1100px (iPad Pro/Laptop)
+	console.log("FailBack dans la detection des media")
+    if (width < 768) return isLandscape ? 'mobile-landscape' : 'mobile-portrait';
+    if (width < 1100) return isLandscape ? 'tablet-landscape' : 'tablet-portrait';
+    return isLandscape ? 'desktop-landscape' : 'desktop-portrait';
+}
+
+function determineLayout() {
+    const mode = getGraphMode();
+	console.log("mode est : "+mode)
+    const isLandscape = mode.includes('landscape');
+    
+    let count = 3; // Par défaut (Desktop)
+
+    // Logique de densité d'affichage
+    if (mode === 'mobile-portrait') {
+        count = 1; // Un seul gros graphe sur téléphone vertical
+    } else if (mode === 'mobile-landscape') {
+        count = 2; // Deux graphes côte à côte sur téléphone horizontal
+    } else if (mode.includes('tablet')) {
+        count = 2; // Sur tablette, 2 graphes sont souvent plus lisibles que 3
+    } else {
+        count = 3; // Grand écran : on affiche tout
+    }
+	console.log("count:"+count)
+	console.log("orientation:"+isLandscape ? 'row' : 'column')
+    return { count, orientation: isLandscape ? 'row' : 'column', isLandscape };
+}
+
+function applyChartHeights() {
+    const headerH = $('#graphHeader').outerHeight() || 40;
+    const navH = 65; // Hauteur fixe pour le Navigator (wrapper + marges)
+	const margin = 10; // Marges et paddings cumulés
+	
+	
+    const availableDataH = window.innerHeight - headerH - navH - margin;	// On calcule la hauteur disponible pour les graphiques Y1, Y2, Y3
+    
+    // 1. On force la hauteur pour les graphiques de données uniquement
+    $('.dashboard-card').css({
+        'height': (window.innerHeight - headerH - 5) + 'px',	//'height': Math.max(availableH, 200) + 'px',
+        'width': '100%' 
+    });
+
+    const layout = determineLayout();
+    
+    // 2. Logique de wrapper pour la zone de données
+    $('.charts-wrapper').css({
+        'flex-direction': layout.orientation,
+        'width': '100%',
+        'height': availableDataH + 'px',
+        'box-sizing': 'border-box'
+    });
+	
+	// 3. On s'assure que le Navigator occupe bien sa place fixe
+    $('#navZone').css({
+        'height': '55px',
+        'width': '100%'
+    });
+
+    // 4. Ton loop de visibilité (y1, y2, y3) est conservé
+    for (let i = 1; i <= 3; i++) {
+        const $zone = $(`#graph-zone-${i}`);
+		// Si c'est la zone 1, on FORCE l'affichage quoi qu'il arrive
+	    // Si c'est 2 ou 3, on suit le layout.count
+	    if (i === 1 || i <= layout.count) {
+	        $zone.prop('style', 'display: flex !important'); // Écrase tout inline style existant
+	        $zone.css('height', layout.height + 'px');
+	    } else {
+	        $zone.hide();
+	    }
+    }
+}
+
+/**
+ * --- 3. OPTIONS DES GRAPHIQUES ---
+ */
+ 
+ 
+function updateGraphVisibility(zone, source) {
+    const g = (zone == 1) ? g1 : (zone == 2) ? g2 : g3;
+    if (!g) return;
+
+    let visibilityArray;
+
+    if (typeof source === "string") {
+        // CAS 1 : On a passé un nom de groupe (ex: "Chimie")
+        // On récupère le tableau de booléens directement
+        visibilityArray = SERIES_MAPPING[source];
+        
+        // On synchronise aussi visuellement le sélecteur d'axes
+        const labelsToSelect = [];
+        visibilityArray.forEach((isVisible, i) => {
+            if (isVisible && ALL_LABELS[i + 1] !== "Navigation") {
+                labelsToSelect.push(ALL_LABELS[i + 1]);
+            }
+        });
+        $(`#axesSelector${zone}`).val(labelsToSelect).selectmenu("refresh");
+
+    } else if (Array.isArray(source)) {
+        // CAS 2 : On a passé un tableau de labels (ex: ["PH", "CL"])
+        // On convertit les noms d'axes en tableau de booléens [true, false...]
+        visibilityArray = ALL_LABELS.slice(1).map(label => {
+            if (label === "Navigation") return false;
+            return source.includes(label);
+        });
+    }
+
+    // Application finale au graphique
+    if (visibilityArray) {
+        g.updateOptions({ visibility: visibilityArray });
+    }
+}
+
+
+function getGraphOptions(type, isNavigator, zoneIndex) {
+
+
+    if (isNavigator) {
+   		vis = [false, false, false, false, false, true];		// Il faut 6 éléments ! Navigation est le 6ème (index 5 du tableau de visibilité)
+	} else {
+		vis = SERIES_MAPPING[type];
+		if (!vis) {
+            console.warn("Type de graphique non trouvé dans le mapping :", type);
+            vis = [true, true, true, true, true, false]; // Affiche tout pour débugger
+        }
+    }
+	
+	// Générer les couleurs en suivant STRICTEMENT l'ordre de ALL_LABELS
+    // ALL_LABELS = ["Time", "PH", "CL", "TempAir", "TempEau", "PP", "Navigation"]
+    // On slice(1) pour ignorer "Time"
+    const colorsForGraph = ALL_LABELS.slice(1).map(label => {
+        return SENSOR_CONFIG[label] ? SENSOR_CONFIG[label].color : "#FFFFFF";
+    });
+	
+	const seriesConfig = {};
+    Object.keys(SENSOR_CONFIG).forEach(key => {
+        seriesConfig[key] = {
+            color: SENSOR_CONFIG[key].color
+        };
+    });
+	
+	
+	
+    // 1. Options de base communes
+    const commonOptions = {
+        labels: ALL_LABELS,
+        visibility: vis,
+		gridLineColor: '#222',
+        axisLineColor: '#FFFFFF', // Axe blanc
+        axisLabelColor: '#FFFFFF', // Indices blancs        
+        highlightSeriesOpts: {
+            strokeWidth: 3,
+            highlightCircleSize: 5
+        },
+		highlightSeriesBackgroundAlpha: 1.0, // Empêche l'assombrissement/changement de fond
+    };
+
+    // 2. Configuration spécifique pour le NAVIGATEUR
+    if (isNavigator) {
+        return {
+            ...commonOptions,
+            colors: ['#00FBFF'],
+            strokeWidth: 1,
+            fillGraph: true,
+            fillAlpha: 0.3,
+            backgroundColor: '#111',
+            showRangeSelector: true,
+            rangeSelectorHeight: 40,
+            rangeSelectorHandleWidth: 15,
+            rangeSelectorAlpha: 0.5,
+            rangeSelectorHandleColor: '#00FBFF',
+            rangeSelectorAddIn: 10,
+			showLabelsOnHighlight: false, // Empêche l'affichage des points au survol
+        	labelsSeparateLines: false,
+        	legend: 'none',               // Désactive totalement la légende
+            axes: {
+                x: { drawAxis: true, axisLabelFontSize: 10, axisLabelColor: '#eee' },
+                y: { drawAxis: false, drawGrid: false }
+            },
+            margin: { left: 45, right: 15, top: 0, bottom: 5 }
+        };
+    } 
+
+    // 3. Configuration pour les graphiques de DONNÉES
+    return {
+        ...commonOptions,
+        series: seriesConfig,
+        connectSeparatedPoints: true,
+		animatedZooms: true,		
+        drawPoints: false,
+        fillGraph: false,
+        fillAlpha: 0.15,
+        backgroundColor: '#000',
+        strokeWidth: 2,
+        margin: { left: 45, right: 15, top: 10, bottom: 15 },
+        showRangeSelector: false,
+		title: null,
+        ylabel: null,              // On supprime le ylabel à gauche
+		margin: { left: 50, right: 15, top: 15, bottom: 15 },
+        axes: {
+            x: { drawAxis: false },
+			y: { 
+            	drawAxis: true, 
+            	axisLabelFormatter: formatYAxisLabelLimit4,
+            	axisLabelColor: '#FFFFFF', // Force le blanc pour les chiffres Y
+            	axisLineColor: '#FFFFFF'   // Force le blanc pour la ligne de l'axe
+        		}
+		},
+		// --- GESTION NATIVE DES LABELS ---
+        // On définit la div de destination si ce n'est pas le navigator
+        labelsDiv: `status-val-${zoneIndex}`,
+        labelsSeparateLines: false,
+        legend: 'always', // Affiche toujours la valeur sous le doigt
+		legendFormatter: function(data) {
+		    if (data.x == null) return '';
+		    
+		    // Heure en blanc brillant
+		    let html = `<span style="color:#FFF; font-weight:bold;">${data.xHTML}</span> <span style="color:#444">|</span> `;
+		    
+		    data.series.forEach((s, i) => {
+		        if (s.isVisible) {
+		            // Nom de la série en couleur, valeur en blanc
+		            html += `<span style="color:${s.color}">${s.labelHTML}:</span>` +
+		                    `<span style="color:#FFF; margin-left:3px; margin-right:8px;">${s.yHTML}</span>`;
+		            
+		            // On ajoute un séparateur sauf pour le dernier élément
+		            if (i < data.series.length - 1) {
+		                html += `<span style="color:#333; margin-right:8px;">•</span>`;
+		            }
+		        }
+		    });
+		    return html;
+		},		
+		highlightCallback: function(event, x, points, row, seriesName) {
+		    if (isNavigator) return; // Pas de légende pour le nav
+		
+		    const statusEl = document.getElementById(`status-val-${zoneIndex}`);
+			if (!statusEl) return;
+			
+			// 1. Formater l'heure (Axe X)
+			const date = new Date(x);
+		    
+		    // Format Date : 16/02 (Jour/Mois)
+		    const dateStr = date.getDate().toString().padStart(2, '0') + "/" + 
+		                    (date.getMonth() + 1).toString().padStart(2, '0');
+		    
+		    // Format Heure : 14:35:02
+		    const timeStr = date.getHours().toString().padStart(2, '0') + ":" + 
+		                    date.getMinutes().toString().padStart(2, '0') + ":" + 
+		                    date.getSeconds().toString().padStart(2, '0');
+					
+			// On affiche la date et l'heure dans un style légèrement différent (gris/blanc)
+		    let html = `<span class="legend-value-item" style="color: #aaa; margin-right: 15px; font-size: 10px;">
+		                    ${dateStr} <span style="color: #00FBFF; font-size: 11px; margin-left: 5px;">${timeStr}</span>
+						</span>`;
+					
+		    // 3. Ajouter les autres points (PH, CL, etc.)
+			points.forEach(p => {
+			    const config = SENSOR_CONFIG[p.name] || { color: "#FFF", label: p.name, unit: "" };
+			    
+			    // On met la couleur sur le span parent, et grâce au CSS "inherit", 
+			    // tout ce qui est dedans (label + valeur) sera coloré.
+			    html += `<span class="legend-value-item" style="color: ${config.color} !important;">
+			                <span class="smallLabel">${config.label}:</span> 
+			                ${p.yval.toFixed(2)}${config.unit}
+			             </span>`;
+			});
+			statusEl.innerHTML = html;
+		},		
+	};
+}
+
+/*
+			gridLineColor: '#333',
+            axisLineColor: '#FFF',
+            axisLabelColor: '#FFF',
+
+			rangeSelectorBackgroundStrokeColor: '#ffffff',
+            rangeSelectorPlotStrokeColor: '#FFFFFF',
+            rangeSelectorPlotFillColor: 'rgba(255,255,255,0.1)',
+*/            
+
+
+/**
+ * --- 4. CŒUR DU SYSTÈME (UPDATE) ---
+ */
+ 
+const activeGraphs = [];
+	
+function updateGraphs() {
+    // Verrou de sécurité
+    if (isInteracting) return;
+
+    const layout = determineLayout();
+    
+    // 1. On coupe la synchro avant de toucher au DOM
+    if (syncHandler) { 
+        try { syncHandler.detach(); } catch(e) {} 
+        syncHandler = null; 
+    }
+
+	
+    // 2. Gestion des graphes de DONNÉES (1, 2, 3)
+    for (let i = 1; i <= 3; i++) {
+        const $zone = $(`#graph-zone-${i}`);
+        const container = document.getElementById(`graph-canvas-${i}`);
+        
+        if (i <= layout.count && container) {
+            $zone.show().css('display', 'flex');
+            const type = $zone.find('select.zone-graph-selector').val();
+            const options = getGraphOptions(type, false, i);
+            
+            let gObj = (i === 1 ? g1 : (i === 2 ? g2 : g3));
+
+            if (!gObj) {
+                // Création
+                if (gNav) options.dateWindow = gNav.xAxisRange(); // On s'aligne sur le maître
+                gObj = new Dygraph(container, globalData, options);
+                if (i === 1) g1 = gObj; else if (i === 2) g2 = gObj; else g3 = gObj;
+            } else {
+                // Update
+                delete options.dateWindow; // On ne force pas le zoom ici
+                gObj.updateOptions(options);
+            }
+            activeGraphs.push(gObj);
+        } else {
+            $zone.hide();
+        }
+    }
+
+    // 3. Gestion du NAVIGATOR (Maître)
+    const navContainer = document.getElementById('graph-canvas-nav');
+    if (navContainer) {
+        const navOptions = getGraphOptions(null, true);
+        if (!gNav) {
+            gNav = new Dygraph(navContainer, globalData, navOptions);
+        } else {
+            gNav.updateOptions(navOptions);
+        }
+        activeGraphs.push(gNav);
+    }
+
+    // 4. Synchronisation : Tout le monde écoute le maître
+    if (activeGraphs.length >= 2) {
+        window.requestAnimationFrame(() => {
+            syncHandler = Dygraph.synchronize(activeGraphs, {
+                selection: true, // Barre verticale partagée
+                zoom: true,      // Zoom partagé
+                range: false     // IMPORTANT: range:false car seul gNav a un slider
+            });
+        });
+    }
+}
+
+function initCharts() {
+    // 1. Calculer les hauteurs d'abord pour que Dygraph connaisse sa taille
+    applyChartHeights();
+
+    // 2. Créer les instances de graphiques (ils vont lire getGraphOptions)
+    updateGraphs();
+    
+    // 3. Synchroniser les multi-sélecteurs d'axes pour qu'ils 
+    // reflètent le mapping du groupe par défaut
+    for(let i = 1; i <= 3; i++) {
+        const $zone = $(`#graph-zone-${i}`);
+        
+        // On ne configure que les zones réellement affichées
+        if($zone.is(':visible')) {
+            // CRUCIAL : On récupère la valeur du sélecteur spécifique à CETTE zone
+            const currentGroup = $(`#graphSelector${i}`).val();
+            
+            // On s'assure de passer l'index 'i' pour ne mettre à jour que le sélecteur 'i'
+            updateAxesSelectorsVisual(i, currentGroup);
+        }
+    }
+    
+    // 4. ResizeObserver (votre code est très bien ici)
+    if (!window.chartObserver) {
+        const dashboard = document.querySelector('.dashboard-card');
+        window.chartObserver = new ResizeObserver(() => {
+            window.requestAnimationFrame(() => {
+                if (g1) g1.resize(); 
+                if (g2) g2.resize(); 
+                if (g3) g3.resize();
+                if (gNav) gNav.resize();
+            });
+        });
+        window.chartObserver.observe(dashboard);
+    }
+}
+
+function updateAxesSelectorsVisual(zone, groupName) {
+    const mapping = SERIES_MAPPING[groupName];
+    if (!mapping) return;
+
+    let labelsToSelect = [];
+    mapping.forEach((isVisible, i) => {
+        // i+1 car SERIES_MAPPING saute "Time"
+        if (isVisible && ALL_LABELS[i + 1] !== "Navigation") {
+            labelsToSelect.push(ALL_LABELS[i + 1]);
+        }
+    });
+
+    // On coche les bonnes cases et on demande à JQM de rafraîchir le bouton
+    $(`#axesSelector${zone}`).val(labelsToSelect).selectmenu("refresh");
+}
+
+function saveUserPreferences(zoneIndex, selectedSensors) {
+    // On crée une clé unique, ex: "pool_prefs_zone_1"
+    const key = `pool_prefs_zone_${zoneIndex}`;
+    localStorage.setItem(key, JSON.stringify(selectedSensors));
+}
+
+function getSavedPreferences(zoneIndex, defaultSensors) {
+    const key = `pool_prefs_zone_${zoneIndex}`;
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : defaultSensors;
+}
+
+const PREFS_KEY_PREFIX = "pool_dashboard_zone_";
+
+// Sauvegarder les capteurs sélectionnés pour une zone
+function saveZonePrefs(zoneIndex, sensorList) {
+    localStorage.setItem(PREFS_KEY_PREFIX + zoneIndex, JSON.stringify(sensorList));
+}
+
+// Récupérer les préférences ou retourner les capteurs par défaut
+function getZonePrefs(zoneIndex, defaultSensors) {
+    const saved = localStorage.getItem(PREFS_KEY_PREFIX + zoneIndex);
+    try {
+        return saved ? JSON.parse(saved) : defaultSensors;
+    } catch (e) {
+        return defaultSensors;
+    }
+}
+/**
+ * --- 5. ÉVÉNEMENTS ---
+ */
+
+// A. Verrouillage (On garde la sécurité pour les mobiles lents)
+	$(document).on('pointerdown', '.dygraph-rangesel-fgcanvas, .dygraph-rangesel-zoomhandle', function() {
+	    isInteracting = true;
+	    if (interactionTimeout) clearTimeout(interactionTimeout);
+	});
+
+	$(document).on('pointerup pointercancel', function() {
+	    interactionTimeout = setTimeout(() => { isInteracting = false; }, 150); 
+	});
+
+// B. Changements utilisateur
+	// quand on clique sur le titre
+	$(document).on('click', '.graph-title-button', function(e) {
+	    e.preventDefault();
+	    const zone = $(this).data('zone');
+	    const $select = $(`#graphSelector${zone}`);
+    
+	    if ($select.length) {
+	        $select.selectmenu('open'); // Ouvre le menu JQM
+	    } else {
+	        console.error("Sélecteur introuvable pour la zone " + zone);
+	    }
+	});
+
+	// Quand on change la sélection de graphe dans le menu JQM
+	$(document).on('change', '.zone-graph-selector', function() {
+		const zone = $(this).data('zone');
+    	const type = $(this).val();
+    
+	    // 1. On met à jour les graphes et les cases cochées du sélecteur d'axes
+	    updateGraphVisibility(zone, type);
+    	// Si vous avez besoin de reconstruire pour d'autres raisons :
+    	// updateGraphs();
+		
+	});
+	
+	// quand on selectionne de axes 
+	$(document).on('change', '.axes-multi-selector', function() {
+		const zone = $(this).data('zone');
+    	const type = $(this).val();
+    
+	    // 1. On met à jour les graphes et les cases cochées du sélecteur d'axes
+	    updateGraphVisibility(zone, type);
+		
+	});
+
+// C. Layout
+	$(window).on('resize orientationchange', function() {
+	    applyChartHeights();
+	    updateGraphs();
+	    // Force resize final
+	    setTimeout(() => {
+	        if (g1) g1.resize();
+	        if (gNav) gNav.resize();
+	    }, 100);
+	});
+
+// D. Init
+	$(document).on('pageshow', '#graphMainPage', function() {
+	// 1. Affiche le spinner JQM
+	    $.mobile.loading('show', {
+	        text: "Initialisation des graphiques...",
+	        textVisible: true,
+	        theme: "b" // Thème sombre
+	    });
+			
+		// 2. On laisse un peu de temps au spinner pour s'afficher avant de bloquer le thread avec initCharts
+	    setTimeout(function() {
+	        try {
+	            initCharts();
+	        } finally {
+	            // 3. Cache le spinner quoi qu'il arrive
+	            $.mobile.loading('hide');
+	        }
+	    }, 200);
+	});
+
+</script>
+</body>
+</html>

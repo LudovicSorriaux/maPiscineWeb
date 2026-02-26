@@ -1,0 +1,547 @@
+/* Le conteneur global (style identique à vos cartes de graphiques) */
+/* La boîte globale centrée */
+.graph-selector-box {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Centre le groupe sélecteur + date */
+    gap: 20px;               /* Espace entre le sélecteur et la date */
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 0 15px;
+    margin: 5px auto;
+    height: 44px;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+/* Élargir le sélecteur sans augmenter la hauteur */
+.selector-side {
+    width: 200px; /* Plus large */
+}
+
+.selector-side .ui-select, 
+.selector-side .ui-btn {
+    margin: 0 !important;
+    width: 100% !important;
+}
+
+/* La Textbox en relief inversé */
+.inset-textbox {
+    background-color: #050505 !important;
+    color: #00FBFF !important;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85em;
+    padding: 5px 15px;
+    border-radius: 4px;
+    border: 1px solid #222;
+    min-width: 250px;
+    text-align: center;
+    /* Effet de profondeur (creusé) */
+    box-shadow: inset 2px 2px 4px rgba(0,0,0,0.8), 
+                inset -1px -1px 1px rgba(255,255,255,0.05);
+    display: block; /* Assure la visibilité */
+    line-height: 1.2;
+}
+
+.display-side {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    margin-left: 15px;
+}
+
+
+
+    /* ZONE DES GRAPHIQUES DE DONNÉES */
+		.dashboard-card {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            box-sizing: border-box;
+            padding: 5px;
+        }
+
+        .charts-wrapper {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            gap: 5px;
+        }
+
+    /* ZONE DU NAVIGATEUR FIXE EN BAS */
+        .nav-wrapper {
+            flex: 0 0 55px; /* Hauteur pour le slider */
+			height: 55px;
+			/* On réduit la largeur et on centre avec auto */
+		    width: calc(100% - 40px) !important;		/* width: 100%; */ 
+		    margin: 5px auto 10px auto !important;		/* margin-top: 5px; */
+            background: #111;
+            border-radius: 4px;
+            border: 1px solid #333;
+        }
+
+        .graph-zone {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+            background: #111;
+            border-radius: 4px;
+            border: 1px solid #222;
+        }
+
+		.graph-header-mini {
+		    display: flex;
+		    flex-direction: column; /* Empile le sélecteur et les valeurs */
+		    padding: 5px 10px;
+		    background: #151515;
+		    border-bottom: 1px solid #222;
+		}
+		
+		/* --- ALIGNEMENT DU HEADER --- */
+		.header-top-row {
+		    display: flex !important;
+		    align-items: center !important;
+		    justify-content: flex-start; 
+		    width: 100% !important;
+		    gap: 8px;
+		}
+		
+		/* On pousse l'export à l'extrémité droite */
+		.export-container {
+		    margin-left: auto !important; 
+		    display: block !important;
+		}
+		
+		.export-container .ui-select {
+		    display: block !important; 
+			}
+
+	
+		/* --- BOUTONS DU HEADER (LOOK RELIEF COMMUN) --- */
+		.header-top-row .ui-select .ui-btn {
+		    background-color: #1a1a1a !important;
+		    color: #FFF !important;
+		    border-radius: 6px !important;
+		    font-weight: bold !important;
+		    text-transform: uppercase;
+		    font-size: 11px !important;
+		    text-shadow: none !important;
+		    
+		    /* Effet Relief : Lumière en haut, ombre en bas */
+		    border-top: 1px solid #444 !important;
+		    border-left: 1px solid #333 !important;
+		    border-right: 1px solid #222 !important;
+		    border-bottom: 1px solid #111 !important;
+		    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 5px rgba(0,0,0,0.8) !important;
+		    
+		    padding-top: 8px !important;
+		    padding-bottom: 8px !important;
+		    transition: border-color 0.2s, background-color 0.2s;
+		}
+		
+		/* Hover Global sur les boutons */
+		.header-top-row .ui-select .ui-btn:hover {
+		    border-color: #00FBFF !important;
+		    background-color: #222 !important;
+		}
+		
+		/* --- SPÉCIFICITÉS PAR TYPE DE BOUTON --- */
+		
+		/* Titre (Icone à droite) */
+		[id^="graphSelector"]-button {
+		    padding-right: 35px !important;
+		    padding-left: 12px !important;
+		}
+		
+		/* Axes (Icone à gauche) */
+		[id^="axesSelector"]-button {
+		    padding-left: 35px !important;
+		    padding-right: 12px !important;
+		}
+
+		/* --- BOUTON EXPORT : CARRÉ ABSOLU (Version Fusionnée) --- */
+		/* 1. Conteneur Parent */
+		.export-container .ui-select {
+		    width: 32px !important; 
+		    height: 32px !important;
+		    padding: 0 !important;
+		    margin: 0 !important;
+		    flex-shrink: 0 !important;
+		}
+		
+		/* 2. Le Bouton (Balise <a> générée) */
+		.export-container .ui-select a.ui-btn {
+		    width: 32px !important;
+		    height: 32px !important;
+		    min-width: 32px !important;
+		    max-width: 32px !important;
+		    padding: 0 !important;
+		    margin: 0 !important;
+		    
+		    display: flex !important;
+		    align-items: center !important;
+		    justify-content: center !important;
+		    
+		    aspect-ratio: 1 / 1 !important;
+		    overflow: hidden !important;
+		    text-indent: -9999px !important; /* Cache le texte proprement */
+		}
+		
+		/* 3. L'Icône (Centrage parfait) */
+		.export-container .ui-select a.ui-btn::after {
+		    position: absolute !important;
+		    left: 50% !important;
+		    top: 50% !important;
+		    margin-left: -11px !important; /* Moitié de 22px */
+		    margin-top: -11px !important;
+		    right: auto !important;
+		}
+		
+		/* 4. On s'assure que le span interne est invisible */
+		.export-container .ui-select a.ui-btn span {
+		    display: none !important;
+		}
+		
+		/* Masquer les badges de comptage JQM sur les axes */
+		.axes-container .ui-li-count { display: none !important; }
+		
+		/* --- POPUPS UNIFIÉS (LOOK MÉTALLIQUE SOMBRE) --- */
+		/* Le cadre du menu */
+		[id^="graphSelector"][id$="-listbox-popup"],
+		[id^="axesSelector"][id$="-listbox-popup"],
+		[id^="exportAction"][id$="-listbox-popup"] {
+		    background-color: #1a1a1a !important;
+		    border-radius: 8px !important;
+		    border-top: 1px solid #444 !important;
+		    border-left: 1px solid #333 !important;
+		    border-right: 1px solid #222 !important;
+		    border-bottom: 1px solid #111 !important;
+		    box-shadow: 0 10px 30px rgba(0,0,0,0.9) !important;
+		    overflow: hidden !important;
+		}
+		
+		/* La liste à l'intérieur */
+		[id^="graphSelector"][id$="-listbox"],
+		[id^="axesSelector"][id$="-listbox"],
+		[id^="exportAction"][id$="-listbox"] {
+		    background: #1a1a1a !important;
+		    margin: 0 !important;
+		    padding: 0 !important;
+		    border: none !important;
+		}
+		
+		/* Les options (liens) */
+		[id^="graphSelector"][id$="-listbox"] li a,
+		[id^="axesSelector"][id$="-listbox"] li a,
+		[id^="exportAction"][id$="-listbox"] li a {
+		    background: #1a1a1a !important;
+		    color: #bbb !important;
+		    text-shadow: none !important;
+		    font-size: 11px !important;
+		    padding: 12px 20px !important;
+		    border: none !important;
+		    border-bottom: 1px solid #222 !important;
+		    -webkit-font-smoothing: antialiased;
+		}
+		
+		/* Survol des options */
+		[id^="graphSelector"][id$="-listbox"] li a:hover,
+		[id^="axesSelector"][id$="-listbox"] li a:hover,
+		[id^="exportAction"][id$="-listbox"] li a:hover {
+		    background-color: #222 !important;
+		    color: #00FBFF !important;
+		}
+		
+		/* Header & Titre des popups */
+		[id$="-listbox-popup"] .ui-header {
+		    background: #1a1a1a !important;
+		    border-bottom: 1px solid #333 !important;
+		}
+		[id$="-listbox-popup"] .ui-title {
+		    font-size: 11px !important;
+		    color: #eee !important;
+		    text-transform: uppercase;
+		}
+		
+		/* --- BOUTON FERMER DU POPUP (AXES) --- */
+		
+		/* Positionner le bouton à droite dans le header du popup */
+		[id$="-listbox-popup"] .ui-header .ui-btn-left {
+		    right: 5px !important;
+		    left: auto !important; /* On annule le positionnement à gauche par défaut */
+		}
+
+		/* 1. État de base du bouton dans le header du popup */
+		[id$="-listbox-popup"] .ui-header .ui-btn {
+		    background-color: #111 !important;
+		    border: 1px solid #444 !important; /* Bordure grise par défaut */
+		    border-radius: 4px !important;
+		    width: 26px !important;
+		    height: 26px !important;
+		    transition: all 0.2s ease !important;
+		    box-shadow: none !important;
+		}
+		
+		/* 2. LE HOVER : On cible le CADRE (la bordure) */
+		[id$="-listbox-popup"] .ui-header .ui-btn:hover {
+		    border-color: #00FBFF !important; /* Le cadre devient cyan */
+		    background-color: #222 !important; /* Le fond s'éclaircit légèrement */
+		    cursor: pointer;
+		}
+		
+		/* Leave the JQM icon (::after) style to jQuery Mobile to ensure the X icon displays correctly. */
+
+		/* Force le masquage des options cachées dans les menus JQM */
+		.ui-selectmenu-list li.ui-screen-hidden {
+		    display: none !important;
+		}
+
+/* --- INDICATEUR PULSE POUR SELECT AXES --- */
+@keyframes axesPulse {
+	0% { box-shadow: 0 0 0 0 rgba(16,69,169,0.0); }
+	50% { box-shadow: 0 0 10px 6px rgba(16,69,169,0.18); }
+	100% { box-shadow: 0 0 0 0 rgba(16,69,169,0.0); }
+}
+.axes-pulse-active .axes-multi-selector, .axes-pulse-active select.axes-multi-selector {
+	animation: axesPulse 1.2s infinite ease-in-out;
+	border: 2px solid #1045a9 !important;
+	border-radius: 6px;
+}
+
+/* Fallback visible icon injected into popup header if JQM sprite missing */
+/* Removed injected fallback icon styles - rely on jQuery Mobile native icon rendering. */
+
+/* Bouton de fermeture visible dans la zone des axes */
+/* popup close button emphasis (appliqué via JS class on the JQM popup header button) */
+.axes-pulse-close-emph {
+	border-color: #00FBFF !important;
+	box-shadow: 0 0 8px rgba(0,191,255,0.35) !important;
+	color: #00FBFF !important;
+}
+
+
+        .smallLabel { 
+			color: #00FBFF; 
+			font-size: 11px; 
+			font-weight: bold; 
+		}
+		
+		
+        .graph-content { 
+			flex: 1; 
+			position: relative; 
+			width: 100%; 
+		}
+		
+        .graph-canvas { 
+			position: absolute; 
+			top: 0; 
+			left: 0; 
+			right: 0; 
+			bottom: 0; 
+		}
+
+		/* Le cadre de légende statique */
+		.static-legend-frame {
+		    position: absolute !important;
+		    top: 10px !important;
+		    right: 10px !important;
+		    z-index: 100 !important;
+		    
+		    /* Fond très léger pour voir les courbes passer derrière */
+		    background: rgba(20, 20, 20, 0.4) !important; 
+		    
+		    /* Flou très léger : protège le texte sans cacher la forme des courbes */
+		    backdrop-filter: blur(2px) !important;
+		    -webkit-backdrop-filter: blur(2px) !important;
+		
+		    /* Bordure fine pour délimiter le cadre */
+		    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+		    border-radius: 0.3125em !important;
+		    padding: 5px 10px !important;
+		    box-shadow: 0 2px 10px rgba(0,0,0,0.3) !important;
+		    pointer-events: none !important;
+		}
+		
+		.legend-row {
+		    display: flex !important;
+		    align-items: center !important;
+		    justify-content: flex-end;
+		    margin-bottom: 3px !important;
+		}
+		
+		.legend-label {
+		    font-family: sans-serif !important;
+		    font-size: 11px !important;
+		    color: #ffffff !important; 
+		    font-weight: 700 !important;
+		    /* Ombre portée plus marquée pour détacher le texte du fond transparent */
+		    text-shadow: 1px 1px 1px #000, 0px 0px 3px #000 !important; 
+		    -webkit-font-smoothing: antialiased;
+		}
+		
+		.legend-dot {
+		    width: 9px !important;
+		    height: 9px !important;
+		    border-radius: 2px !important;
+		    margin-left: 8px !important;
+		    flex-shrink: 0;
+		    /* On entoure le point d'un petit liseré pour qu'il soit net */
+		    border: 1px solid rgba(0,0,0,0.4) !important;
+		}
+		
+		.graph-title-button {
+		    background: linear-gradient(180deg, #444 0%, #222 100%); /* Effet relief */
+		    color: #FFFFFF !important; /* FORCE LE BLANC */
+		    text-decoration: none !important;
+		    font-weight: bold;
+		    font-size: 13px;
+		    padding: 4px 15px;
+		    border-radius: 4px;
+		    border: 1px solid #555; /* Bordure claire pour le relief */
+		    box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 4px rgba(0,0,0,0.5);
+		    text-shadow: 0 -1px 0 rgba(0,0,0,0.8);
+		    min-width: 120px;
+		    text-align: center;
+		    display: inline-block;
+		}
+
+		/* Petite flèche vers le bas pour indiquer le menu */
+		.graph-title-button::after {
+		    content: '▼';
+		    font-size: 9px;
+		    margin-left: 8px;
+		    opacity: 0.7;
+		}
+		
+		/* Animation discrète au clic sur le titre */
+		.graph-title-button:active {
+			background: #111;
+		    box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
+		    transform: translateY(1px);
+		}
+			
+	/* Amélioration visuelle des éléments du slider */
+		/* 1. Style des poignées (handles) gauche et droite */
+		.dygraph-rangesel-zoomhandle {
+		    /* Indique visuellement qu'on peut redimensionner horizontalement */
+		    cursor: ew-resize !important;
+			 width: 16px !important;
+			 height: 40px !important;
+			 
+		    /* Augmente la luminosité pour ressortir sur le fond noir */
+		    filter: brightness(1.8) drop-shadow(0px 0px 2px rgba(255,255,255,0.5));
+		    
+		    /* Ajoute un contour net pour la précision sur tablette */
+		    border: 1px solid #ffffff !important;
+		    background-color: #00FBFF !important; /* Force la couleur néon */
+		    
+		    /* IMPORTANT : Empêche la tablette de faire défiler la page 
+		       pendant qu'on manipule le slider */
+		    touch-action: none;
+		}
+		/* 2. Style de la zone de sélection (le rectangle entre les poignées) */
+		.dygraph-rangesel-fgcanvas {
+		    /* Rend la zone sélectionnée plus opaque et donc plus visible */
+		    opacity: 0.85 !important;
+		}
+		
+		/* 3. Style du fond du slider (la zone non sélectionnée) */
+		.dygraph-rangesel-bgcanvas {
+		    /* On garde le fond très sombre pour le contraste */
+		    opacity: 0.2 !important;
+		}
+		/* 4. Affichage des valeurs */
+		.local-status-val {
+		    width: 100%;
+		    font-family: 'Segoe UI', Tahoma, monospace;
+		    font-size: 11px; /* Plus petit pour tenir sur la largeur */
+		    color: #eee;
+		    white-space: nowrap;
+		    overflow: hidden;
+		    text-overflow: ellipsis;
+		    min-height: 14px; /* Évite les sauts de hauteur quand vide */
+			z-index: 10; 
+			text-shadow: none !important;
+		}
+		/* Force les spans à l'intérieur à ignorer le #eee et utiliser leur propre couleur */
+		.local-status-val span {
+		    color: inherit !important; 
+		}
+		
+		.legend-value-item {
+		    text-shadow: none !important;
+		    -webkit-font-smoothing: antialiased;
+		    display: inline-block;
+		    margin-right: 12px;
+		    font-weight: bold;
+		    font-size: 12px;
+		    transition: color 0.2s ease;
+		    /* Indispensable pour que le label et la valeur prennent la couleur du style inline */
+		    color: inherit; 
+		}
+		/* Force tous les sous-éléments de la légende à prendre la couleur définie en JS */
+		.local-status-val span.legend-value-item, 
+		.local-status-val span.legend-value-item span {
+		    color: inherit !important;
+		}
+
+		/* Style des labels d'axes pour qu'ils ne mangent pas d'espace */
+		.dygraph-axis-label { font-size: 10px !important; }
+		
+		/* Force le blanc sur le titre au centre */
+		.dygraph-title {
+		    color: #FFFFFF !important;
+		    font-size: 12px !important;
+		    opacity: 1 !important;
+		}
+		
+		/* Force le blanc sur les indices des axes (X et Y) */
+		.dygraph-axis-label {
+		    color: #FFFFFF !important;
+		    font-weight: bold !important;
+		    opacity: 1 !important;
+		}
+		
+		/* Optionnel : couleur des lignes de la grille pour qu'elles restent discrètes */
+		.dygraph-gridline {
+		    border-color: #333333 !important;
+		}
+		
+		/* Style pour les titres Y1 et Y2 */
+		.dygraph-ylabel, .dygraph-y2label {
+		    color: #FFFFFF !important;  /* Blanc pur */
+		    font-weight: 600 !important;
+		    font-size: 13px !important;
+		    text-shadow: none !important;
+		    /* Correction du flou */
+		    -webkit-font-smoothing: antialiased;
+		    -moz-osx-font-smoothing: grayscale;
+		    transform: translateZ(0); 
+		    opacity: 1 !important;
+		}
+		
+		/* On s'assure que les conteneurs de titres ne limitent pas la netteté */
+		.dygraph-axis-label-y, .dygraph-axis-label-y2 {
+		    color: #FFFFFF !important;
+		}
+
+		/* Empêche le scroll du navigateur sur les zones de dessin pour éviter l'erreur Intervention */
+		.graph-canvas, .dygraph-rangesel-fgcanvas, .dygraph-rangesel-zoomhandle {
+		    touch-action: none;
+		}
+        .ui-content { padding: 0 !important; height: 100%; }
+		
+		/* pour éviter que Dygraph ne laisse des traces fantômes */
+		canvas {
+		    image-rendering: -moz-crisp-edges;
+		    image-rendering: -webkit-optimize-contrast;
+		    image-rendering: crisp-edges;
+		    image-rendering: pixelated;
+		}
+		
+		

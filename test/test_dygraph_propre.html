@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>test dygraph prototype — propre</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.1.0/dygraph.min.css" />
+  <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css" />
+  <style>
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial;background:#f0f2f5}
+    .dashboard-card{width:95vw;max-width:980px;margin:16px auto;background:#fff;border-radius:8px;overflow:hidden;display:flex;flex-direction:column;min-height:360px}
+    .legend-bar{background:#2c3e50;color:#fff;padding:8px 12px;display:flex;align-items:center;justify-content:center;height:48px}
+    .charts-wrapper{padding:8px;display:flex;flex-direction:column;gap:8px;flex:1}
+    .graph-zone{border:1px solid #eee;border-radius:6px;padding:6px;background:#fafafa}
+    .graph-zone-title{text-align:center;margin:0;padding:6px 0;font-size:15px;cursor:pointer}
+    .graph-selector{display:none}
+    .graph-content{position:relative}
+    .graph-canvas{display:block;width:100%;height:220px;min-height:80px}
+    .axis-selector .axis-selector-dropdown{display:none}
+    .axis-selector.open .axis-selector-dropdown{display:inline-block}
+    @media (max-width:700px) and (orientation:portrait){#graph-zone-2,#graph-zone-3{display:none!important}.graph-canvas{height:260px}}
+    @media (min-width:900px) and (orientation:landscape){.charts-wrapper{flex-direction:row;gap:12px}.graph-zone{flex:1}.graph-canvas{height:320px}}
+    #test-diagnostics{position:fixed;right:8px;bottom:8px;width:360px;max-height:40vh;overflow:auto;background:rgba(0,0,0,0.86);color:#fff;font-size:12px;padding:8px;border-radius:6px;z-index:99999;box-shadow:0 2px 6px rgba(0,0,0,0.4)}
+    #test-diagnostics .clear{float:right;cursor:pointer;color:#ddd}
+  </style>
+</head>
+<body>
+
+<div class="dashboard-card">
+  <div class="legend-bar"><span class="myh1">Piscine Manager — Prototype</span></div>
+  <div role="main" id="graphMainPage" class="ui-content" style="padding:10px;">
+    <div class="ui-field-contain" style="margin-bottom:8px;display:flex;align-items:center;gap:8px">
+      <label for="daterange" class="select smallLabel" style="margin:0">Periode:</label>
+      <input id="daterange" name="daterange" class="single" value="01/01/2018 - 01/15/2018" style="flex:1" />
+    </div>
+
+    <div id="graph-container" class="charts-wrapper">
+      <div class="graph-zone" id="graph-zone-1" data-graph-type="chemistry">
+        <div class="graph-selector"><div class="ui-field-contain"><label class="select smallLabel">Graphique:</label><select name="graphSelector1" class="zone-graph-selector" data-zone="1"><option value="chemistry" selected>Chimie</option><option value="temperature">Températures</option><option value="equipment">Équipements</option></select></div></div>
+        <h3 class="graph-zone-title">Chimie de l'eau</h3>
+        <div class="graph-content"></div>
+      </div>
+      <div class="graph-zone" id="graph-zone-2" data-graph-type="temperature">
+        <div class="graph-selector"><div class="ui-field-contain"><label class="select smallLabel">Graphique:</label><select name="graphSelector2" class="zone-graph-selector" data-zone="2"><option value="chemistry">Chimie</option><option value="temperature" selected>Températures</option><option value="equipment">Équipements</option></select></div></div>
+        <h3 class="graph-zone-title">Températures</h3>
+        <div class="graph-content"></div>
+      </div>
+      <div class="graph-zone" id="graph-zone-3" data-graph-type="equipment">
+        <div class="graph-selector"><div class="ui-field-contain"><label class="select smallLabel">Graphique:</label><select name="graphSelector3" class="zone-graph-selector" data-zone="3"><option value="chemistry">Chimie</option><option value="temperature">Températures</option><option value="equipment" selected>Équipements</option></select></div></div>
+        <h3 class="graph-zone-title">Équipements</h3>
+        <div class="graph-content"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="test-diagnostics">Diagnostics... <span class="clear">[clear]</span></div>
+
+<script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+<script src="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.1.0/dygraph.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.1.0/extras/synchronizer.js"></script>
+
+<script>
+// Sample data
+const data = []; const t = new Date(); for(let i=0;i<500;i++){ const x=new Date(t.getTime()+i*60000); data.push([x,10+Math.sin(i/20)*5+Math.random(),200+Math.cos(i/20)*50+Math.random()*10]); }
+const commonOptions = { legend:'always', animatedZooms:true, gridLineColor:'#eee', axisLabelFontSize:12, axisLabelColor:'#666', yAxisLabelWidth:60, valueFormatter:v=>v.toFixed(2), highlightCircleSize:4, strokeWidth:2 };
+
+window.debug = true;
+function testLog(...args){ try{ console.log.apply(console,args); const panel=document.getElementById('test-diagnostics'); if(panel){ const line=document.createElement('div'); line.textContent=(new Date()).toLocaleTimeString()+' - '+args.map(a=>typeof a==='object'?JSON.stringify(a):String(a)).join(' '); panel.appendChild(line); while(panel.childNodes.length>200) panel.removeChild(panel.firstChild); panel.scrollTop=panel.scrollHeight; } }catch(e){ try{console.log('[TEST-DIAG-ERR]',e);}catch(e){} }}
+
+function getGraphMode(){ var mqDesktopLandscape=window.matchMedia('(min-width: 1101px) and (orientation: landscape)'); var mqDesktopPortrait=window.matchMedia('(min-height: 1101px) and (orientation: portrait)'); var mqTabletPortrait=window.matchMedia('(min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (orientation: portrait)'); var mqTabletLandscape=window.matchMedia('(min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (orientation: landscape)'); var mqMobilePortrait=window.matchMedia('(max-width: 700px) and (orientation: portrait)'); var mqMobileLandscape=window.matchMedia('(max-height: 700px) and (orientation: landscape)'); var variant=null; if(mqDesktopLandscape.matches) variant='desktop-landscape'; else if(mqDesktopPortrait.matches) variant='desktop-portrait'; else if(mqTabletLandscape.matches) variant='tablet-landscape'; else if(mqTabletPortrait.matches) variant='tablet-portrait'; else if(mqMobileLandscape.matches) variant='mobile-landscape'; else if(mqMobilePortrait.matches) variant='mobile-portrait'; else { var width=window.innerWidth; var isLandscape=window.innerWidth>window.innerHeight; if(width<768) variant=isLandscape?'mobile-landscape':'mobile-portrait'; else if(width<1024||!isLandscape) variant=isLandscape?'tablet-landscape':'tablet-portrait'; else variant=isLandscape?'desktop-landscape':'desktop-portrait'; } if(window.debug) testLog('[RESPONSIVE] getGraphMode ->',variant); return variant; }
+
+const template = { chemistry:`<div class="ui-field-contain axis-selector"><label class="smallLabel">Courbes:</label><select class="axis-selector-dropdown" multiple data-native-menu="false" data-mini="true" style="width:80%"><option value="PHVal" selected>PHVal</option><option value="RedoxVal" selected>RedoxVal</option></select></div><div class="graph-legend" data-legend="chemistry"></div><div class="graph-canvas" data-canvas="chemistry"></div>`, temperature:`<div class="ui-field-contain axis-selector"><label class="smallLabel">Courbes:</label><select class="axis-selector-dropdown" multiple data-native-menu="false" data-mini="true" style="width:80%"><option value="TempEau" selected>TempEau</option><option value="TempAir" selected>TempAir</option></select></div><div class="graph-legend" data-legend="temperature"></div><div class="graph-canvas" data-canvas="temperature"></div>`, equipment:`<div class="ui-field-contain axis-selector"><label class="smallLabel">Courbes:</label><select class="axis-selector-dropdown" multiple data-native-menu="false" data-mini="true" style="width:80%"><option value="PP" selected>PP</option><option value="PAC" selected>PAC</option></select></div><div class="graph-legend" data-legend="equipment"></div><div class="graph-canvas" data-canvas="equipment"></div>` };
+
+function populateGraphZone(zoneId, graphType){ const $zone=$('#graph-zone-'+zoneId); const $content=$zone.find('.graph-content'); const tpl=template[graphType]||template.chemistry; testLog('[TEST-DIAG] populateGraphZone',zoneId,graphType); $content.empty().html(tpl); try{$content.find('.axis-selector-dropdown').hide();$content.find('.axis-selector').removeClass('open');}catch(e){} try{$content.enhanceWithin();}catch(e){} $zone.attr('data-graph-type',graphType); const titles={'chemistry':'Chimie de l\'eau','temperature':'Températures','equipment':'Équipements'}; $zone.find('.graph-zone-title').text(titles[graphType]||graphType); testLog('[TEST-DIAG] injected html for zone',zoneId,'hasAxis?',$content.find('.axis-selector').length); }
+
+function initCharts(){ for(let i=1;i<=3;i++){ const $sel=$('#graph-zone-'+i+' .zone-graph-selector'); const graphType=($sel.length?$sel.val():$('#graph-zone-'+i).attr('data-graph-type'))||'chemistry'; populateGraphZone(i,graphType); const $canvas=$('#graph-zone-'+i).find('.graph-canvas'); if($canvas.length) $canvas.attr('id','graph-canvas-'+i).css({position:'relative',width:'100%',height:'100%'}); } applyChartHeights(); setTimeout(()=>{ createOrUpdateGraphs(); enableHandlePointerFixes(); setTimeout(()=>{ applyChartHeights(); },120); setTimeout(()=>{ applyChartHeights(); },300); },30); }
+
+Create successful. Would you like me to open this new file in your browser (I can give the command), or proceed to replace the original `test/test dygraph 2.html` fully (I can overwrite it now that we have a clean copy)?

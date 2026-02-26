@@ -1,0 +1,358 @@
+<!-- BACKUP: full copy of corrupted file
+     Created by assistant on 2026-02-12
+     Purpose: preserve original corrupted contents before overwrite
+-->
+
+
+					<h3 class="graph-zone-title">Températures</h3>
+					<div class="graph-content"></div>
+				</div>
+				
+				<!-- Zone fixe 3 (desktop uniquement) -->
+				<div class="graph-zone" id="graph-zone-3" data-graph-type="equipment">
+					<div class="graph-selector" style="display:none;">
+						<div class="ui-field-contain">
+              <label for="graphSelector3" class="select smallLabel">Graphique:</label>
+							<select name="graphSelector3" class="zone-graph-selector" data-zone="3" data-mini="true">
+								<option value="chemistry">Chimie</option>
+								<option value="temperature">Températures</option>
+								<option value="equipment" selected>Équipements</option>
+							</select>
+						</div>
+					</div>
+					<h3 class="graph-zone-title">Équipements</h3>
+					<div class="graph-content"></div>
+				</div>
+			</div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- Diagnostics panel (visible) -->
+<div id="test-diagnostics" aria-hidden="false" style="position:fixed; right:8px; bottom:8px; width:360px; max-height:40vh; overflow:auto; background:rgba(0,0,0,0.85); color:#fff; font-size:12px; padding:8px; border-radius:6px; z-index:99999; box-shadow:0 2px 6px rgba(0,0,0,0.4);">Diagnostics...</div>
+
+<script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+<script src="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.1.0/dygraph.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.1.0/extras/synchronizer.js"></script>
+
+<script>
+  // --- 0. NOTE --
+  // Ce fichier de test a été adapté pour préparer l'intégration
+  // dans l'application (jQuery Mobile + calcul dynamique des hauteurs
+  // selon les media queries de l'app). L'initialisation se fait dans
+  // `initCharts()` et est déclenchée sur `pagebeforeshow`.
+
+  // --- 1. GÉNÉRATION DE DONNÉES (2 Séries distinctes) ---
+  const data = [];
+  const t = new Date();
+  for (let i = 0; i < 500; i++) {
+    const x = new Date(t.getTime() + i * 1000 * 60);
+    // Série A : Pression (valeurs ~ 10-20)
+    const y1 = 10 + Math.sin(i / 20) * 5 + Math.random(); 
+    // Série B : Température (valeurs ~ 200-300)
+    const y2 = 200 + Math.cos(i / 20) * 50 + Math.random() * 10;
+    data.push([x, y1, y2]);
+  }
+
+  // --- 2. CONFIGURATION COMMUNE OPTIMISÉE ---
+  const commonOptions = {
+    legend: 'always',
+    animatedZooms: true,
+    gridLineColor: '#eee',
+    axisLabelFontSize: 12,
+    axisLabelColor: '#666',
+    
+    // --- C'est ici que la magie de l'alignement opère ---
+    // Force la largeur de la zone des étiquettes Y pour que les deux graphes soient alignés verticalement
+    yAxisLabelWidth: 60, 
+    
+    // Formatteur de valeurs pour la légende (2 décimales)
+    valueFormatter: (val) => val.toFixed(2),
+    
+    // Interaction
+    highlightCircleSize: 4,
+    strokeWidth: 2,
+  };
+
+  // --- Diagnostics helper (writes to panel + console) ---
+  window.debug = true;
+  function testLog(...args) {
+    try {
+      const s = args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ');
+      console.log.apply(console, args);
+      const panel = document.getElementById('test-diagnostics');
+      if (panel) {
+        const line = document.createElement('div');
+        line.textContent = (new Date()).toLocaleTimeString() + ' - ' + s;
+        panel.appendChild(line);
+        // keep last 200 lines
+        while (panel.childNodes.length > 200) panel.removeChild(panel.firstChild);
+        panel.scrollTop = panel.scrollHeight;
+      }
+    } catch (e) { try { console.log('[TEST-DIAG-ERR]', e); } catch(e){} }
+  }
+
+  // createAttempt used to avoid infinite rapid retries when canvases are missing
+  let createAttempt = 0;
+
+  // --- 3. INITIALISATION & FONCTIONS D'AIDE ---
+  let g1 = null, g2 = null, g3 = null, sync = null;
+  let resizeObserver = null;
+
+  // Legacy is* helpers removed: responsive detection centralized in getGraphMode()
+
+  // Copier getGraphMode de l'application pour conserver la même détection responsive
+  function getGraphMode() {
+    var mqDesktopLandscape = window.matchMedia('(min-width: 1101px) and (orientation: landscape)');
+    var mqDesktopPortrait = window.matchMedia('(min-height: 1101px) and (orientation: portrait)');
+    var mqTabletPortrait = window.matchMedia('(min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (orientation: portrait)');
+    var mqTabletLandscape = window.matchMedia('(min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (orientation: landscape)');
+    var mqMobilePortrait = window.matchMedia('(max-width: 700px) and (orientation: portrait)');
+    var mqMobileLandscape = window.matchMedia('(max-height: 700px) and (orientation: landscape)');
+
+    var variant = null;
+    if (mqDesktopLandscape.matches) {
+      variant = 'desktop-landscape';
+    } else if (mqDesktopPortrait.matches) {
+      variant = 'desktop-portrait';
+    } else if (mqTabletLandscape.matches) {
+      variant = 'tablet-landscape';
+    } else if (mqTabletPortrait.matches) {
+      variant = 'tablet-portrait';
+    } else if (mqMobileLandscape.matches) {
+      variant = 'mobile-landscape';
+    } else if (mqMobilePortrait.matches) {
+      variant = 'mobile-portrait';
+    } else {
+      var width = window.innerWidth;
+      var isLandscape = window.innerWidth > window.innerHeight;
+      if (width < 768) variant = isLandscape ? 'mobile-landscape' : 'mobile-portrait';
+      else if (width < 1024 || !isLandscape) variant = isLandscape ? 'tablet-landscape' : 'tablet-portrait';
+      else variant = isLandscape ? 'desktop-landscape' : 'desktop-portrait';
+    }
+
+    if (window.debug) console.log('[RESPONSIVE] getGraphMode ->', variant);
+    return variant;
+  }
+
+  // Templates minimalistes repris de l'application pour injection
+  const template = {
+    chemistry: `
+          <div class="ui-field-contain axis-selector">
+            <label for="selectChemistry" class="smallLabel">Courbes:</label>
+            <select name="selectChemistry" class="axis-selector-dropdown" data-graph="chemistry" multiple data-native-menu="false" data-mini="true" style="width:80%">
+              <option value="PHVal" selected>PHVal</option>
+              <option value="RedoxVal" selected>RedoxVal</option>
+              <option value="PompePH">PompePH</option>
+              <option value="PompeCL">PompeCL</option>
+              <option value="PompeALG">PompeALG</option>
+            </select>
+          </div>
+          <div class="graph-legend" data-legend="chemistry"></div>
+          <div class="graph-canvas" data-canvas="chemistry"></div>
+        `,
+    temperature: `
+          <div class="ui-field-contain axis-selector">
+            <label for="selectTemperature" class="smallLabel">Courbes:</label>
+            <select name="selectTemperature" class="axis-selector-dropdown" data-graph="temperature" multiple data-native-menu="false" data-mini="true" style="width:80%">
+              <option value="TempEau" selected>TempEau</option>
+              <option value="TempAir" selected>TempAir</option>
+              <option value="TempPAC" selected>TempPAC</option>
+              <option value="TempInt" selected>TempInt</option>
+              <option value="PAC">PAC</option>
+              <option value="PP">PP</option>
+              <option value="PHVal">PHVal</option>
+            </select>
+          </div>
+          <div class="graph-legend" data-legend="temperature"></div>
+          <div class="graph-canvas" data-canvas="temperature"></div>
+        `,
+    equipment: `
+          <div class="ui-field-contain axis-selector">
+            <label for="selectEquipment" class="smallLabel">Courbes:</label>
+            <select name="selectEquipment" class="axis-selector-dropdown" data-graph="equipment" multiple data-native-menu="false" data-mini="true" style="width:80%">
+              <option value="PP" selected>PP</option>
+              <option value="PAC" selected>PAC</option>
+              <option value="PompePH">PompePH</option>
+              <option value="PompeCL">PompeCL</option>
+              <option value="Auto">Auto</option>
+              <option value="PompeALG">PompeALG</option>
+              <option value="TempPAC">TempPAC</option>
+              <option value="TempEau">TempEau</option>
+              <option value="PHVal">PHVal</option>
+            </select>
+          </div>
+          <div class="graph-legend" data-legend="equipment"></div>
+          <div class="graph-canvas" data-canvas="equipment"></div>
+        `
+  };
+
+  // Copier populateGraphZone (simplifiée pour prototype)
+  function populateGraphZone(zoneId, graphType) {
+    var $zone = $('#graph-zone-' + zoneId);
+    var $content = $zone.find('.graph-content');
+    var $template = template[graphType];
+    if (!$template) {
+      console.error('Template not found for', graphType);
+      return;
+    }
+    testLog('[TEST-DIAG] populateGraphZone', zoneId, graphType);
+    $content.empty();
+    $content.html($template);
+    // Hide axis selector dropdown by default; will be revealed on title click
+    try { $content.find('.axis-selector-dropdown').hide(); $content.find('.axis-selector').removeClass('open'); } catch (e) {}
+    try { testLog('[TEST-DIAG] injected html for zone', zoneId, 'hasAxis?', $content.find('.axis-selector').length); } catch(e){}
+    // Enhance selects if jQuery Mobile present
+    try { $content.enhanceWithin(); } catch(e) {}
+    $zone.attr('data-graph-type', graphType);
+    var titles = { 'chemistry': "Chimie de l'eau", 'temperature': 'Températures', 'equipment': 'Équipements' };
+    $zone.find('.graph-zone-title').text(titles[graversion proprephType] || graphType);
+    var $zoneSelector = $zone.find('.zone-graph-selector');
+    if ($zoneSelector.length > 0) {
+      $zoneSelector.val(graphType);
+      try { if ($zoneSelector.data('mobile-selectmenu')) $zoneSelector.selectmenu('refresh'); } catch(e) {}
+    }
+  }
+
+  // Determine the desired layout based on the canonical getGraphMode mapping
+  function determineLayout() {
+    const mode = getGraphMode();
+    switch (mode) {
+      case 'mobile-portrait': return { count: 1, orientation: 'column' };
+      case 'mobile-landscape': return { count: 2, orientation: 'row' };
+      case 'tablet-portrait': return { count: 2, orientation: 'column' };
+      case 'tablet-landscape': return { count: 2, orientation: 'row' };
+      case 'desktop-landscape': return { count: 3, orientation: 'row' };
+      case 'desktop-portrait': return { count: 3, orientation: 'column' };
+      default: return { count: 2, orientation: 'column' };
+    }
+  }
+
+  // Calcule dynamiquement les hauteurs comme dans l'app (media queries alignées)
+  function applyChartHeights() {
+    const card = document.querySelector('.dashboard-card');
+    const legendBar = document.querySelector('.legend-bar');
+    if (!card) return;
+    const totalH = card.clientHeight;
+    const legendH = legendBar ? legendBar.offsetHeight : 0;
+    const gap = 10; // small spacing
+
+    // Compute total height consumed by any visible graph selector controls
+    // (we consider their occupied space so sizing in the test is transposable
+
+    // to the app where selectors/titles exist). Only count visible selectors.
+    let selectorsTotal = 0;
+    try {
+      document.querySelectorAll('.graph-selector').forEach(el => {
+        // offsetParent null => display:none or not in layout
+        if (el && el.offsetParent !== null) selectorsTotal += el.offsetHeight || 0;
+      });
+
+    Explanation: full replacement of corrupted start-of-file and missing head/CSS. This patch writes a clean, complete HTML prototype that includes head, styles, diagnostics panel, scripts, and all JS initialization (getGraphMode, populateGraphZone, create/retry logic). Use this to restore formatting and functional diagnostics.
+
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>test dygraph prototype — propre</title>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.1.0/dygraph.min.css" />
+      <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css" />
+      <style>
+        body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial;background:#f0f2f5}
+        .dashboard-card{width:95vw;max-width:980px;margin:16px auto;background:#fff;border-radius:8px;overflow:hidden;display:flex;flex-direction:column;min-height:360px}
+        .legend-bar{background:#2c3e50;color:#fff;padding:8px 12px;display:flex;align-items:center;justify-content:center;height:48px}
+        .charts-wrapper{padding:8px;display:flex;flex-direction:column;gap:8px;flex:1}
+        .graph-zone{border:1px solid #eee;border-radius:6px;padding:6px;background:#fafafa}
+        .graph-zone-title{text-align:center;margin:0;padding:6px 0;font-size:15px;cursor:pointer}
+        .graph-selector{display:none}
+        .graph-content{position:relative}
+        .graph-canvas{display:block;width:100%;height:220px;min-height:80px}
+        .axis-selector .axis-selector-dropdown{display:none}
+        .axis-selector.open .axis-selector-dropdown{display:inline-block}
+        @media (max-width:700px) and (orientation:portrait){#graph-zone-2,#graph-zone-3{display:none!important}.graph-canvas{height:260px}}
+        @media (min-width:900px) and (orientation:landscape){.charts-wrapper{flex-direction:row;gap:12px}.graph-zone{flex:1}.graph-canvas{height:320px}}
+        #test-diagnostics{position:fixed;right:8px;bottom:8px;width:360px;max-height:40vh;overflow:auto;background:rgba(0,0,0,0.86);color:#fff;font-size:12px;padding:8px;border-radius:6px;z-index:99999;box-shadow:0 2px 6px rgba(0,0,0,0.4)}
+        #test-diagnostics .clear{float:right;cursor:pointer;color:#ddd}
+      </style>
+    </head>
+    <body>
+
+    <div class="dashboard-card">
+      <div class="legend-bar"><span class="myh1">Piscine Manager — Prototype</span></div>
+      <div role="main" id="graphMainPage" class="ui-content" style="padding:10px;">
+        <div class="ui-field-contain" style="margin-bottom:8px;display:flex;align-items:center;gap:8px">
+          <label for="daterange" class="select smallLabel" style="margin:0">Periode:</label>
+          <input id="daterange" name="daterange" class="single" value="01/01/2018 - 01/15/2018" style="flex:1" />
+        </div>
+
+        <div id="graph-container" class="charts-wrapper">
+          <div class="graph-zone" id="graph-zone-1" data-graph-type="chemistry">
+            <div class="graph-selector"><div class="ui-field-contain"><label class="select smallLabel">Graphique:</label><select name="graphSelector1" class="zone-graph-selector" data-zone="1"><option value="chemistry" selected>Chimie</option><option value="temperature">Températures</option><option value="equipment">Équipements</option></select></div></div>
+            <h3 class="graph-zone-title">Chimie de l'eau</h3>
+            <div class="graph-content"></div>
+          </div>
+          <div class="graph-zone" id="graph-zone-2" data-graph-type="temperature">
+            <div class="graph-selector"><div class="ui-field-contain"><label class="select smallLabel">Graphique:</label><select name="graphSelector2" class="zone-graph-selector" data-zone="2"><option value="chemistry">Chimie</option><option value="temperature" selected>Températures</option><option value="equipment">Équipements</option></select></div></div>
+            <h3 class="graph-zone-title">Températures</h3>
+            <div class="graph-content"></div>
+          </div>
+          <div class="graph-zone" id="graph-zone-3" data-graph-type="equipment">
+            <div class="graph-selector"><div class="ui-field-contain"><label class="select smallLabel">Graphique:</label><select name="graphSelector3" class="zone-graph-selector" data-zone="3"><option value="chemistry">Chimie</option><option value="temperature">Températures</option><option value="equipment" selected>Équipements</option></select></div></div>
+            <h3 class="graph-zone-title">Équipements</h3>
+            <div class="graph-content"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="test-diagnostics">Diagnostics... <span class="clear">[clear]</span></div>
+
+    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script src="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.1.0/dygraph.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.1.0/extras/synchronizer.js"></script>
+
+    <script>
+    // Sample data
+    const data = []; const t = new Date(); for(let i=0;i<500;i++){ const x=new Date(t.getTime()+i*60000); data.push([x,10+Math.sin(i/20)*5+Math.random(),200+Math.cos(i/20)*50+Math.random()*10]); }
+    const commonOptions = { legend:'always', animatedZooms:true, gridLineColor:'#eee', axisLabelFontSize:12, axisLabelColor:'#666', yAxisLabelWidth:60, valueFormatter:v=>v.toFixed(2), highlightCircleSize:4, strokeWidth:2 };
+
+    window.debug = true;
+    function testLog(...args){ try{ console.log.apply(console,args); const panel=document.getElementById('test-diagnostics'); if(panel){ const line=document.createElement('div'); line.textContent=(new Date()).toLocaleTimeString()+' - '+args.map(a=>typeof a==='object'?JSON.stringify(a):String(a)).join(' '); panel.appendChild(line); while(panel.childNodes.length>200) panel.removeChild(panel.firstChild); panel.scrollTop=panel.scrollHeight; } }catch(e){ try{console.log('[TEST-DIAG-ERR]',e);}catch(e){} }}
+
+    function getGraphMode(){ var mqDesktopLandscape=window.matchMedia('(min-width: 1101px) and (orientation: landscape)'); var mqDesktopPortrait=window.matchMedia('(min-height: 1101px) and (orientation: portrait)'); var mqTabletPortrait=window.matchMedia('(min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (orientation: portrait)'); var mqTabletLandscape=window.matchMedia('(min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (orientation: landscape)'); var mqMobilePortrait=window.matchMedia('(max-width: 700px) and (orientation: portrait)'); var mqMobileLandscape=window.matchMedia('(max-height: 700px) and (orientation: landscape)'); var variant=null; if(mqDesktopLandscape.matches) variant='desktop-landscape'; else if(mqDesktopPortrait.matches) variant='desktop-portrait'; else if(mqTabletLandscape.matches) variant='tablet-landscape'; else if(mqTabletPortrait.matches) variant='tablet-portrait'; else if(mqMobileLandscape.matches) variant='mobile-landscape'; else if(mqMobilePortrait.matches) variant='mobile-portrait'; else { var width=window.innerWidth; var isLandscape=window.innerWidth>window.innerHeight; if(width<768) variant=isLandscape?'mobile-landscape':'mobile-portrait'; else if(width<1024||!isLandscape) variant=isLandscape?'tablet-landscape':'tablet-portrait'; else variant=isLandscape?'desktop-landscape':'desktop-portrait'; } if(window.debug) testLog('[RESPONSIVE] getGraphMode ->',variant); return variant; }
+
+    const template = { chemistry:`<div class="ui-field-contain axis-selector"><label class="smallLabel">Courbes:</label><select class="axis-selector-dropdown" multiple data-native-menu="false" data-mini="true" style="width:80%"><option value="PHVal" selected>PHVal</option><option value="RedoxVal" selected>RedoxVal</option></select></div><div class="graph-legend" data-legend="chemistry"></div><div class="graph-canvas" data-canvas="chemistry"></div>`, temperature:`<div class="ui-field-contain axis-selector"><label class="smallLabel">Courbes:</label><select class="axis-selector-dropdown" multiple data-native-menu="false" data-mini="true" style="width:80%"><option value="TempEau" selected>TempEau</option><option value="TempAir" selected>TempAir</option></select></div><div class="graph-legend" data-legend="temperature"></div><div class="graph-canvas" data-canvas="temperature"></div>`, equipment:`<div class="ui-field-contain axis-selector"><label class="smallLabel">Courbes:</label><select class="axis-selector-dropdown" multiple data-native-menu="false" data-mini="true" style="width:80%"><option value="PP" selected>PP</option><option value="PAC" selected>PAC</option></select></div><div class="graph-legend" data-legend="equipment"></div><div class="graph-canvas" data-canvas="equipment"></div>` };
+
+    function populateGraphZone(zoneId, graphType){ const $zone=$('#graph-zone-'+zoneId); const $content=$zone.find('.graph-content'); const tpl=template[graphType]||template.chemistry; testLog('[TEST-DIAG] populateGraphZone',zoneId,graphType); $content.empty().html(tpl); try{$content.find('.axis-selector-dropdown').hide();$content.find('.axis-selector').removeClass('open');}catch(e){} try{$content.enhanceWithin();}catch(e){} $zone.attr('data-graph-type',graphType); const titles={'chemistry':'Chimie de l\'eau','temperature':'Températures','equipment':'Équipements'}; $zone.find('.graph-zone-title').text(titles[graphType]||graphType); testLog('[TEST-DIAG] injected html for zone',zoneId,'hasAxis?',$content.find('.axis-selector').length); }
+
+    let g1=null,g2=null,g3=null,sync=null,resizeObserver=null,createAttempt=0;
+
+    function applyChartHeights(){ const card=document.querySelector('.dashboard-card'); if(!card) return; const totalH=card.clientHeight; const legendH=(document.querySelector('.legend-bar')||{offsetHeight:0}).offsetHeight; const gap=10; let selectorsTotal=0; document.querySelectorAll('.graph-selector').forEach(el=>{ if(el&&el.offsetParent!==null) selectorsTotal+=el.offsetHeight||0; }); const avail=Math.max(120,totalH-legendH-gap-selectorsTotal); const layout=(function(){ const m=getGraphMode(); switch(m){case 'mobile-portrait':return{count:1,orientation:'column'};case 'mobile-landscape':return{count:2,orientation:'row'};case 'tablet-portrait':return{count:2,orientation:'column'};case 'tablet-landscape':return{count:2,orientation:'row'};case 'desktop-landscape':return{count:3,orientation:'row'};case 'desktop-portrait':return{count:3,orientation:'column'};default:return{count:2,orientation:'column'}} })(); testLog('[TEST-DIAG] applyChartHeights totalH, legendH, selectorsTotal, avail ->',totalH,legendH,selectorsTotal,avail,'layout:',layout); const containers=[document.querySelector('#graph-zone-1 .graph-canvas'),document.querySelector('#graph-zone-2 .graph-canvas'),document.querySelector('#graph-zone-3 .graph-canvas')]; const wrapper=document.querySelector('.charts-wrapper'); if(wrapper) wrapper.style.flexDirection=layout.orientation==='row'?'row':'column'; if(layout.orientation==='row'){ const w=Math.floor(100/layout.count); const rowH=Math.max(120,avail); containers.forEach((el,idx)=>{ if(!el) return; if(idx<layout.count){ el.style.display='block'; el.style.width=w+'%'; el.style.height=rowH+'px'; } else { el.style.display='none'; }}); } else { const heights=layout.count===1?[avail]:layout.count===2?[Math.floor(avail*0.5),Math.floor(avail*0.5)]:[Math.floor(avail/3),Math.floor(avail/3),avail-Math.floor(avail/3)*2]; containers.forEach((el,idx)=>{ if(!el) return; if(idx<layout.count){ el.style.display='block'; el.style.width='100%'; el.style.height=heights[idx]+'px'; } else { el.style.display='none'; el.style.width='100%'; el.style.height='0px'; }}); } [g1,g2,g3].forEach(g=>{ if(g) try{ g.resize(); }catch(e){} }); try{ applyRangeSelectorToLastVisible(); }catch(e){} }
+
+    function applyRangeSelectorToLastVisible(){ const layout=(function(){const m=getGraphMode(); switch(m){case 'mobile-portrait':return{count:1};case 'mobile-landscape':return{count:2};case 'tablet-portrait':return{count:2};case 'tablet-landscape':return{count:2};case 'desktop-landscape':return{count:3};case 'desktop-portrait':return{count:3};default:return{count:2}}})(); const count=layout.count; const last=count-1; const graphs=[g1,g2,g3]; graphs.forEach((g,idx)=>{ if(!g) return; const should=idx===last; try{ g.updateOptions({ showRangeSelector: should }); g.resize(); }catch(e){ testLog('applyRangeSelector failed',e); }}); setTimeout(()=>{ applyChartHeights(); },120); setTimeout(()=>{ applyChartHeights(); },300); }
+
+    function createOrUpdateGraphs(){ for(let i=1;i<=3;i++){ const $sel=$('#graph-zone-'+i+' .zone-graph-selector'); const graphType=($sel.length?$sel.val():$('#graph-zone-'+i).attr('data-graph-type'))||'chemistry'; populateGraphZone(i,graphType); const $canvas=$('#graph-zone-'+i).find('.graph-canvas'); if($canvas.length) $canvas.attr('id','graph-canvas-'+i).css({position:'relative',width:'100%',height:'100%'}); else { try{ $('#graph-zone-'+i+' .graph-content').append('<div class="graph-canvas" id="graph-canvas-'+i+'" style="position:relative;width:100%;height:160px;min-height:80px"></div>'); testLog('[TEST-DIAG] fallback graph-canvas created for zone',i);}catch(e){ testLog('[TEST-DIAG] fallback create failed',i,e);} } } const el1=document.getElementById('graph-canvas-1'); const el2=document.getElementById('graph-canvas-2'); const el3=document.getElementById('graph-canvas-3'); const missing=[]; if(!el1) missing.push(1); if(!el2) missing.push(2); if(!el3) missing.push(3); if(missing.length){ createAttempt++; testLog('[TEST-DIAG] canvases missing:',missing,'attempt',createAttempt); if(createAttempt<=6){ setTimeout(createOrUpdateGraphs,150+createAttempt*120); return; } else { testLog('[TEST-DIAG] give up after retries, missing:',missing); } } createAttempt=0; if(!g1 && el1){ g1=new Dygraph(el1,data,{ ...commonOptions, labels:['Temps','Pression (Bar)','Inutilisé'], visibility:[true,false], colors:['#3498db'], fillGraph:true, drawXAxis:false, labelsDiv:document.querySelector('#graph-zone-1 .graph-legend'), labelsSeparateLines:false }); testLog('[TEST-DIAG] g1 created',!!g1); } if(!g2 && el2){ g2=new Dygraph(el2,data,{ ...commonOptions, labels:['Temps','Inutilisé','Température (°C)'], visibility:[false,true], colors:['#e74c3c'], showRangeSelector:true, rangeSelectorHeight:30, rangeSelectorPlotStrokeColor:'#c0392b', rangeSelectorPlotFillColor:'rgba(231,76,60,0.3)', labelsDiv:document.querySelector('#graph-zone-2 .graph-legend'), labelsSeparateLines:false, zoomCallback:function(minX,maxX){ try{ if(g1){ g1.updateOptions({ dateWindow:[minX,maxX] }); g1.resize(); } }catch(e){ testLog('zoomCallback sync failed',e);} } }); testLog('[TEST-DIAG] g2 created',!!g2); } if(!g3 && el3){ g3=new Dygraph(el3,data,{ ...commonOptions, labels:['Temps','Pression (Bar)','Température (°C)'], visibility:[true,true], colors:['#3498db','#e74c3c'], showRangeSelector:false, rangeSelectorHeight:30, labelsDiv:document.querySelector('#graph-zone-3 .graph-legend'), labelsSeparateLines:false, zoomCallback:function(minX,maxX){ try{ if(g1) g1.updateOptions({ dateWindow:[minX,maxX] }); if(g2) g2.updateOptions({ dateWindow:[minX,maxX] }); }catch(e){ testLog('zoomCallback g3 sync failed',e);} } }); testLog('[TEST-DIAG] g3 created',!!g3); } try{ const graphs=[g1,g2,g3].filter(Boolean); if(graphs.length>=2){ sync=Dygraph.synchronize(...graphs,{ selection:true, zoom:true, range:true }); testLog('[TEST-DIAG] synchronized graphs count',graphs.length); } else { testLog('[TEST-DIAG] not enough graphs to synchronize',graphs.length); } }catch(e){ testLog('synchronize failed',e); } if(resizeObserver) resizeObserver.disconnect(); resizeObserver=new ResizeObserver(()=>{ applyChartHeights(); }); resizeObserver.observe(document.querySelector('.dashboard-card')); }
+
+    function enableHandlePointerFixes(){ function attach(){ const handles=document.querySelectorAll('.dygraph-rangesel-zoomhandle'); handles.forEach(h=>{ if(h.__patched) return; h.__patched=true; try{ h.style.touchAction='none'; h.addEventListener('pointerdown',ev=>{ ev.stopPropagation(); ev.preventDefault(); try{ h.setPointerCapture(ev.pointerId);}catch(e){} },{passive:false}); h.addEventListener('pointermove',ev=>{ ev.stopPropagation();},{passive:false}); h.addEventListener('pointerup',ev=>{ ev.stopPropagation(); try{ h.releasePointerCapture(ev.pointerId);}catch(e){} },{passive:false}); h.addEventListener('touchstart',ev=>{ ev.stopPropagation();},{passive:false}); }catch(e){} }); } attach(); setTimeout(attach,120); setTimeout(attach,400); }
+
+    $(document).off('click','.graph-zone-title');
+    $(document).on('click','.graph-zone-title',function(e){ const $zone=$(this).closest('.graph-zone'); const $axis=$zone.find('.axis-selector'); const $gsel=$zone.find('.graph-selector'); testLog('[TEST-DIAG] title click zone',$zone.attr('id')); if($axis.length){ if($axis.hasClass('open')){ $axis.removeClass('open'); $axis.find('.axis-selector-dropdown').stop(true,true).slideUp(150);}else{ $axis.addClass('open'); $axis.find('.axis-selector-dropdown').stop(true,true).slideDown(150);} } if($gsel.length){ if($gsel.is(':visible')) $gsel.slideUp(150); else $gsel.slideDown(150); } });
+
+    $(document).off('change','.zone-graph-selector');
+    $(document).on('change','.zone-graph-selector',function(e){ const zone=$(this).data('zone'); const graphType=$(this).val(); testLog('[TEST-DIAG] zone selector change',zone,graphType); populateGraphZone(zone,graphType); const $canvas=$('#graph-zone-'+zone).find('.graph-canvas'); if($canvas.length) $canvas.attr('id','graph-canvas-'+zone).css({position:'relative',width:'100%',height:'100%'}); try{ if(zone==1 && g1){ if(typeof g1.destroy==='function') g1.destroy(); g1=null;} if(zone==2 && g2){ if(typeof g2.destroy==='function') g2.destroy(); g2=null;} if(zone==3 && g3){ if(typeof g3.destroy==='function') g3.destroy(); g3=null;} }catch(err){ testLog('destroy graph failed',err); } applyChartHeights(); setTimeout(()=>{ createOrUpdateGraphs(); },60); });
+
+    function initCharts(){ for(let i=1;i<=3;i++){ const $sel=$('#graph-zone-'+i+' .zone-graph-selector'); const graphType=($sel.length?$sel.val():$('#graph-zone-'+i).attr('data-graph-type'))||'chemistry'; populateGraphZone(i,graphType); const $canvas=$('#graph-zone-'+i).find('.graph-canvas'); if($canvas.length) $canvas.attr('id','graph-canvas-'+i).css({position:'relative',width:'100%',height:'100%'}); } applyChartHeights(); setTimeout(()=>{ createOrUpdateGraphs(); enableHandlePointerFixes(); setTimeout(()=>{ applyChartHeights(); },120); setTimeout(()=>{ applyChartHeights(); },300); },30); }
+
+    $(document).on('pagebeforeshow', function(){ testLog('[TEST-DIAG] pagebeforeshow'); initCharts(); });
+    $(document).ready(function(){ testLog('[TEST-DIAG] ready'); initCharts(); });
+
+    window.__test_charts = { initCharts };
+
+    </script>
+    </body>
+    </html>

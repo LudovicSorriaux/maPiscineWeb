@@ -1,0 +1,1588 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>Dashboard Dygraph - Master Navigator</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.2.1/dygraph.min.css" />
+    <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css" />
+    
+	<script src="https://code.jquery.com/jquery-1.11.1.min.js"></script>
+    <script src="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.2.1/dygraph.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.2.1/extras/synchronizer.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+    /* BASE & THEME DARK */
+        html, body { height: 100%; margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
+        .ui-page { background: #000; }
+		
+		/* Style pour le spinner JQM pour qu'il soit bien visible sur fond noir */
+		.ui-loader-verbose {
+		    background: rgba(0, 0, 0, 0.8) !important;
+		    border: 1px solid #00FBFF !important;
+		    color: #00FBFF !important;
+		}
+
+    /* ZONE DES GRAPHIQUES DE DONNÉES */
+		.dashboard-card {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            box-sizing: border-box;
+            padding: 5px;
+        }
+
+        .charts-wrapper {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            gap: 5px;
+        }
+
+    /* ZONE DU NAVIGATEUR FIXE EN BAS */
+        .nav-wrapper {
+            flex: 0 0 55px; /* Hauteur pour le slider */
+			height: 55px;
+			/* On réduit la largeur et on centre avec auto */
+		    width: calc(100% - 40px) !important;		/* width: 100%; */ 
+		    margin: 5px auto 10px auto !important;		/* margin-top: 5px; */
+            background: #111;
+            border-radius: 4px;
+            border: 1px solid #333;
+        }
+
+        .graph-zone {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+            background: #111;
+            border-radius: 4px;
+            border: 1px solid #222;
+        }
+
+		.graph-header-mini {
+		    display: flex;
+		    flex-direction: column; /* Empile le sélecteur et les valeurs */
+		    padding: 5px 10px;
+		    background: #151515;
+		    border-bottom: 1px solid #222;
+		}
+		
+		/* --- ALIGNEMENT DU HEADER --- */
+		.header-top-row {
+		    display: flex !important;
+		    align-items: center !important;
+		    justify-content: flex-start; 
+		    width: 100% !important;
+		    gap: 8px;
+		}
+		
+		/* On pousse l'export à l'extrémité droite */
+		.export-container {
+		    margin-left: auto !important; 
+		    display: block !important;
+		}
+		
+		.export-container .ui-select {
+		    display: block !important; 
+			}
+
+	
+		/* --- BOUTONS DU HEADER (LOOK RELIEF COMMUN) --- */
+		.header-top-row .ui-select .ui-btn {
+		    background-color: #1a1a1a !important;
+		    color: #FFF !important;
+		    border-radius: 6px !important;
+		    font-weight: bold !important;
+		    text-transform: uppercase;
+		    font-size: 11px !important;
+		    text-shadow: none !important;
+		    
+		    /* Effet Relief : Lumière en haut, ombre en bas */
+		    border-top: 1px solid #444 !important;
+		    border-left: 1px solid #333 !important;
+		    border-right: 1px solid #222 !important;
+		    border-bottom: 1px solid #111 !important;
+		    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 5px rgba(0,0,0,0.8) !important;
+		    
+		    padding-top: 8px !important;
+		    padding-bottom: 8px !important;
+		    transition: border-color 0.2s, background-color 0.2s;
+		}
+		
+		/* Hover Global sur les boutons */
+		.header-top-row .ui-select .ui-btn:hover {
+		    border-color: #00FBFF !important;
+		    background-color: #222 !important;
+		}
+		
+		/* --- SPÉCIFICITÉS PAR TYPE DE BOUTON --- */
+		
+		/* Titre (Icone à droite) */
+		[id^="graphSelector"]-button {
+		    padding-right: 35px !important;
+		    padding-left: 12px !important;
+		}
+		
+		/* Axes (Icone à gauche) */
+		[id^="axesSelector"]-button {
+		    padding-left: 35px !important;
+		    padding-right: 12px !important;
+		}
+
+		/* --- BOUTON EXPORT : CARRÉ ABSOLU (Version Fusionnée) --- */
+		/* 1. Conteneur Parent */
+		.export-container .ui-select {
+		    width: 32px !important; 
+		    height: 32px !important;
+		    padding: 0 !important;
+		    margin: 0 !important;
+		    flex-shrink: 0 !important;
+		}
+		
+		/* 2. Le Bouton (Balise <a> générée) */
+		.export-container .ui-select a.ui-btn {
+		    width: 32px !important;
+		    height: 32px !important;
+		    min-width: 32px !important;
+		    max-width: 32px !important;
+		    padding: 0 !important;
+		    margin: 0 !important;
+		    
+		    display: flex !important;
+		    align-items: center !important;
+		    justify-content: center !important;
+		    
+		    aspect-ratio: 1 / 1 !important;
+		    overflow: hidden !important;
+		    text-indent: -9999px !important; /* Cache le texte proprement */
+		}
+		
+		/* 3. L'Icône (Centrage parfait) */
+		.export-container .ui-select a.ui-btn::after {
+		    position: absolute !important;
+		    left: 50% !important;
+		    top: 50% !important;
+		    margin-left: -11px !important; /* Moitié de 22px */
+		    margin-top: -11px !important;
+		    right: auto !important;
+		}
+		
+		/* 4. On s'assure que le span interne est invisible */
+		.export-container .ui-select a.ui-btn span {
+		    display: none !important;
+		}
+		
+		/* Masquer les badges de comptage JQM sur les axes */
+		.axes-container .ui-li-count { display: none !important; }
+		
+		/* --- POPUPS UNIFIÉS (LOOK MÉTALLIQUE SOMBRE) --- */
+		/* Le cadre du menu */
+		[id^="graphSelector"][id$="-listbox-popup"],
+		[id^="axesSelector"][id$="-listbox-popup"],
+		[id^="exportAction"][id$="-listbox-popup"] {
+		    background-color: #1a1a1a !important;
+		    border-radius: 8px !important;
+		    border-top: 1px solid #444 !important;
+		    border-left: 1px solid #333 !important;
+		    border-right: 1px solid #222 !important;
+		    border-bottom: 1px solid #111 !important;
+		    box-shadow: 0 10px 30px rgba(0,0,0,0.9) !important;
+		    overflow: hidden !important;
+		}
+		
+		/* La liste à l'intérieur */
+		[id^="graphSelector"][id$="-listbox"],
+		[id^="axesSelector"][id$="-listbox"],
+		[id^="exportAction"][id$="-listbox"] {
+		    background: #1a1a1a !important;
+		    margin: 0 !important;
+		    padding: 0 !important;
+		    border: none !important;
+		}
+		
+		/* Les options (liens) */
+		[id^="graphSelector"][id$="-listbox"] li a,
+		[id^="axesSelector"][id$="-listbox"] li a,
+		[id^="exportAction"][id$="-listbox"] li a {
+		    background: #1a1a1a !important;
+		    color: #bbb !important;
+		    text-shadow: none !important;
+		    font-size: 11px !important;
+		    padding: 12px 20px !important;
+		    border: none !important;
+		    border-bottom: 1px solid #222 !important;
+		    -webkit-font-smoothing: antialiased;
+		}
+		
+		/* Survol des options */
+		[id^="graphSelector"][id$="-listbox"] li a:hover,
+		[id^="axesSelector"][id$="-listbox"] li a:hover,
+		[id^="exportAction"][id$="-listbox"] li a:hover {
+		    background-color: #222 !important;
+		    color: #00FBFF !important;
+		}
+		
+		/* Header & Titre des popups */
+		[id$="-listbox-popup"] .ui-header {
+		    background: #1a1a1a !important;
+		    border-bottom: 1px solid #333 !important;
+		}
+		[id$="-listbox-popup"] .ui-title {
+		    font-size: 11px !important;
+		    color: #eee !important;
+		    text-transform: uppercase;
+		}
+		
+		/* --- BOUTON FERMER DU POPUP (AXES) --- */
+		
+		/* Positionner le bouton à droite dans le header du popup */
+		[id$="-listbox-popup"] .ui-header .ui-btn-left {
+		    right: 5px !important;
+		    left: auto !important; /* On annule le positionnement à gauche par défaut */
+		}
+
+		/* 1. État de base du bouton dans le header du popup */
+		[id$="-listbox-popup"] .ui-header .ui-btn {
+		    background-color: #111 !important;
+		    border: 1px solid #444 !important; /* Bordure grise par défaut */
+		    border-radius: 4px !important;
+		    width: 26px !important;
+		    height: 26px !important;
+		    transition: all 0.2s ease !important;
+		    box-shadow: none !important;
+		}
+		
+		/* 2. LE HOVER : On cible le CADRE (la bordure) */
+		[id$="-listbox-popup"] .ui-header .ui-btn:hover {
+		    border-color: #00FBFF !important; /* Le cadre devient cyan */
+		    background-color: #222 !important; /* Le fond s'éclaircit légèrement */
+		    cursor: pointer;
+		}
+		
+		/* 3. L'ICÔNE : On s'assure qu'elle ne change pas de "fond" bizarrement */
+		[id$="-listbox-popup"] .ui-header .ui-btn::after {
+		    background-color: #888 !important; /* Couleur du X par défaut */
+		    scale: 0.7;
+		    transition: background-color 0.2s ease;
+		}
+		
+		/* Optionnel : Le X devient cyan aussi quand on survole le bouton */
+		[id$="-listbox-popup"] .ui-header .ui-btn:hover::after {
+		    background-color: #00FBFF !important;
+		}
+
+		/* Force le masquage des options cachées dans les menus JQM */
+		.ui-selectmenu-list li.ui-screen-hidden {
+		    display: none !important;
+		}
+
+        .smallLabel { 
+			color: #00FBFF; 
+			font-size: 11px; 
+			font-weight: bold; 
+		}
+		
+		
+        .graph-content { 
+			flex: 1; 
+			position: relative; 
+			width: 100%; 
+		}
+		
+        .graph-canvas { 
+			position: absolute; 
+			top: 0; 
+			left: 0; 
+			right: 0; 
+			bottom: 0; 
+		}
+
+		/* Le cadre de légende statique */
+.static-legend-frame {
+    position: absolute !important;
+    top: 10px !important;
+    right: 10px !important;
+    z-index: 100 !important;
+    
+    /* Fond très léger pour voir les courbes passer derrière */
+    background: rgba(20, 20, 20, 0.4) !important; 
+    
+    /* Flou très léger : protège le texte sans cacher la forme des courbes */
+    backdrop-filter: blur(2px) !important;
+    -webkit-backdrop-filter: blur(2px) !important;
+
+    /* Bordure fine pour délimiter le cadre */
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 0.3125em !important;
+    padding: 5px 10px !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3) !important;
+    pointer-events: none !important;
+}
+
+.legend-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end;
+    margin-bottom: 3px !important;
+}
+
+.legend-label {
+    font-family: sans-serif !important;
+    font-size: 11px !important;
+    color: #ffffff !important; 
+    font-weight: 700 !important;
+    /* Ombre portée plus marquée pour détacher le texte du fond transparent */
+    text-shadow: 1px 1px 1px #000, 0px 0px 3px #000 !important; 
+    -webkit-font-smoothing: antialiased;
+}
+
+.legend-dot {
+    width: 9px !important;
+    height: 9px !important;
+    border-radius: 2px !important;
+    margin-left: 8px !important;
+    flex-shrink: 0;
+    /* On entoure le point d'un petit liseré pour qu'il soit net */
+    border: 1px solid rgba(0,0,0,0.4) !important;
+}
+
+		.graph-title-button {
+		    background: linear-gradient(180deg, #444 0%, #222 100%); /* Effet relief */
+		    color: #FFFFFF !important; /* FORCE LE BLANC */
+		    text-decoration: none !important;
+		    font-weight: bold;
+		    font-size: 13px;
+		    padding: 4px 15px;
+		    border-radius: 4px;
+		    border: 1px solid #555; /* Bordure claire pour le relief */
+		    box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 4px rgba(0,0,0,0.5);
+		    text-shadow: 0 -1px 0 rgba(0,0,0,0.8);
+		    min-width: 120px;
+		    text-align: center;
+		    display: inline-block;
+		}
+
+		/* Petite flèche vers le bas pour indiquer le menu */
+		.graph-title-button::after {
+		    content: '▼';
+		    font-size: 9px;
+		    margin-left: 8px;
+		    opacity: 0.7;
+		}
+		
+		/* Animation discrète au clic sur le titre */
+		.graph-title-button:active {
+			background: #111;
+		    box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
+		    transform: translateY(1px);
+		}
+			
+	/* Amélioration visuelle des éléments du slider */
+		/* 1. Style des poignées (handles) gauche et droite */
+		.dygraph-rangesel-zoomhandle {
+		    /* Indique visuellement qu'on peut redimensionner horizontalement */
+		    cursor: ew-resize !important;
+			 width: 16px !important;
+			 height: 40px !important;
+		    
+		    /* Augmente la luminosité pour ressortir sur le fond noir */
+		    filter: brightness(1.8) drop-shadow(0px 0px 2px rgba(255,255,255,0.5));
+		    
+		    /* Ajoute un contour net pour la précision sur tablette */
+		    border: 1px solid #ffffff !important;
+		    background-color: #00FBFF !important; /* Force la couleur néon */
+		    
+		    /* IMPORTANT : Empêche la tablette de faire défiler la page 
+		       pendant qu'on manipule le slider */
+		    touch-action: none;
+		}
+		
+
+		/* 2. Style de la zone de sélection (le rectangle entre les poignées) */
+		.dygraph-rangesel-fgcanvas {
+		    /* Rend la zone sélectionnée plus opaque et donc plus visible */
+		    opacity: 0.85 !important;
+		}
+		
+		/* 3. Style du fond du slider (la zone non sélectionnée) */
+		.dygraph-rangesel-bgcanvas {
+		    /* On garde le fond très sombre pour le contraste */
+		    opacity: 0.2 !important;
+		}
+		/* 4. Affichage des valeurs */
+		.local-status-val {
+		    width: 100%;
+		    font-family: 'Segoe UI', Tahoma, monospace;
+		    font-size: 11px; /* Plus petit pour tenir sur la largeur */
+		    color: #eee;
+		    white-space: nowrap;
+		    overflow: hidden;
+		    text-overflow: ellipsis;
+		    min-height: 14px; /* Évite les sauts de hauteur quand vide */
+			z-index: 10; 
+			text-shadow: none !important;
+		}
+		/* Force les spans à l'intérieur à ignorer le #eee et utiliser leur propre couleur */
+		.local-status-val span {
+		    color: inherit !important; 
+		}
+		
+		.legend-value-item {
+		    text-shadow: none !important;
+		    -webkit-font-smoothing: antialiased;
+		    display: inline-block;
+		    margin-right: 12px;
+		    font-weight: bold;
+		    font-size: 12px;
+		    transition: color 0.2s ease;
+		    /* Indispensable pour que le label et la valeur prennent la couleur du style inline */
+		    color: inherit; 
+		}
+		/* Force tous les sous-éléments de la légende à prendre la couleur définie en JS */
+		.local-status-val span.legend-value-item, 
+		.local-status-val span.legend-value-item span {
+		    color: inherit !important;
+		}
+
+		/* Style des labels d'axes pour qu'ils ne mangent pas d'espace */
+		.dygraph-axis-label { font-size: 10px !important; }
+		
+		/* Force le blanc sur le titre au centre */
+		.dygraph-title {
+		    color: #FFFFFF !important;
+		    font-size: 12px !important;
+		    opacity: 1 !important;
+		}
+		
+		/* Force le blanc sur les indices des axes (X et Y) */
+		.dygraph-axis-label {
+		    color: #FFFFFF !important;
+		    font-weight: bold !important;
+		    opacity: 1 !important;
+		}
+		
+		/* Optionnel : couleur des lignes de la grille pour qu'elles restent discrètes */
+		.dygraph-gridline {
+		    border-color: #333333 !important;
+		}
+		
+		/* Style pour les titres Y1 et Y2 */
+		.dygraph-ylabel, .dygraph-y2label {
+		    color: #FFFFFF !important;  /* Blanc pur */
+		    font-weight: 600 !important;
+		    font-size: 13px !important;
+		    text-shadow: none !important;
+		    /* Correction du flou */
+		    -webkit-font-smoothing: antialiased;
+		    -moz-osx-font-smoothing: grayscale;
+		    transform: translateZ(0); 
+		    opacity: 1 !important;
+		}
+		
+		/* On s'assure que les conteneurs de titres ne limitent pas la netteté */
+		.dygraph-axis-label-y, .dygraph-axis-label-y2 {
+		    color: #FFFFFF !important;
+		}
+
+		/* Empêche le scroll du navigateur sur les zones de dessin pour éviter l'erreur Intervention */
+		.graph-canvas, .dygraph-rangesel-fgcanvas, .dygraph-rangesel-zoomhandle {
+		    touch-action: none;
+		}
+        .ui-content { padding: 0 !important; height: 100%; }
+		
+		/* pour éviter que Dygraph ne laisse des traces fantômes */
+		canvas {
+		    image-rendering: -moz-crisp-edges;
+		    image-rendering: -webkit-optimize-contrast;
+		    image-rendering: crisp-edges;
+		    image-rendering: pixelated;
+		}
+		
+    </style>
+</head>
+<body>
+	
+<div data-role="page" id="graphMainPage">
+    <div data-role="header" id="graphHeader" data-theme="b" style="height:40px; overflow:hidden;">
+        <h1 style="margin: 10px 0;">Dashboard Temps Réel</h1>
+    </div>
+
+    <div role="main" class="ui-content" id="graphContent">
+        
+        <div class="dashboard-card">
+            <div class="charts-wrapper" id="dataChartsArea">
+		        <div id="graph-zone-1" class="graph-zone">
+					<div class="graph-header-mini">
+						<div class="header-top-row">
+						    <div class="title-container">
+						        <select id="graphSelector1" class="zone-graph-selector" data-zone="1" data-native-menu="false" data-theme="b" data-mini="true" data-icon="arrow-d" data-iconpos="right" >
+									<option value="Chimie" selected>Chimie</option>
+					                <option value="Températures">Températures</option>
+					                <option value="Équipements">Équipements</option>
+						        </select>
+						    </div>
+							<div class="axes-container">
+							    <select id="axesSelector1" class="axes-multi-selector" data-zone="1" multiple="multiple" data-native-menu="false" data-theme="b" data-icon="gear" data-iconpos="left" data-hide-placeholder-menu="true">
+							        <option data-placeholder="true">Courbes...</option> 
+									<option value="PH">PH</option>
+						            <option value="CL">Chlore</option>
+						            <option value="Redox">Redox</option>
+						            <option value="TempAir">Temp Air</option>
+						            <option value="TempEau">Temp Eau</option>
+						            <option value="PP">Pression</option>
+						        </select>
+							</div>
+							<div class="export-container">
+							    <select id="exportAction1" data-zone="1" class="export-selector" data-native-menu="false" data-mini="true" data-icon="camera" data-iconpos="notext">
+							        <option value="" data-placeholder="true">Type d'Export...</option>
+							        <option value="png">Image PNG</option>
+							        <option value="csv">Données CSV</option>
+							    </select>
+						    </div>
+						</div>							
+					    <div id="status-val-1" class="local-status-val"></div>
+					</div>
+		            <div class="graph-content"><div id="graph-canvas-1" class="graph-canvas"></div></div>
+				</div>
+				
+		        <div id="graph-zone-2" class="graph-zone">
+		            <div class="graph-header-mini">
+						<div class="header-top-row">
+						    <div class="title-container">
+				                <select id="graphSelector2" class="zone-graph-selector" data-zone="2" data-native-menu="false" data-theme="b" data-mini="true" data-icon="arrow-d" data-iconpos="right">
+				                    <option value="Chimie">Chimie</option>
+				                    <option value="Températures" selected>Températures</option>
+				                    <option value="Équipements">Équipements</option>
+				                </select>
+							</div>
+						    <div class="axes-container">
+						        <select id="axesSelector2" class="axes-multi-selector" data-zone="2" multiple="multiple" data-native-menu="false" data-theme="b" data-icon="gear" data-iconpos="left" data-hide-placeholder-menu="true">
+							        <option data-placeholder="true">Courbes...</option> 
+									<option value="PH">PH</option>
+						            <option value="CL">Chlore</option>
+						            <option value="Redox">Redox</option>
+						            <option value="TempAir">Temp Air</option>
+						            <option value="TempEau">Temp Eau</option>
+						            <option value="PP">Pression</option>
+						        </select>
+						    </div>
+							<div class="export-container">
+							    <select id="exportAction2" data-zone="2" class="export-selector" data-native-menu="false" data-mini="true" data-icon="camera" data-iconpos="notext">
+							        <option value="" data-placeholder="true">Type d'Export...</option>
+							        <option value="png">Image PNG</option>
+							        <option value="csv">Données CSV</option>
+							    </select>
+						    </div>
+						</div>
+						<div id="status-val-2" class="local-status-val"></div>
+		            </div>
+		            <div class="graph-content"><div id="graph-canvas-2" class="graph-canvas"></div></div>
+		        </div>
+		
+		        <div id="graph-zone-3" class="graph-zone">
+		            <div class="graph-header-mini">
+						<div class="header-top-row">
+						    <div class="title-container">
+								<select id="graphSelector3" class="zone-graph-selector" data-zone="3" data-native-menu="false" data-theme="b" data-mini="true" data-icon="arrow-d" data-iconpos="right">
+				                    <option value="Chimie">Chimie</option>
+				                    <option value="Températures">Températures</option>
+				                    <option value="Équipements" selected>Équipements</option>
+				                </select>
+							</div>
+						    <div class="axes-container">
+						        <select id="axesSelector3" class="axes-multi-selector" data-zone="3" multiple="multiple" data-native-menu="false" data-theme="b" data-icon="gear" data-iconpos="left" data-hide-placeholder-menu="true">
+							        <option data-placeholder="true">Courbes...</option> 
+									<option value="PH">PH</option>
+						            <option value="CL">Chlore</option>
+						            <option value="Redox">Redox</option>
+						            <option value="TempAir">Temp Air</option>
+						            <option value="TempEau">Temp Eau</option>
+						            <option value="PP">Pression</option>
+						        </select>
+						    </div>
+							<div class="export-container">
+							    <select id="exportAction3" data-zone="3" class="export-selector" data-native-menu="false" data-mini="true" data-icon="camera" data-iconpos="notext">
+							        <option value="" data-placeholder="true">Type d'Export...</option>
+							        <option value="png">Image PNG</option>
+							        <option value="csv">Données CSV</option>
+							    </select>
+						    </div>
+						</div>
+						<div id="status-val-3" class="local-status-val"></div>
+		            </div>
+		            <div class="graph-content"><div id="graph-canvas-3" class="graph-canvas"></div></div>
+		        </div>
+			</div>	
+            <div class="nav-wrapper" id="navZone">
+                <div id="graph-canvas-nav" style="width:100%; height:100%;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * --- 1. ÉTAT GLOBAL ET CONFIGURATION ---
+ */
+ 
+/* Couleurs pour le mode sombre 
+	Chauds	Rouge Corail	#FF3B30 Alertes, pH acide
+			Rouge Rose		#FF2D55	Débit pompe, Chauffage
+			Orange Néon		#FF9500	Niveaux critiques, alertes moyennes
+			Orange Cuivré	#FF69B4	Éclairage (Puissance)
+			Jaune Ambre		#FFCC00	Température Air, Soleil
+			Jaune Citron	#E6FF00	Rendement, Intensité
+			Or / Moutarde	#D4AF37	Puissance, Intensité
+	Verts	Vert Émeraude	#32D74B	Température Eau, État OK
+			Vert Menthe		#63E6BE	Débits, FluxVert 
+			Vert Lime		#A6FF00	Consommation électrique
+			Vert d'Eau		#00FA9A	Oxygène, Propreté
+			Citron			#A6FF00	Rendement, Éco
+	Bleus	Cyan Électrique	#00FBFF	Chlore, Potabilité
+			Bleu Ciel		#5AC8FA	Humidité, Niveau d'eau
+			Bleu Indigo		#5E5CE6	Pression, Vitesse
+			Bleu Azur		#007AFF	Réseau, Signal
+	Violets	Violet Royal	#BF5AF2	Redox, UV, Ozone
+			Mauve Clair		#D087FF	Analyse chimique secondaire
+			Rose Fuchsia	#FF2D55	Dosage produit, Pompes
+			Rose Pastel		#FF9F0A	Éclairage, Auxiliaires
+	Neutres	Blanc Pur		#FFFFFF	Lignes de repère, Navigation
+			Gris Argent		#A2A2A2	Courbes de référence / Moyennes
+			Doré			#FFD700	Temps de fonctionnement
+*/
+let g1 = null, g2 = null, g3 = null, gNav = null;
+let syncHandler = null;
+let isInteracting = false;      
+let interactionTimeout = null; 
+
+const ALL_Graph_LABELS = ["Chimie", "Température", "Équipement"];
+
+// Ordre : 0:Time, 1:S1, 2:S2, 3:S3, 4:S4, 5:S5, 6:Nav
+const ALL_LABELS = ["Time", "PH", "CL",  "Redox", "TempAir", "TempEau", "PP", "Navigation"];
+
+const PALETTE = {
+    RED_CORAL:    "#FF3B30",	// Famille des Rouges/Oranges (Alertes, Acidité, Chaleur)
+    RED_ROSE:     "#FF2D55",
+    ORANGE_NEON:  "#FF9500",
+    ORANGE_SOFT:  "#FF69B4",
+    AMBER:        "#FFCC00",
+    YELLOW_LIME:  "#E6FF00",
+    GREEN_EMERALD: "#32D74B",	// Famille des Verts (Stabilité, Flux, Énergie)
+    GREEN_MINT:    "#63E6BE",
+    GREEN_LIME:    "#A6FF00",
+    GREEN_SEA:     "#00FA9A",
+    CYAN_ELECTRIC: "#00FBFF",	// Famille des Bleus (Eau, Pression, Air)
+    BLUE_SKY:      "#5AC8FA",
+    BLUE_INDIGO:   "#5E5CE6",
+    BLUE_AZURE:    "#007AFF",
+    BLUE_DEEP:     "#0055FF",   
+    PURPLE_ROYAL:  "#BF5AF2",	 // Famille des Violets/Roses (Chimie, Électronique, Dosage)
+    PURPLE_LIGHT:  "#D087FF",
+    PINK_FUCHSIA:  "#FF00FF",
+    WHITE:         "#FFFFFF",	// Neutres (Navigation, Consignes, Moyennes)
+    SILVER:        "#A2A2A2",
+    GOLD:          "#FFD700"
+};
+
+const SERIES_MAPPING = {
+// HIDDEN : L'option n'apparaît même pas dans le menu
+    // OFF    : L'option apparaît dans le menu mais n'est pas cochée (pas de courbe)
+    // ON     : L'option apparaît et est cochée par défaut (courbe affichée)
+    // 			    [PH,    CL,       Redox, TAir   TEau,  PP,       Nav] -> Navigation est toujours "HIDDEN" ici
+    "Chimie":       ["ON",  "OFF",    "ON",  "OFF", "ON",  "HIDDEN", "HIDDEN"], 
+    "Températures": ["OFF", "OFF",    "OFF", "ON",  "ON",  "HIDDEN", "HIDDEN"], 
+    "Équipements":  ["OFF", "HIDDEN", "ON",  "OFF", "OFF", "ON",     "HIDDEN"]  
+};
+
+const SENSOR_CONFIG = {
+    "PH":       { label: "pH",       unit: "pH",   color: PALETTE.RED_CORAL, min: 7.2, max: 7.6 },
+    "CL":       { label: "Chlore",   unit: "mg/l", color: PALETTE.PURPLE_ROYAL, min: 1.0, max: 2.0 },
+    "Redox":    { label: "Redox",    unit: "mV",   color: PALETTE.CYAN_ELECTRIC, min: 650, max: 750, axis: 'y2'}, // Valeurs réelles
+    "TempAir":  { label: "T° Air",   unit: "°C",   color: PALETTE.AMBER,                     axis: 'y2'}, 
+    "TempEau":  { label: "T° Eau",   unit: "°C",   color: PALETTE.GREEN_EMERALD, min: 25,  max: 28,  axis: 'y2'},
+    "PP":       { label: "Pression", unit: " bar", color: PALETTE.BLUE_INDIGO, min: 0.5, max: 1.5 },
+    "Navigation": { label: "Nav",    unit: "",     color: PALETTE.SILVER }
+};
+
+
+// Génération des données
+const globalData = (function() {
+    const data = [];
+    const t = new Date();
+    
+    // Valeurs initiales au milieu de leurs plages respectives
+    let lastPh = 7.2;
+    let lastCl = 1.2;
+    let lastRedox = 700;
+    let lastTEau = 26.5;
+    let lastTAir = 22.0;
+
+    for (let i = 0; i < 500; i++) {
+        const x = new Date(t.getTime() + i * 60000); // Pas de 1 minute
+
+        // 1. pH (4 à 12) : très stable, micro-variations
+        lastPh += (Math.random() - 0.5) * 0.05;
+        lastPh = Math.max(4, Math.min(12, lastPh));
+
+        // 2. CL (0.5 à 2) : variations lentes
+        lastCl += (Math.random() - 0.5) * 0.1;
+        lastCl = Math.max(0.5, Math.min(2, lastCl));
+
+        // 3. Redox (500 à 900) : lié au chlore mais avec du "bruit"
+        // On simule une dérive lente + un petit bruit aléatoire
+        lastRedox += (Math.random() - 0.5) * 5;
+        lastRedox = Math.max(500, Math.min(900, lastRedox));
+
+        // 4. Températures (Air et Eau)
+        // L'eau est beaucoup plus stable que l'air
+        lastTEau += (Math.random() - 0.5) * 0.1;
+        lastTAir += (Math.random() - 0.5) * 0.2;
+        
+        // 5. PP (On/Off : 0 ou 1)
+        // On simule un cycle : allumé 30 min, éteint 30 min
+        const PP = (i % 60 < 30) ? 1 : 0;
+
+        // 6. Navigation (yNav) : Une courbe douce pour le slider
+        const yNav = Math.sin(i/10)*40; //Math.sin(i/50) * 10 + 50;
+
+        data.push([x, 
+            parseFloat(lastPh.toFixed(2)), 
+            parseFloat(lastCl.toFixed(2)), 
+            parseFloat(lastRedox.toFixed(1)), 
+            parseFloat(lastTAir.toFixed(1)), 
+            parseFloat(lastTEau.toFixed(1)), 
+            PP, 
+            yNav
+        ]);
+    }
+    return data;
+})();
+
+
+
+/**
+ * --- 2. FONCTIONS UTILITAIRES ---
+ */
+function getNormalizedData() {
+    return globalData.map(row => {
+		let newRow = [...row];
+        // On normalise le Redox (index 3 dans globalData : Time, PH, CL, Redox...)
+        // if (newRow[3] !== null) newRow[3] = newRow[3] / 100; 
+        return newRow;
+    });
+}
+
+function formatYAxisLabelLimit4(v) {
+    if (v === null || v === undefined || isNaN(v)) return '';
+    const absV = Math.abs(v);
+    if (absV < 1000) return Number(v).toFixed(1);
+    return (v / 1000).toFixed(1) + 'k';
+}
+
+// Fonction helper pour identifier précisément le device
+function getGraphModeBackup() {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const isLandscape = width > height;
+
+    // Breakpoints standards : 768px (iPad Mini/Mobile) et 1100px (iPad Pro/Laptop)
+    if (width < 768) return isLandscape ? 'mobile-landscape' : 'mobile-portrait';
+    if (width < 1100) return isLandscape ? 'tablet-landscape' : 'tablet-portrait';
+    return isLandscape ? 'desktop-landscape' : 'desktop-portrait';
+}
+
+function getGraphMode() {
+    var mqDesktopLandscape = window.matchMedia('(min-width: 1101px) and (orientation: landscape)');
+    var mqDesktopPortrait = window.matchMedia('(min-height: 1101px) and (orientation: portrait)');
+    var mqTabletPortrait = window.matchMedia('(min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (orientation: portrait)');
+    var mqTabletLandscape = window.matchMedia('(min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (orientation: landscape)');
+    var mqMobilePortrait = window.matchMedia('(max-width: 700px) and (orientation: portrait)');
+    var mqMobileLandscape = window.matchMedia('(max-height: 700px) and (orientation: landscape)');
+
+    if (mqDesktopLandscape.matches) return 'desktop-landscape';
+    if (mqDesktopPortrait.matches)  return 'desktop-portrait';
+    if (mqTabletLandscape.matches)  return 'tablet-landscape';
+    if (mqTabletPortrait.matches)   return 'tablet-portrait';
+    if (mqMobileLandscape.matches)  return 'mobile-landscape';
+    if (mqMobilePortrait.matches)   return 'mobile-portrait';
+
+    // Fallback
+    // Breakpoints standards : 768px (iPad Mini/Mobile) et 1100px (iPad Pro/Laptop)
+	console.log("FailBack dans la detection des media")
+    if (width < 768) return isLandscape ? 'mobile-landscape' : 'mobile-portrait';
+    if (width < 1100) return isLandscape ? 'tablet-landscape' : 'tablet-portrait';
+    return isLandscape ? 'desktop-landscape' : 'desktop-portrait';
+}
+
+function determineLayout() {
+    const mode = getGraphMode();
+	console.log("mode est : "+mode)
+    const isLandscape = mode.includes('landscape');
+    
+    let count = 3; // Par défaut (Desktop)
+
+    // Logique de densité d'affichage
+    if (mode === 'mobile-portrait') {
+        count = 1; // Un seul gros graphe sur téléphone vertical
+    } else if (mode === 'mobile-landscape') {
+        count = 2; // Deux graphes côte à côte sur téléphone horizontal
+    } else if (mode.includes('tablet')) {
+        count = 2; // Sur tablette, 2 graphes sont souvent plus lisibles que 3
+    } else {
+        count = 3; // Grand écran : on affiche tout
+    }
+	console.log(isLandscape ? 'orientation:row' : 'orientation:column')
+    return { count, orientation: isLandscape ? 'row' : 'column', isLandscape };
+}
+
+function exportGraphPNG(zoneIndex) {
+    // On cible toute la zone (qui contient le header, les axes et le graph)
+    const element = document.getElementById(`graph-zone-${zoneIndex}`);
+    
+    if (!element) return;
+
+    // html2canvas prend une "photo" de l'élément HTML complet
+    html2canvas(element, {
+        backgroundColor: "#1a1a1a", // Force le fond sombre de votre dashboard
+        scale: 2, // Augmente la qualité de l'image (Retina)
+        logging: false,
+        useCORS: true
+    }).then(canvas => {
+        // Transformation en lien de téléchargement
+        const link = document.createElement('a');
+        const date = new Date().getTime();
+        link.download = `dashboard_piscine_z${zoneIndex}_${date}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+    });
+}
+
+function exportGraphCSV(zoneIndex) {
+    const g = activeGraphs[zoneIndex - 1];
+    if (!g) {
+        console.error("Graphique non trouvé pour l'index corrigé :", zoneIndex - 1);
+        return;
+    }
+
+    try {
+        let csvContent = "";
+        const allLabels = g.getLabels(); // [Date, PH, CL, TempAir, ...]
+        const visibility = g.visibility(); // [true, false, true, ...]
+        
+        // 1. Filtrer les en-têtes (La date à l'index 0 est toujours visible)
+        let activeLabels = [allLabels[0]];
+        for (let i = 0; i < visibility.length; i++) {
+            if (visibility[i]) {
+                activeLabels.push(allLabels[i + 1]); 
+            }
+        }
+        csvContent += activeLabels.join(",") + "\n";
+
+        // 2. Filtrer les données ligne par ligne
+        const rowCount = g.numRows();
+        for (let i = 0; i < rowCount; i++) {
+            let rowData = [];
+            
+            // Toujours ajouter la date (colonne 0)
+            let d = new Date(g.getValue(i, 0));
+            rowData.push(d.toISOString());
+
+            // Ajouter uniquement les colonnes visibles
+            for (let j = 0; j < visibility.length; j++) {
+                if (visibility[j]) {
+                    let val = g.getValue(i, j + 1);
+                    rowData.push(val === null ? "" : val);
+                }
+            }
+            csvContent += rowData.join(",") + "\n";
+        }
+
+        // 3. Procédure de téléchargement (identique à la précédente)
+        const BOM = "\uFEFF";
+        const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `export_filtre_zone${zoneIndex}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        
+        setTimeout(() => {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }, 100);
+
+    } catch (err) {
+        console.error("Erreur export CSV filtré:", err);
+    }
+}
+
+function applyChartHeights() {
+    const headerH = $('#graphHeader').outerHeight() || 40;
+    const navH = 65; // Hauteur fixe pour le Navigator (wrapper + marges)
+	const margin = 10; // Marges et paddings cumulés
+	
+	
+    const availableDataH = window.innerHeight - headerH - navH - margin;	// On calcule la hauteur disponible pour les graphiques Y1, Y2, Y3
+    
+    // 1. On force la hauteur pour les graphiques de données uniquement
+    $('.dashboard-card').css({
+        'height': (window.innerHeight - headerH - 5) + 'px',	//'height': Math.max(availableH, 200) + 'px',
+        'width': '100%' 
+    });
+
+    const layout = determineLayout();
+    
+    // 2. Logique de wrapper pour la zone de données
+    $('.charts-wrapper').css({
+        'flex-direction': layout.orientation,
+        'width': '100%',
+        'height': availableDataH + 'px',
+        'box-sizing': 'border-box'
+    });
+	
+	// 3. On s'assure que le Navigator occupe bien sa place fixe
+    $('#navZone').css({
+        'height': '55px',
+        'width': '100%'
+    });
+
+    // 4. Ton loop de visibilité (y1, y2, y3) est conservé
+    for (let i = 1; i <= 3; i++) {
+        const $zone = $(`#graph-zone-${i}`);
+		// Si c'est la zone 1, on FORCE l'affichage quoi qu'il arrive
+	    // Si c'est 2 ou 3, on suit le layout.count
+	    if (i === 1 || i <= layout.count) {
+	        $zone.prop('style', 'display: flex !important'); // Écrase tout inline style existant
+	        $zone.css('height', layout.height + 'px');
+	    } else {
+	        $zone.hide();
+	    }
+    }
+}
+
+/**
+ * --- 3. OPTIONS DES GRAPHIQUES ---
+ */
+ 
+ 
+function updateGraphVisibility(zone, source, isInit = false) {
+    const g = (zone == 1) ? g1 : (zone == 2) ? g2 : g3;
+    if (!g) return;
+
+    let visibilityArray;
+	let sensorsToSave = [];
+
+    if (typeof source === "string") {
+        // CAS 1 : C'est un nom de groupe (ex: "Chimie")
+        const mapping = SERIES_MAPPING[source];
+        if (!mapping) return;
+
+        // On ne met 'true' (tracé) que si l'état est "ON"
+        visibilityArray = mapping.map(state => state === "ON");
+
+		// On prépare la liste des noms de capteurs ON pour la sauvegarde
+        ALL_LABELS.slice(1).forEach((label, i) => {
+            if (mapping[i] === "ON") sensorsToSave.push(label);
+        });
+		
+    } else if (Array.isArray(source)) {
+        // CAS 2 : C'est un tableau de labels (ex: ["PH", "Redox"])
+        // Provient du sélecteur multiple quand l'utilisateur coche manuellement
+        visibilityArray = ALL_LABELS.slice(1).map(label => {
+            if (label === "Navigation") return false;
+            return source.includes(label);
+        });
+		sensorsToSave = source; // C'est déjà notre liste
+	}
+
+    if (visibilityArray) {
+		console.log(`[GRAPH] Envoi updateOptions à la Zone ${zone}`);
+        g.updateOptions({ visibility: visibilityArray });
+        refreshStaticLegend(g);
+		
+		if (!isInit) {
+			console.log(`[PREFS] Sauvegarde manuelle Zone ${zone}`);
+            saveZonePrefs(zone, sensorsToSave);	// --- SAUVEGARDE DES PRÉFÉRENCES ---
+        }
+	}
+}
+
+function getGraphOptions(type, isNavigator, zoneIndex) {
+
+	let vis;
+    if (isNavigator) {
+   		vis = [false, false, false, false, false, false, true];		// Il faut 7 éléments ! Navigation est le 7ème (index 6 du tableau de visibilité)
+	} else {
+		vis = SERIES_MAPPING[type];
+		if (!vis) {
+            console.warn("Type de graphique non trouvé dans le mapping :", type);
+            vis = [true, true, true, true, true, false]; // Affiche tout pour débugger
+        }
+    }
+		
+	const seriesConfig = {};
+    Object.keys(SENSOR_CONFIG).forEach(key => {
+        seriesConfig[key] = {
+            color: SENSOR_CONFIG[key].color,
+			axis: SENSOR_CONFIG[key].axis || 'y' // Utilise y2 si défini, sinon y
+        };
+    });
+	
+	const mapping = SERIES_MAPPING[type] || SERIES_MAPPING["Chimie"];
+    
+	// Définition des unités pour les titres des axes Y
+	const y1Title = "pH / Chlore (mg/L)";
+	const y2Title = type === "Chimie" ? "Redox (mV)" : "Température (°C)";
+
+    // 1. Options de base communes
+    const commonOptions = {
+        labels: ALL_LABELS,
+        visibility: vis,
+		gridLineColor: '#222',
+        axisLineColor: '#FFFFFF', // Axe blanc
+        axisLabelColor: '#FFFFFF', // Indices blancs        
+        highlightSeriesOpts: {
+            strokeWidth: 3,
+            highlightCircleSize: 5
+        },
+		highlightSeriesBackgroundAlpha: 1.0, // Empêche l'assombrissement/changement de fond
+    };
+
+    // 2. Configuration spécifique pour le NAVIGATEUR
+    if (isNavigator) {
+        return {
+            ...commonOptions,
+            colors: ['#00FBFF'],
+            strokeWidth: 1,
+            fillGraph: true,
+            fillAlpha: 0.3,
+            backgroundColor: '#111',
+            showRangeSelector: true,
+            rangeSelectorHeight: 40,
+            rangeSelectorHandleWidth: 15,
+            rangeSelectorAlpha: 0.5,
+            rangeSelectorHandleColor: '#00FBFF',
+            rangeSelectorAddIn: 10,
+			showLabelsOnHighlight: false, // Empêche l'affichage des points au survol
+        	labelsSeparateLines: false,
+        	legend: 'none',               // Désactive totalement la légende
+            axes: {
+                x: { drawAxis: true, axisLabelFontSize: 10, axisLabelColor: '#eee' },
+                y: { drawAxis: false, drawGrid: false }
+            },
+            margin: { left: 45, right: 15, top: 0, bottom: 5 }
+        };
+    } 
+
+    // 3. Configuration pour les graphiques de DONNÉES
+    return {
+        ...commonOptions,
+        series: seriesConfig,
+        connectSeparatedPoints: true,
+		animatedZooms: true,		
+        drawPoints: false,
+        fillGraph: false,
+        fillAlpha: 0.15,
+        backgroundColor: '#000',
+        strokeWidth: 2,
+        margin: { left: 45, right: 15, top: 10, bottom: 15 },
+        showRangeSelector: false,
+		title: null,
+		margin: { left: 50, right: 15, top: 15, bottom: 15 },
+		ylabel: y1Title,
+        y2label: y2Title,
+		labelsDivStyles: { 'textAlign': 'right' },
+        yAxisLabelWidth: 60,  // Espace pour le titre à gauche
+        y2AxisLabelWidth: 60, // Espace pour le titre à droite		
+        axes: {
+            x: { drawAxis: true },
+			y: { 
+				drawAxis: true,		// L'axe ne se dessine que s'il y a des données correspondantes
+                valueRange: [0, 14],
+                drawGrid: true,
+                axisLabelFormatter: function(y) { return y; },		
+				//axisLabelFormatter: formatYAxisLabelLimit4,
+            	axisLabelColor: '#FFFFFF', // Force le blanc pour les chiffres Y
+            	axisLineColor: '#FFFFFF' ,  // Force le blanc pour la ligne de l'axe
+			},
+			y2: { 
+				drawAxis: true,
+                independentTicks: true,
+                axisLabelFormatter: function(y) { return y; },
+                drawGrid: false
+            }
+		},
+		// --- GESTION NATIVE DES LABELS ---
+        // On définit la div de destination si ce n'est pas le navigator
+        labelsDiv: `status-val-${zoneIndex}`,
+        labelsSeparateLines: false,
+        legend: 'always', // Affiche toujours la valeur sous le doigt
+		legendFormatter: function(data) {
+		    if (data.x == null) return '';
+		    
+		    // Heure en blanc brillant
+			const date = new Date(data.x);
+		    
+		    // Format Date : 16/02 (Jour/Mois)
+		    const dateStr = date.getDate().toString().padStart(2, '0') + "/" + 
+		                    (date.getMonth() + 1).toString().padStart(2, '0');
+		    
+		    // Format Heure : 14:35:02
+		    const timeStr = date.getHours().toString().padStart(2, '0') + ":" + 
+		                    date.getMinutes().toString().padStart(2, '0') + ":" + 
+		                    date.getSeconds().toString().padStart(2, '0');
+					
+			// On affiche la date et l'heure dans un style légèrement différent (gris/blanc)
+		    let html = `<span class="legend-value-item" style="color: #aaa; margin-right: 15px; font-size: 10px;">
+		                    ${dateStr} <span style="color: #00FBFF; font-size: 11px;">${timeStr}</span>
+						</span>`;
+												
+		    data.series.forEach((s, i) => {
+		        if (s.isVisible) {
+					const config = SENSOR_CONFIG[s.label] || { color: "#FFF", label: s.label, unit: "" };
+			        const val = (s.label === "Redox") ? s.y.toFixed(0) : s.y.toFixed(2);
+			        
+			        // On met la couleur de la config ici. 
+			        // Le CSS se chargera de faire hériter cette couleur à tout le contenu.
+			        html += `<span class="legend-value-item" style="color: ${config.color} !important;">
+			                    <span style="opacity: 0.85; font-size: 0.9em;">${config.label}:</span> 
+			                    ${val}${config.unit}
+							</span>`;
+                }
+            });
+            return html;
+		},		
+		highlightCallback: function(event, x, points, row, seriesName) {
+		    if (isNavigator) return; // Pas de légende pour le nav
+		
+		    const statusEl = document.getElementById(`status-val-${zoneIndex}`);
+			if (!statusEl) return;
+			
+			// 1. Formater l'heure (Axe X)
+			const date = new Date(x);
+		    
+		    // Format Date : 16/02 (Jour/Mois)
+		    const dateStr = date.getDate().toString().padStart(2, '0') + "/" + 
+		                    (date.getMonth() + 1).toString().padStart(2, '0');
+		    
+		    // Format Heure : 14:35:02
+		    const timeStr = date.getHours().toString().padStart(2, '0') + ":" + 
+		                    date.getMinutes().toString().padStart(2, '0') + ":" + 
+		                    date.getSeconds().toString().padStart(2, '0');
+					
+			// On affiche la date et l'heure dans un style légèrement différent (gris/blanc)
+		    let html = `<span class="legend-value-item" style="color: #aaa; margin-right: 15px; font-size: 10px;">
+		                    ${dateStr} <span style="color: #00FBFF; font-size: 11px; margin-left: 5px;">${timeStr}</span>
+						</span>`;
+					
+		    // 3. Ajouter les autres points (PH, CL, etc.)
+			points.forEach(p => {
+			    const config = SENSOR_CONFIG[p.name] || { color: "#FFF", label: p.name, unit: "" };
+			    
+			    // On met la couleur sur le span parent, et grâce au CSS "inherit", 
+			    // tout ce qui est dedans (label + valeur) sera coloré.
+			    html += `<span class="legend-value-item" style="color: ${config.color} !important;">
+			                <span class="smallLabel">${config.label}:</span> 
+			                ${p.yval.toFixed(2)}${config.unit}
+			             </span>`;
+			});
+			statusEl.innerHTML = html;
+		},
+		underlayCallback: function(canvas, area, g) {
+            drawLimitLines(canvas, area, g);
+        },
+		
+	};
+}
+
+
+/**
+ * --- 4. CŒUR DU SYSTÈME (UPDATE) ---
+ */
+ 
+const activeGraphs = [];
+	
+function updateGraphs() {
+    // Verrou de sécurité
+    if (isInteracting) return;
+
+    const layout = determineLayout();
+    
+    // 1. On coupe la synchro avant de toucher au DOM
+    if (syncHandler) { 
+        try { syncHandler.detach(); } catch(e) {} 
+        syncHandler = null; 
+    }
+
+	
+    // 2. Gestion des graphes de DONNÉES (1, 2, 3)
+	const normalizedData = getNormalizedData(); // Préparez les données une fois
+	
+    for (let i = 1; i <= 3; i++) {
+        const $zone = $(`#graph-zone-${i}`);
+        const container = document.getElementById(`graph-canvas-${i}`);
+        
+        if (i <= layout.count && container) {
+            $zone.show().css('display', 'flex');
+            const type = $zone.find('select.zone-graph-selector').val();
+            const options = getGraphOptions(type, false, i);
+            
+            let gObj = (i === 1 ? g1 : (i === 2 ? g2 : g3));
+
+            if (!gObj) {
+                // Création
+                if (gNav) options.dateWindow = gNav.xAxisRange(); // On s'aligne sur le maître
+                gObj = new Dygraph(container, normalizedData, options);
+                if (i === 1) g1 = gObj; else if (i === 2) g2 = gObj; else g3 = gObj;
+				console.log("Graphique créé, tentative de légende...");
+				refreshStaticLegend(gObj);
+			} else {
+                // Update
+                delete options.dateWindow; // On ne force pas le zoom ici
+                gObj.updateOptions({ file: normalizedData, ...options });
+            }
+            activeGraphs.push(gObj);
+        } else {
+            $zone.hide();
+        }
+    }
+
+    // 3. Gestion du NAVIGATOR (Maître)
+    const navContainer = document.getElementById('graph-canvas-nav');
+    if (navContainer) {
+        const navOptions = getGraphOptions(null, true);
+        if (!gNav) {
+            gNav = new Dygraph(navContainer, globalData, navOptions);
+        } else {
+            gNav.updateOptions(navOptions);
+        }
+        activeGraphs.push(gNav);
+    }
+
+    // 4. Synchronisation : Tout le monde écoute le maître
+    if (activeGraphs.length >= 2) {
+        window.requestAnimationFrame(() => {
+            syncHandler = Dygraph.synchronize(activeGraphs, {
+                selection: true, // Barre verticale partagée
+                zoom: true,      // Zoom partagé
+                range: false     // IMPORTANT: range:false car seul gNav a un slider
+            });
+        });
+    }
+}
+
+function initCharts() {
+    // 1. Calculer les hauteurs d'abord pour que Dygraph connaisse sa taille
+    applyChartHeights();
+
+    // 2. Créer les instances de graphiques (ils vont lire getGraphOptions)
+    updateGraphs();
+    
+    // 3. Synchroniser les multi-sélecteurs d'axes pour qu'ils 
+    // reflètent le mapping du groupe par défaut
+    for(let i = 1; i <= 3; i++) {
+        const $zone = $(`#graph-zone-${i}`);
+        
+        // On ne configure que les zones réellement affichées
+        if($zone.is(':visible')) {
+            // CRUCIAL : On récupère la valeur du sélecteur spécifique à CETTE zone
+            const currentGroup = $(`#graphSelector${i}`).val();
+            
+            // On s'assure de passer l'index 'i' pour ne mettre à jour que le sélecteur 'i'
+            updateAxesSelectorsVisual(i, currentGroup);
+        }
+    }
+    
+    // 4. ResizeObserver (votre code est très bien ici)
+    if (!window.chartObserver) {
+        const dashboard = document.querySelector('.dashboard-card');
+        window.chartObserver = new ResizeObserver(() => {
+            window.requestAnimationFrame(() => {
+                if (g1) g1.resize(); 
+                if (g2) g2.resize(); 
+                if (g3) g3.resize();
+                if (gNav) gNav.resize();
+            });
+        });
+        window.chartObserver.observe(dashboard);
+    }
+}
+
+// Cette fonction reconstruit le contenu du sélecteur d'axes
+function updateAxesSelectorsVisual(zone, groupName) {
+    const mapping = SERIES_MAPPING[groupName];
+    if (!mapping) return;
+
+    const $select = $(`#axesSelector${zone}`);
+    
+    // 1. Calculer les labels par défaut (ceux qui sont "ON")
+    const defaultLabels = [];
+    ALL_LABELS.slice(1).forEach((label, i) => {
+        if (mapping[i] === "ON") defaultLabels.push(label);
+    });
+
+    // 2. Récupérer les préférences sauvegardées
+    const savedLabels = getZonePrefs(zone, defaultLabels);
+	console.log(`[UI] Zone ${zone}, labels à cocher :`, savedLabels); // <--- LOG ICI
+
+    let labelsToSelect = [];
+
+    // 3. Filtrer pour ne garder que ce qui appartient au groupe actuel
+    $select.find('option').each(function() {
+        const label = $(this).val();
+        if (!label) return;
+
+        const indexInLabels = ALL_LABELS.indexOf(label);
+        if (indexInLabels > 0) {
+            const state = mapping[indexInLabels - 1];
+            // On ne sélectionne que si c'est autorisé par le groupe (ON ou OFF)
+            // ET si c'est présent dans nos préférences sauvegardées
+            if ((state === "ON" || state === "OFF") && savedLabels.includes(label)) {
+                labelsToSelect.push(label);
+                $(this).show();
+            } else if (state === "HIDDEN") {
+                $(this).hide();
+            } else {
+                $(this).show(); // Cas "OFF" mais pas dans les préférences
+            }
+        }
+    });
+
+    // 4. Appliquer à l'UI
+    $select.val(labelsToSelect).selectmenu("refresh");
+    
+    // 5. Appliquer au graphique avec un flag "isInit" pour ne pas auto-écraser
+    updateGraphVisibility(zone, labelsToSelect, true);
+}
+
+function refreshStaticLegend(g) {
+    if (!g || !g.maindiv_) return;
+
+    const container = g.maindiv_;
+    let frame = container.querySelector('.static-legend-frame');
+    
+    if (!frame) {
+        frame = document.createElement('div');
+        frame.className = 'static-legend-frame';
+        container.style.position = "relative"; 
+        container.appendChild(frame);
+    }
+
+    const labels = g.getLabels();
+    const visibility = g.visibility();
+
+    if (!labels || !visibility) return;
+
+    let html = "";
+    // On commence à i=1 pour ignorer "Time"
+    for (let i = 1; i < labels.length; i++) {
+        const labelName = labels[i];
+        
+        // On vérifie la visibilité (index i-1 car visibility ne contient pas Time)
+        if (visibility[i-1] && labelName !== "Navigation") {
+            
+            // SOLUTION : On récupère la couleur définie dans SENSOR_CONFIG
+            // Si le label n'existe pas dans la config, on met du blanc par défaut
+            const sensorCfg = SENSOR_CONFIG[labelName];
+            const color = sensorCfg ? sensorCfg.color : "#FFFFFF";
+            
+            html += `<div class="legend-row">
+                        <span class="legend-label">${labelName}</span>
+                        <div class="legend-dot" style="background-color:${color} !important;"></div>
+                     </div>`;
+        }
+    }
+    frame.innerHTML = html;
+}
+
+function drawLimitLines(canvas, area, g) {
+    const labels = g.getLabels();
+    const visibility = g.visibility();
+
+    for (let i = 1; i < labels.length; i++) {
+        const label = labels[i];
+        const config = SENSOR_CONFIG[label];
+
+        // On vérifie si la série est visible et si elle a des limites configurées
+        if (visibility[i - 1] && config && (config.min !== undefined || config.max !== undefined)) {
+            canvas.save();
+            canvas.beginPath();
+            
+// --- NOUVEAU RÉGLAGE ÉQUILIBRÉ ---
+            canvas.setLineDash([8, 4]);    // Tirets un peu plus courts
+            canvas.lineWidth = 1.5;        // Plus fin que 2.5, mais plus que l'original
+            canvas.strokeStyle = config.color;
+            canvas.globalAlpha = 0.8;      // Légère transparence pour laisser respirer la courbe            // --------------------------------------
+
+            // Détection de l'axe (0 = gauche, 1 = droite)
+            const axisNum = config.axis === 'y2' ? 1 : 0;
+            
+            // Dessin de la ligne Max
+            if (config.max !== undefined) {
+                // La conversion vers les coordonnées du canvas gère automatiquement l'échelle de l'axe choisi
+                const y = g.toDomYCoord(config.max, axisNum);
+                // On ne dessine que si la ligne est dans la zone visible du graphique
+                if (y >= area.y && y <= area.y + area.h) {
+                    canvas.moveTo(area.x, y); canvas.lineTo(area.x + area.w, y);
+                }
+            }
+            
+            // Dessin de la ligne Min
+            if (config.min !== undefined) {
+                const y = g.toDomYCoord(config.min, axisNum);
+                if (y >= area.y && y <= area.y + area.h) {
+                    canvas.moveTo(area.x, y); canvas.lineTo(area.x + area.w, y);
+                }
+            }
+            
+            canvas.stroke();
+            canvas.restore();
+        }
+    }
+}
+
+
+function saveUserPreferences(zoneIndex, selectedSensors) {
+    // On crée une clé unique, ex: "pool_prefs_zone_1"
+    const key = `pool_prefs_zone_${zoneIndex}`;
+    localStorage.setItem(key, JSON.stringify(selectedSensors));
+}
+
+function getSavedPreferences(zoneIndex, defaultSensors) {
+    const key = `pool_prefs_zone_${zoneIndex}`;
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : defaultSensors;
+}
+
+const PREFS_KEY_PREFIX = "pool_dashboard_zone_";
+
+// Sauvegarder les capteurs sélectionnés pour une zone
+function saveZonePrefs(zoneIndex, sensorList) {
+    localStorage.setItem(PREFS_KEY_PREFIX + zoneIndex, JSON.stringify(sensorList));
+}
+
+// Récupérer les préférences ou retourner les capteurs par défaut
+function getZonePrefs(zoneIndex, defaultSensors) {
+    const saved = localStorage.getItem(PREFS_KEY_PREFIX + zoneIndex);
+	console.log(`[PREFS] Lecture Zone ${zoneIndex}:`, saved);
+    try {
+        return saved ? JSON.parse(saved) : defaultSensors;
+    } catch (e) {
+		console.error(`[PREFS] Erreur JSON Zone ${zoneIndex}:`, e);
+        return defaultSensors;
+    }
+}
+/**
+ * --- 5. ÉVÉNEMENTS ---
+ */
+
+// A. Verrouillage (On garde la sécurité pour les mobiles lents)
+	$(document).on('pointerdown', '.dygraph-rangesel-fgcanvas, .dygraph-rangesel-zoomhandle', function() {
+	    isInteracting = true;
+	    if (interactionTimeout) clearTimeout(interactionTimeout);
+	});
+
+	$(document).on('pointerup pointercancel', function() {
+	    interactionTimeout = setTimeout(() => { isInteracting = false; }, 150); 
+	});
+
+// B. Changements utilisateur
+	// quand on clique sur le titre
+	$(document).on('click', '.graph-title-button', function(e) {
+	    e.preventDefault();
+	    const zone = $(this).data('zone');
+	    const $select = $(`#graphSelector${zone}`);
+    
+	    if ($select.length) {
+	        $select.selectmenu('open'); // Ouvre le menu JQM
+	    } else {
+	        console.error("Sélecteur introuvable pour la zone " + zone);
+	    }
+	});
+
+	// A. Quand on change de groupe (ex: de Chimie à Températures)
+	$(document).on('change', '.zone-graph-selector', function() {
+		const zone = $(this).data('zone');
+    	const type = $(this).val();
+    
+	    // 1. On met à jour les graphes et les cases cochées du sélecteur d'axes
+	    updateGraphVisibility(zone, type);
+    	// Si vous avez besoin de reconstruire pour d'autres raisons :
+    	// updateGraphs();
+		
+	});
+	
+	// quand on selectionne de axes 
+	$(document).on('change', '.axes-multi-selector', function() {
+		const zone = $(this).data('zone');
+    	const type = $(this).val();
+    
+	    // 1. On met à jour les graphes et les cases cochées du sélecteur d'axes
+	    updateGraphVisibility(zone, type);
+		
+	});
+	
+	// choix du type d'export
+	$(document).on("change", ".export-selector", function() {
+	    // Force la conversion en nombre pour éviter les erreurs de type "1" vs 1
+	    const zoneIndex = parseInt($(this).data("zone"), 10); 
+	    const mode = $(this).val();
+	
+	    if (!mode) return;
+	
+	    // Log de debug pour vérifier qui appelle quoi
+	    console.log("Zone détectée :", zoneIndex, "Mode :", mode);
+	    console.log("Graphique visé :", activeGraphs[zoneIndex]);
+	
+	    if (mode === "png") {
+	        exportGraphPNG(zoneIndex); 
+	    } else if (mode === "csv") {
+	        exportGraphCSV(zoneIndex);
+	    }
+	
+	    $(this).val("").selectmenu("refresh");
+	});
+
+// C. Layout
+	$(window).on('resize orientationchange', function() {
+	    applyChartHeights();
+	    updateGraphs();
+	    // Force resize final
+	    setTimeout(() => {
+	        if (g1) g1.resize();
+	        if (gNav) gNav.resize();
+	    }, 100);
+	});
+
+// D. Init
+	$(document).on('pageshow', '#graphMainPage', function() {
+	// 1. Affiche le spinner JQM
+	    $.mobile.loading('show', {
+	        text: "Initialisation des graphiques...",
+	        textVisible: true,
+	        theme: "b" // Thème sombre
+	    });
+			
+		// 2. On laisse un peu de temps au spinner pour s'afficher avant de bloquer le thread avec initCharts
+	    setTimeout(function() {
+	        try {
+	            initCharts();
+	        } finally {
+	            // 3. Cache le spinner quoi qu'il arrive
+	            $.mobile.loading('hide');
+	        }
+	    }, 200);
+	});
+
+</script>
+</body>
+</html>

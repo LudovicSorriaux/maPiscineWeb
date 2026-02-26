@@ -1396,63 +1396,6 @@
 					<div class="graph-content"></div>
 				</div>
 			</div>
-			
-			<!-- Templates graphiques (masqués, clonés par JS) -->
-			<div id="graph-templates" style="display: none;">
-				<!-- Template Chimie -->
-				<div id="template-chemistry" class="graph-template">
-					<div class="ui-field-contain axis-selector">
-						<label for="selectChemistry" class="smallLabel">Courbes:</label> 
-						<select name="selectChemistry" class="axis-selector-dropdown" data-graph="chemistry" multiple="multiple" data-native-menu="false" data-mini="true" style="width:80%">
-							<option value="PHVal" selected="selected">PHVal</option>
-							<option value="RedoxVal" selected="selected">RedoxVal</option>
-							<option value="PompePH">PompePH</option>
-							<option value="PompeCL">PompeCL</option>
-							<option value="PompeALG">PompeALG</option>
-						</select>
-					</div>
-					<div class="graph-legend" data-legend="chemistry"></div>
-					<div class="graph-canvas" data-canvas="chemistry"></div>
-				</div>
-				
-				<!-- Template Températures -->
-				<div id="template-temperature" class="graph-template">
-					<div class="ui-field-contain axis-selector">
-						<label for="selectTemperature" class="smallLabel">Courbes:</label> 
-						<select name="selectTemperature" class="axis-selector-dropdown" data-graph="temperature" multiple="multiple" data-native-menu="false" data-mini="true" style="width:80%">
-							<option value="TempEau" selected="selected">TempEau</option>
-							<option value="TempAir" selected="selected">TempAir</option>
-							<option value="TempPAC" selected="selected">TempPAC</option>
-							<option value="TempInt" selected="selected">TempInt</option>
-							<option value="PAC">PAC</option>
-							<option value="PP">PP</option>
-							<option value="PHVal">PHVal</option>
-						</select>
-					</div>
-					<div class="graph-legend" data-legend="temperature"></div>
-					<div class="graph-canvas" data-canvas="temperature"></div>
-				</div>
-				
-				<!-- Template Équipements -->
-				<div id="template-equipment" class="graph-template">
-					<div class="ui-field-contain axis-selector">
-						<label for="selectEquipment" class="smallLabel">Courbes:</label> 
-						<select name="selectEquipment" class="axis-selector-dropdown" data-graph="equipment" multiple="multiple" data-native-menu="false" data-mini="true" style="width:80%">
-							<option value="PP" selected="selected">PP</option>
-							<option value="PAC" selected="selected">PAC</option>
-							<option value="PompePH" selected="selected">PompePH</option>
-							<option value="PompeCL" selected="selected">PompeCL</option>
-							<option value="Auto">Auto</option>
-							<option value="PompeALG">PompeALG</option>
-							<option value="TempPAC">TempPAC</option>
-							<option value="TempEau">TempEau</option>
-							<option value="PHVal">PHVal</option>
-						</select>
-					</div>
-					<div class="graph-legend" data-legend="equipment"></div>
-					<div class="graph-canvas" data-canvas="equipment"></div>
-				</div>
-			</div>
 		</div>
 	</div>	<!-- page -->
 
@@ -1461,17 +1404,16 @@
 
 	<div data-role="panel" id="leftpanel" data-display="overlay" data-position-fixed="true" data-theme="b">
 		<div data-role="collapsibleset" id="leftpanelMenu">
-<!--			<div data-role="collapsible" data-collapsed="false" data-collapsed-icon="plus" data-expanded-icon="minus" data-iconpos="right" data-theme="b" data-content-theme="b">
+			<div data-role="collapsible" data-collapsed="false" data-collapsed-icon="plus" data-expanded-icon="minus" data-iconpos="right" data-theme="b" data-content-theme="b">
 				<h3 class="myh3">Piscine</h3>
 				<ul data-role="listview" data-inset="true">
 					<li><a href="#pagePiscinePrincipale" data-transition="flip">Page Principale</a></li>
-					<li><a href="#pagePiscineParametres" data-transition="flip">Parametres</a></li>
-					<li><a href="#pagePiscineMaintenance" data-transition="flip">Maintenance</a></li>
-					<li><a href="#pagePiscineAlertes" data-transition="flip">Alertes</a></li>
-					<li><a href="#pagePiscineDebug" data-transition="flip">Debug</a></li>
+					<li><a href="#pagePiscineParametres" data-transition="flip">Parametres Piscine</a></li>
+					<li><a href="#pagePiscineMaintenance" data-transition="flip">Maintenance Piscine</a></li>
+					<li><a href="#pagePiscineGraphs" data-transition="flip">Graphs Piscine</a></li>
+					<li><a href="#pagePiscineDebug" data-transition="flip">Debug Piscine</a></li>
 				</ul>
 			</div>
--->
 		</div>
 	</div> <!-- left panel -->
 	
