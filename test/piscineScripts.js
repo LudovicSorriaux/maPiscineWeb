@@ -41,7 +41,7 @@ class GraphInstance {
 			}
 			const create = () => {
 				const rect = container.getBoundingClientRect();
-				console.log(`[Dygraph] Création sur ${container.id} (zone ${displayZone||'?'}) : ${rect.width}x${rect.height}`);
+				console.debug && console.debug(`[Dygraph] Création sur ${container.id} (zone ${displayZone||'?'} ) : ${rect.width}x${rect.height}`);
 				this.dygraph = new Dygraph(container, this.data, options);
 				resolve(this.dygraph);
 			};
@@ -105,7 +105,7 @@ class GraphInstance {
 										console.warn('[Diag] updateAxesVisibility suppressed dygraph error', err);
 									}
 								} else {
-									console.log('[Diag] updateAxesVisibility skipped - dygraph DOM missing');
+									console.debug && console.debug('[Diag] updateAxesVisibility skipped - dygraph DOM missing');
 								}
 							} catch (e) { /* ignore */ }
 							this.__updatingAxes = false;
@@ -154,7 +154,7 @@ const ALL_LABELS = [
 /** Construire le menu utilisateur dans le panneau gauche */
 function setUserUI(){
 		try{
-				console.log("[DEBUG] In setUserUI - START");
+				console.debug && console.debug("[DEBUG] In setUserUI - START");
 				let theHtml = '';
 				theHtml += '<div data-role="collapsible" data-collapsed-icon="plus" data-expanded-icon="minus" data-iconpos="right" data-theme="b" data-content-theme="b">';
 				theHtml += '  <h3 class="myh3">Piscine</h3>';
@@ -167,7 +167,7 @@ function setUserUI(){
 				theHtml += '</div>';
 				$('#leftpanelMenu').html(theHtml);
 				$('#leftpanelMenu').enhanceWithin();
-				console.log("[DEBUG] setUserUI - COMPLETE");
+				console.debug && console.debug("[DEBUG] setUserUI - COMPLETE");
 		}catch(e){console.warn('[setUserUI] error',e);}
 }
 
@@ -198,6 +198,7 @@ const SENSOR_CONFIG = {
     "Navigation": { label: "Nav",    unit: "",     color: PALETTE.SILVER }
 };
 
+
 let syncHandler = null;
 let isInteracting = false;      
 let interactionTimeout = null; 
@@ -215,8 +216,8 @@ window.displayedGraphs = {};
 */
 
 function determineLayout() {
-    const mode = getGraphMode();
-	console.log("mode est : "+mode)
+	const mode = getGraphMode();
+	console.debug && console.debug("mode est : "+mode)
     const isLandscape = mode.includes('landscape');
     
     let count = 3; // Par défaut (Desktop)
@@ -231,7 +232,7 @@ function determineLayout() {
     } else {
         count = 3; // Grand écran : on affiche tout
     }
-	console.log(isLandscape ? 'orientation:row' : 'orientation:column')
+	console.debug && console.debug(isLandscape ? 'orientation:row' : 'orientation:column')
     return { count, orientation: isLandscape ? 'row' : 'column', isLandscape };
 }
 
@@ -309,7 +310,7 @@ function generateNavigatorData(start, end, options = {}) {
   const intervalMinutes = options.intervalMinutes || 1;
   const rows = [];
   const n = Math.floor((end - start) / (intervalMinutes * 60000));
-  if (debug) console.log(`[dataGen] Génération de ${n} points de ${new Date(start).toLocaleString()} à ${new Date(end).toLocaleString()}`);
+	if (debug) console.debug(`[dataGen] Génération de ${n} points de ${new Date(start).toLocaleString()} à ${new Date(end).toLocaleString()}`);
 
   // Valeurs initiales réalistes
   let navigation = 0;
@@ -350,7 +351,7 @@ async function initData() {
 				// constructor(zoneIndex, type, data, mapping, config, displayed,y1Title,y2Title)
 				window.graphInstances.push(new GraphInstance(idx+1, type, data, mapping, config, displayed, y1Title, y2Title));
 			} else {
-				console.log('Initializing navigator graph data');
+				console.debug && console.debug('Initializing navigator graph data');
 				const mapping = ['Navigation'];
 				const displayed = ['Navigation'];
 				const config = { Navigation: { color: '#00FBFF', axis: 'y' } };
@@ -365,7 +366,7 @@ async function getOriginData(){
 	i=0;
 	now=dayjs().set("minute",0).set("second",0);
 	start=dayjs().subtract(7,"day");  // ← API CHUNKED: Maintenant on peut charger 7 jours sans WDT !
-	console.log("Fetching Origin Data: start:"+start.format("DD-MM-YYYY")+" end:"+now.format("DD-MM-YYYY"));
+	console.debug && console.debug("Fetching Origin Data: start:"+start.format("DD-MM-YYYY")+" end:"+now.format("DD-MM-YYYY"));
 	dataOrigin = window.generatePoolData(start, now, { intervalMinutes: 1, debug });
 //	dataOrigin=await fetchDataChunked(start,now);  // ← NOUVELLE API: Chunking multi-requêtes
 	chartdata=getNormalizedData();  // Normalisation (ex: décalage PAC/PP pour éviter chevauchement)	
@@ -439,7 +440,7 @@ function populateCache(data) {
 async function fetchDataChunked(debut, fin) {
 	// PROTECTION: Bloquer re-chargement si déjà en cours (évite navigation jQuery Mobile)
 	if (window.chunkLoadingInProgress) {
-		console.log("⚠️ [CHUNKED API] Chargement déjà en cours, skip...");
+		console.warn("⚠️ [CHUNKED API] Chargement déjà en cours, skip...");
 		return [];
 	}
 	
@@ -449,7 +450,7 @@ async function fetchDataChunked(debut, fin) {
 	const start = dayjs(debut);
 	const end = dayjs(fin);
 	
-	console.log("📊 [CHUNKED API] Fetching data: " + start.format("DD-MM-YYYY") + " → " + end.format("DD-MM-YYYY"));
+	console.debug && console.debug("📊 [CHUNKED API] Fetching data: " + start.format("DD-MM-YYYY") + " → " + end.format("DD-MM-YYYY"));
 	
 	try {
 		// Étape 1 : Récupérer le plan (start, end, total_days seulement - évite WDT serveur)
@@ -466,7 +467,7 @@ async function fetchDataChunked(debut, fin) {
 		const availableDays = planResponse.available_days || 0;
 		const dates = planResponse.dates || [];
 		
-		console.log(`📋 Plan reçu: ${availableDays}/${totalDays} jours disponibles`);
+		console.debug && console.debug(`📋 Plan reçu: ${availableDays}/${totalDays} jours disponibles`);
 		
 		if (dates.length === 0) {
 			hideGraphProgress();
@@ -492,9 +493,9 @@ async function fetchDataChunked(debut, fin) {
 			if (info.exists) {
 				fileInfos.push(info);
 				totalChunks += info.chunks;
-				console.log(`  📄 ${date}: ${info.size} bytes, ${info.chunks} chunks`);
+				console.debug && console.debug(`  📄 ${date}: ${info.size} bytes, ${info.chunks} chunks`);
 			} else {
-				console.log(`  ⚠️ ${date}: Fichier absent`);
+				console.debug && console.debug(`  ⚠️ ${date}: Fichier absent`);
 			}
 		}
 		
@@ -504,12 +505,12 @@ async function fetchDataChunked(debut, fin) {
 			return datas;
 		}
 		
-		console.log(`📦 Total: ${totalChunks} chunks à charger`);
+		console.debug && console.debug(`📦 Total: ${totalChunks} chunks à charger`);
 		
 		// Étape 3 : Charger chunks fichier par fichier
 		let allData = "";
 		
-		console.log(`🔄 Début chargement chunks : ${fileInfos.length} fichiers, ${totalChunks} chunks total`);
+		console.debug && console.debug(`🔄 Début chargement chunks : ${fileInfos.length} fichiers, ${totalChunks} chunks total`);
 		
 		for (let fileIdx = 0; fileIdx < fileInfos.length; fileIdx++) {
 			const fileInfo = fileInfos[fileIdx];
@@ -569,7 +570,7 @@ async function fetchDataChunked(debut, fin) {
 		
 		showToast(`✅ ${availableDays} jours chargés (${totalChunks} chunks)`, 'success');
 		
-		console.log(`✅ [CHUNKED API] Success: ${datas.length} lignes chargées`);
+		console.info && console.info(`✅ [CHUNKED API] Success: ${datas.length} lignes chargées`);
 		
 	} catch (e) {
 		hideGraphProgress();
@@ -619,7 +620,7 @@ async function fetchDataRange(debut, fin) {
 	
 	// Télécharger les plages manquantes avec API chunked
 	for (const range of missingRanges) {
-		console.log(`Fetching missing data from ${range.start.format("DD-MM-YYYY")} to ${range.end.format("DD-MM-YYYY")}`);
+		console.debug && console.debug(`Fetching missing data from ${range.start.format("DD-MM-YYYY")} to ${range.end.format("DD-MM-YYYY")}`);
 		const newData = await fetchDataChunked(range.start, range.end);  // ← Utilise API chunked
 		populateCache(newData);
 		result.push(...newData);
@@ -669,7 +670,7 @@ function csvToArray(csvText) {
 		return true;
 	});
 	
-	console.log(`✅ Parsing: ${validRows} lignes valides`);
+	console.debug && console.debug(`✅ Parsing: ${validRows} lignes valides`);
 	
 	return dataRows.map(row => {
 		// Parse date avec format ESP8266 corrigé: "D-M-YYYY H:m:s"
@@ -740,7 +741,7 @@ function getNewData(debut, fin) {
 	
 	// Debounce de 300ms avant de lancer la requête
 	updateDebounceTimer = setTimeout(async () => {
-		console.log(`getNewData: fetching from ${debut.format("DD-MM-YYYY")} to ${fin.format("DD-MM-YYYY")}`);
+		console.debug && console.debug(`getNewData: fetching from ${debut.format("DD-MM-YYYY")} to ${fin.format("DD-MM-YYYY")}`);
 		const data = await fetchDataRange(debut, fin);
 		chart.updateOptions({file: data});
 		CurrStart = debut;
@@ -1003,6 +1004,263 @@ function getGraphOptions(instance, isNavigator, zoneIndex) {
 				y: { drawAxis: false, drawGrid: false }
 			},
 			margin: { left: 45, right: 15, top: 0, bottom: 5 }
+			,
+			// Dessine les labels des poignées du range selector directement sur le canvas
+			drawCallback: function(g) {
+						try {
+					const maindiv = g.maindiv_;
+					if (!maindiv) return;
+					// Récupérer la fenêtre X courante
+					let dateWindow = null;
+					if (typeof g.xAxisRange === 'function') {
+						try { dateWindow = g.xAxisRange(); } catch(e) { dateWindow = null; }
+					}
+					if (!dateWindow) dateWindow = g.getOption && g.getOption('dateWindow') ? g.getOption('dateWindow') : null;
+					if (!dateWindow) return;
+					const leftX = dateWindow[0];
+					const rightX = dateWindow[1];
+					// Convertir valeurs X en coordonnées DOM (relatives au maindiv)
+					let leftPx = null, rightPx = null;
+					try {
+						leftPx = g.toDomXCoord(leftX);
+						rightPx = g.toDomXCoord(rightX);
+					} catch (e) { return; }
+					if (leftPx == null || rightPx == null) return;
+					// Obtenir le canvas du range selector si présent (fgcanvas), sinon fallback au canvas principal
+					const rangeCanvas = maindiv.querySelector('.dygraph-rangesel-fgcanvas');
+					const canvas = rangeCanvas || g.canvas_ || maindiv.querySelector('canvas');
+					if (!canvas) return;
+					const ctx = canvas.getContext('2d');
+					if (!ctx) return;
+					const dpr = window.devicePixelRatio || 1;
+					ctx.save();
+					try {
+						// Formatter les dates : utiliser xValueFormatter si présent sinon format FR
+						const fmt = (g.getOption && g.getOption('xValueFormatter')) ? g.getOption('xValueFormatter') : (v => {
+							try {
+								const dt = new Date(v);
+								return dt.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+							} catch (e) { return String(v); }
+						});
+						const leftText = fmt(leftX);
+						const rightText = fmt(rightX);
+
+						// Récupérer styles depuis le CSS pour cohérence visuelle
+						const sampleEl = document.querySelector('.local-status-val') || document.querySelector('.static-legend-frame') || document.body;
+						const cs = window.getComputedStyle(sampleEl);
+						const fontSizePx = parseFloat(cs.fontSize) || 12;
+						const fontFamily = cs.fontFamily || 'Arial, sans-serif';
+						const fontWeight = cs.fontWeight || '600';
+						const textColor = cs.color || '#ffffff';
+
+						// Paramètres de dessin (en pixels réels)
+						ctx.font = `${fontWeight} ${Math.round(fontSizePx * dpr)}px ${fontFamily}`;
+						ctx.textBaseline = 'bottom';
+						ctx.fillStyle = textColor;
+						ctx.lineWidth = Math.max(2, Math.round(2 * dpr));
+						ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+
+						// Positions relatives au canvas (g.toDomXCoord renvoie relatif à maindiv clientLeft)
+						const rect = maindiv.getBoundingClientRect();
+						const canvasRect = canvas.getBoundingClientRect();
+						const offsetLeft = canvasRect.left - rect.left;
+
+						// Mesures textes (retour en CSS px donc diviser par dpr)
+						const leftTextWidth = Math.ceil(ctx.measureText(leftText).width / dpr);
+						const rightTextWidth = Math.ceil(ctx.measureText(rightText).width / dpr);
+
+						const padding = 6; // css px
+						const paddingPx = Math.round(padding * dpr);
+
+						// Calcul Y (placer au-dessus des handles). Si on dessine sur le rangeCanvas,
+						// placer près du haut de ce canvas, sinon utiliser une position par défaut.
+						let ty;
+						if (rangeCanvas) {
+							const rcHeight = Math.round(rangeCanvas.clientHeight || rangeCanvas.height / dpr || 40);
+							// placer le texte 6px au-dessus du bas du range canvas (en CSS px)
+							const tyCss = Math.max(8, rcHeight - 6);
+							ty = Math.round(tyCss * dpr);
+						} else {
+							const tyCss = 14; // css px from top of canvas area
+							ty = Math.round(tyCss * dpr);
+						}
+
+						// Coordonnées en pixels réels
+						const txLeftCss = Math.round(leftPx - offsetLeft + padding);
+						const txLeft = txLeftCss * dpr;
+						const txRightCss = Math.round(rightPx - offsetLeft - rightTextWidth - padding);
+						const txRight = txRightCss * dpr;
+                        
+
+						// Dessiner fond arrondi derrière chaque label pour lisibilité
+						function drawLabelBackground(xPx, yPx, textWidthCss) {
+							const w = Math.round((textWidthCss + padding * 2) * dpr);
+							const h = Math.round((fontSizePx + 4) * dpr);
+							const bx = Math.round(xPx - paddingPx);
+							const by = Math.round(yPx - h - Math.round(2 * dpr));
+							const radius = Math.round(6 * dpr);
+							ctx.beginPath();
+							ctx.fillStyle = 'rgba(0,0,0,0.55)';
+							// rounded rect
+							ctx.moveTo(bx + radius, by);
+							ctx.lineTo(bx + w - radius, by);
+							ctx.quadraticCurveTo(bx + w, by, bx + w, by + radius);
+							ctx.lineTo(bx + w, by + h - radius);
+							ctx.quadraticCurveTo(bx + w, by + h, bx + w - radius, by + h);
+							ctx.lineTo(bx + radius, by + h);
+							ctx.quadraticCurveTo(bx, by + h, bx, by + h - radius);
+							ctx.lineTo(bx, by + radius);
+							ctx.quadraticCurveTo(bx, by, bx + radius, by);
+							ctx.closePath();
+							ctx.fill();
+						}
+
+						// If we are drawing on the range selector canvas, prefer DOM labels
+						if (rangeCanvas) {
+							// create or update left/right labels as DOM nodes for robustness
+							function ensureLabel(className) {
+								let el = maindiv.querySelector('.' + className);
+								// ensure maindiv is a positioning context
+								try { if (maindiv && (!maindiv.style.position || maindiv.style.position === 'static')) maindiv.style.position = 'relative'; } catch(e) {}
+								if (!el) {
+									el = document.createElement('div');
+									el.className = 'nav-range-label ' + className;
+									el.style.position = 'absolute';
+									el.style.pointerEvents = 'none';
+									el.style.zIndex = 9999;
+									// minimal inline to ensure font matches computed style
+									el.style.font = `${fontWeight} ${Math.round(fontSizePx)}px ${fontFamily}`;
+									maindiv.appendChild(el);
+								}
+								return el;
+							}
+							const leftEl = ensureLabel('nav-range-label-left');
+							const rightEl = ensureLabel('nav-range-label-right');
+							// Use actual handle DOM positions if available (more reliable and follows movement)
+							let leftHandleX = null, rightHandleX = null, leftHandleY = null, rightHandleY = null, handleWidthCss = 16;
+							try {
+								const handles = maindiv.querySelectorAll('.dygraph-rangesel-zoomhandle');
+								if (handles && handles.length >= 2) {
+									const h0 = handles[0].getBoundingClientRect();
+									const h1 = handles[1].getBoundingClientRect();
+									handleWidthCss = Math.round(h0.width || handleWidthCss);
+									// positions relative to maindiv
+									leftHandleX = Math.round(h0.left - rect.left + (h0.width || 0) / 2);
+									rightHandleX = Math.round(h1.left - rect.left + (h1.width || 0) / 2);
+									// vertical centers relative to maindiv
+									leftHandleY = Math.round(h0.top - rect.top + (h0.height || 0) / 2);
+									rightHandleY = Math.round(h1.top - rect.top + (h1.height || 0) / 2);
+								}
+							} catch (e) { leftHandleX = null; rightHandleX = null; leftHandleY = null; rightHandleY = null; }
+
+							// Fallback: if handles not available, use g.toDomXCoord values
+							const leftPosCss = (leftHandleX !== null) ? leftHandleX : Math.round(leftPx);
+							const rightPosCss = (rightHandleX !== null) ? rightHandleX : Math.round(rightPx);
+
+							// Position: place left label to the right of the left handle, right label to the left of the right handle
+							const leftCss = leftPosCss + Math.round(handleWidthCss / 2) + 8;
+							const rightCss = rightPosCss - rightTextWidth - Math.round(handleWidthCss / 2) - 8;
+							// Prefer handle vertical center when available so labels align with handles
+							let topCss;
+							if (leftHandleY !== null && rightHandleY !== null) {
+								// place labels vertically centered on the handles
+								topCss = Math.round(((leftHandleY + rightHandleY) / 2) - (fontSizePx / 2));
+							} else if (leftHandleY !== null) {
+								topCss = Math.round(leftHandleY - (fontSizePx / 2));
+							} else {
+								topCss = Math.round((canvasRect.top - rect.top) + (canvasRect.height / 2) - (fontSizePx / 2));
+							}
+							// Small upward adjustment so labels sit approximately at handle height
+							const verticalOffsetCss = 12; // pixels (increased to raise labels a bit more)
+							topCss = topCss - verticalOffsetCss;
+
+							// Set text first (so offsetWidth is available), then measure and position precisely
+							leftEl.textContent = leftText;
+							rightEl.textContent = rightText;
+							// Force reflow to ensure offsetWidth is ready
+							const lw = leftEl.offsetWidth || leftTextWidth;
+							const rw = rightEl.offsetWidth || rightTextWidth;
+
+							// recompute positions using measured widths for proper right alignment
+							const leftPos = leftPosCss + Math.round(handleWidthCss / 2) + 8;
+							const rightPos = rightPosCss - rw - Math.round(handleWidthCss / 2) - 8;
+							leftEl.style.left = Math.round(leftPos) + 'px';
+							rightEl.style.left = Math.round(rightPos) + 'px';
+							// Position labels: if a label is emphasized, lower its top so the fixed label remains readable
+							try {
+								const emphasizeOffset = 18; // px to lower emphasized label
+								const leftTop = topCss + (leftEl.classList.contains('moving') ? emphasizeOffset : 0);
+								const rightTop = topCss + (rightEl.classList.contains('moving') ? emphasizeOffset : 0);
+								try { leftEl.style.setProperty('top', leftTop + 'px', 'important'); } catch(e) { leftEl.style.top = leftTop + 'px'; }
+								try { rightEl.style.setProperty('top', rightTop + 'px', 'important'); } catch(e) { rightEl.style.top = rightTop + 'px'; }
+								// Apply visual translate as fallback to ensure labels sit above handles (use small upward translate)
+								const vo = (typeof verticalOffsetCss === 'number') ? verticalOffsetCss : 12;
+								const leftOffset = Math.max(0, vo - (leftEl.classList.contains('moving') ? emphasizeOffset : 0));
+								const rightOffset = Math.max(0, vo - (rightEl.classList.contains('moving') ? emphasizeOffset : 0));
+								try { leftEl.style.setProperty('transform', `translateY(-${leftOffset}px)`, 'important'); } catch(e) { leftEl.style.transform = `translateY(-${leftOffset}px)`; }
+								try { rightEl.style.setProperty('transform', `translateY(-${rightOffset}px)`, 'important'); } catch(e) { rightEl.style.transform = `translateY(-${rightOffset}px)`; }
+							} catch (e) {
+								leftEl.style.top = topCss + 'px';
+								rightEl.style.top = topCss + 'px';
+							}
+
+							// Apply moving class while user interacts.
+							// Respect the active handle index if available so dragging a single handle
+							// only emphasizes its corresponding label. For pan interactions, both are emphasized.
+							try {
+								const activeIdx = (typeof window._navActiveHandleIndex !== 'undefined') ? window._navActiveHandleIndex : null;
+								if (activeIdx === null) {
+									// not interacting — remove classes
+									leftEl.classList.remove('moving');
+									rightEl.classList.remove('moving');
+								} else if (activeIdx === 'pan') {
+									// pan: emphasize both
+									leftEl.classList.add('moving');
+									rightEl.classList.add('moving');
+								} else if (activeIdx === 0) {
+									leftEl.classList.add('moving');
+									rightEl.classList.remove('moving');
+								} else if (activeIdx === 1) {
+									rightEl.classList.add('moving');
+									leftEl.classList.remove('moving');
+								} else {
+									// fallback: mirror window.isInteracting for safety
+									if (window.isInteracting) {
+										leftEl.classList.add('moving');
+										rightEl.classList.add('moving');
+									} else {
+										leftEl.classList.remove('moving');
+										rightEl.classList.remove('moving');
+									}
+								}
+							} catch (e) {}
+							// Recompute transforms after moving class was applied so the emphasized label
+							// is slightly lower than the fixed one and remains readable when overlapped.
+							try {
+								const vo2 = (typeof verticalOffsetCss === 'number') ? verticalOffsetCss : 12;
+								const extraDown2 = 25;
+								const lMoving = leftEl.classList.contains('moving');
+								const rMoving = rightEl.classList.contains('moving');
+								const lOffset = Math.max(0, vo2 - (lMoving ? extraDown2 : 0));
+								const rOffset = Math.max(0, vo2 - (rMoving ? extraDown2 : 0));
+								try { leftEl.style.setProperty('transform', `translateY(-${lOffset}px)`, 'important'); } catch(e) { leftEl.style.transform = `translateY(-${lOffset}px)`; }
+								try { rightEl.style.setProperty('transform', `translateY(-${rOffset}px)`, 'important'); } catch(e) { rightEl.style.transform = `translateY(-${rOffset}px)`; }
+							} catch (e) {}
+						} else {
+							// Left label: draw background + stroke+fill text
+							drawLabelBackground(txLeft, ty, leftTextWidth);
+							ctx.strokeText(leftText, txLeft, ty);
+							ctx.fillText(leftText, txLeft, ty);
+
+							// Right label: draw background + stroke+fill text
+							drawLabelBackground(txRight, ty, rightTextWidth);
+							ctx.strokeText(rightText, txRight, ty);
+							ctx.fillText(rightText, txRight, ty);
+						}
+
+					} finally { ctx.restore(); }
+				} catch (e) { /* ignore drawing errors */ }
+			}
 		};
 	}
 
@@ -1026,20 +1284,6 @@ function getGraphOptions(instance, isNavigator, zoneIndex) {
 		y2AxisLabelWidth: 60,
 		axes: {
 			x: { drawAxis: true },
-			y: {
-				drawAxis: anyY,
-				valueRange: [0, 14],
-				drawGrid: true,
-				axisLabelFormatter: function(y) { return y; },
-				axisLabelColor: '#FFFFFF',
-				axisLineColor: '#FFFFFF',
-			},
-			y2: {
-				drawAxis: anyY2,
-				independentTicks: true,
-				axisLabelFormatter: function(y) { return y; },
-				drawGrid: false
-			}
 		},
 		labelsDiv: `status-val-${zoneIndex}`,
 		labelsSeparateLines: false,
@@ -1801,14 +2045,114 @@ function exportGraphCSV(zoneIndex) {
 */
 
 // A. Verrouillage (On garde la sécurité pour les mobiles lents)
-	$(document).on('pointerdown', '.dygraph-rangesel-fgcanvas, .dygraph-rangesel-zoomhandle', function() {
+	$(document).on('pointerdown', '.dygraph-rangesel-fgcanvas, .dygraph-rangesel-zoomhandle', function(e) {
 	    isInteracting = true;
+	    try { window.isInteracting = true; } catch(e) {}
 	    console.log('[Diag] pointerdown - isInteracting=true');
+	    try {
+	        // Find the closest graph container (navigator) to scope labels
+	        let $container = $(this).closest('[id^="graph-canvas-"], #graph-canvas-nav');
+	        if (!$container || $container.length === 0) $container = $(document.body);
+	        const $leftLabel = $container.find('.nav-range-label-left');
+	        const $rightLabel = $container.find('.nav-range-label-right');
+			// If user pressed on a handle, emphasize only that label; if on fgcanvas (pan), emphasize both
+			const isHandle = $(this).hasClass('dygraph-rangesel-zoomhandle');
+			if (isHandle) {
+				// determine which handle index within this container
+				const $handles = $container.find('.dygraph-rangesel-zoomhandle');
+				let idx = -1;
+				if ($handles && $handles.length) {
+					idx = $handles.index(this);
+				}
+				// store active index globally for drawCallback to respect during move
+				try { window._navActiveHandleIndex = (idx >= 0 ? idx : null); } catch(e) {}
+				if (idx === 0) {
+					try { $leftLabel.addClass('moving'); $rightLabel.removeClass('moving'); } catch(e) {}
+				} else if (idx === 1) {
+					try { $rightLabel.addClass('moving'); $leftLabel.removeClass('moving'); } catch(e) {}
+				} else {
+					// Unknown handle index — fallback to both and mark as pan-like
+					try { $leftLabel.addClass('moving'); $rightLabel.addClass('moving'); } catch(e) {}
+				}
+				// immediate transform + top update so label visual moves down on pointerdown
+					try {
+						const vo = 12;
+						const extraDown = 12; // match drawCallback behaviour
+						const lMovingNow = $leftLabel.hasClass('moving');
+						const rMovingNow = $rightLabel.hasClass('moving');
+						const lOffset = Math.max(0, vo - (lMovingNow ? extraDown : 0));
+						const rOffset = Math.max(0, vo - (rMovingNow ? extraDown : 0));
+						try { if ($leftLabel && $leftLabel.length && $leftLabel.get(0) && $leftLabel.get(0).style) $leftLabel.get(0).style.setProperty('transform', `translateY(-${lOffset}px)`, 'important'); else $leftLabel.css('transform', `translateY(-${lOffset}px)`); } catch(e) { try { $leftLabel.css('transform', `translateY(-${lOffset}px)`); } catch(_) {} }
+						try { if ($rightLabel && $rightLabel.length && $rightLabel.get(0) && $rightLabel.get(0).style) $rightLabel.get(0).style.setProperty('transform', `translateY(-${rOffset}px)`, 'important'); else $rightLabel.css('transform', `translateY(-${rOffset}px)`); } catch(e) { try { $rightLabel.css('transform', `translateY(-${rOffset}px)`); } catch(_) {} }
+						// also nudge the top so the visual vertical offset matches the draw-time adjustment
+						try {
+							const curLTop = parseFloat($leftLabel.css('top')) || 0;
+							const curRTop = parseFloat($rightLabel.css('top')) || 0;
+							const newLTop = curLTop + (lMovingNow ? extraDown : 0);
+							const newRTop = curRTop + (rMovingNow ? extraDown : 0);
+							// Save original top to restore precisely on pointerup
+							try { if ($leftLabel && $leftLabel.length && $leftLabel.data && $leftLabel.data('origTop') == null) $leftLabel.data('origTop', curLTop); } catch(e) {}
+							try { if ($rightLabel && $rightLabel.length && $rightLabel.data && $rightLabel.data('origTop') == null) $rightLabel.data('origTop', curRTop); } catch(e) {}
+							if ($leftLabel && $leftLabel.length && $leftLabel.get(0) && $leftLabel.get(0).style) $leftLabel.get(0).style.setProperty('top', newLTop + 'px', 'important'); else $leftLabel.css('top', newLTop + 'px');
+							if ($rightLabel && $rightLabel.length && $rightLabel.get(0) && $rightLabel.get(0).style) $rightLabel.get(0).style.setProperty('top', newRTop + 'px', 'important'); else $rightLabel.css('top', newRTop + 'px');
+						} catch(e) {}
+					} catch (e) {}
+			} else {
+				// fgcanvas pan: emphasize both and mark pan mode
+				try {
+					window._navActiveHandleIndex = 'pan';
+					$leftLabel.addClass('moving');
+					$rightLabel.addClass('moving');
+					const vo = 12; const extraDown = 12; const off = Math.max(0, vo - extraDown);
+					try { if ($leftLabel && $leftLabel.length && $leftLabel.get(0) && $leftLabel.get(0).style) $leftLabel.get(0).style.setProperty('transform', `translateY(-${off}px)`, 'important'); else $leftLabel.css('transform', `translateY(-${off}px)`); } catch(e) { try { $leftLabel.css('transform', `translateY(-${off}px)`); } catch(_) {} }
+					try { if ($rightLabel && $rightLabel.length && $rightLabel.get(0) && $rightLabel.get(0).style) $rightLabel.get(0).style.setProperty('transform', `translateY(-${off}px)`, 'important'); else $rightLabel.css('transform', `translateY(-${off}px)`); } catch(e) { try { $rightLabel.css('transform', `translateY(-${off}px)`); } catch(_) {} }
+					try {
+						const curLTop = parseFloat($leftLabel.css('top')) || 0;
+						const curRTop = parseFloat($rightLabel.css('top')) || 0;
+						const newLTop = curLTop + extraDown;
+						const newRTop = curRTop + extraDown;
+						// Save original top if not already saved
+						try { if ($leftLabel && $leftLabel.length && $leftLabel.data && $leftLabel.data('origTop') == null) $leftLabel.data('origTop', curLTop); } catch(e) {}
+						try { if ($rightLabel && $rightLabel.length && $rightLabel.data && $rightLabel.data('origTop') == null) $rightLabel.data('origTop', curRTop); } catch(e) {}
+						if ($leftLabel && $leftLabel.length && $leftLabel.get(0) && $leftLabel.get(0).style) $leftLabel.get(0).style.setProperty('top', newLTop + 'px', 'important'); else $leftLabel.css('top', newLTop + 'px');
+						if ($rightLabel && $rightLabel.length && $rightLabel.get(0) && $rightLabel.get(0).style) $rightLabel.get(0).style.setProperty('top', newRTop + 'px', 'important'); else $rightLabel.css('top', newRTop + 'px');
+					} catch(e) {}
+				} catch(e) {}
+			}
+	    } catch (e) { console.warn('pointerdown label emphasis failed', e); }
 	    if (interactionTimeout) clearTimeout(interactionTimeout);
 	});
 
 	$(document).on('pointerup pointercancel', function() {
-	    interactionTimeout = setTimeout(() => { isInteracting = false; console.log('[Diag] pointerup -> isInteracting=false'); }, 150); 
+	    if (interactionTimeout) clearTimeout(interactionTimeout);
+		// Remove visual moving state immediately so UI feels responsive and clear active handle
+				try {
+					$('.nav-range-label').removeClass('moving');
+					try { window._navActiveHandleIndex = null; } catch(e) {}
+					// Reset transforms and top so labels return to default position immediately
+					try {
+						const vo = 12; const extraDown = 12;
+						try {
+							$('.nav-range-label').each(function(){
+								try {
+									this.style.setProperty('transform', `translateY(-${vo}px)`, 'important');
+									const $el = $(this);
+									const orig = $el.data('origTop');
+									if (orig !== undefined && orig !== null) {
+										// restore exact original top
+										this.style.setProperty('top', orig + 'px', 'important');
+										try { $el.removeData('origTop'); } catch(e) {}
+									} else {
+										const curTop = parseFloat(window.getComputedStyle(this).top) || 0;
+										const restored = Math.max(0, curTop - extraDown);
+										this.style.setProperty('top', restored + 'px', 'important');
+									}
+								} catch (e) {}
+							});
+						} catch(e) { try { $('.nav-range-label').css('transform', `translateY(-${vo}px)`); } catch(_) {} }
+					} catch (e) {}
+				} catch(e) {}
+		interactionTimeout = setTimeout(() => { isInteracting = false; try { window.isInteracting = false; } catch(e) {} console.log('[Diag] pointerup -> isInteracting=false'); }, 150);
 	});
 
 // B. Changements utilisateur
