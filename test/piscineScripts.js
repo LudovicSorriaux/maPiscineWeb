@@ -98,11 +98,85 @@ class GraphInstance {
 							try {
 								// Ensure dygraph DOM still present before updating to avoid internal null refs
 								if (g && g.maindiv_ && g.maindiv_.parentNode) {
-									try {
-										g.updateOptions({ axes: { y: { drawAxis: needY }, y2: { drawAxis: needY2 } } });
+										try {
+											// Update only the drawAxis flags via Dygraph API
+											try {
+												console.debug && console.debug(`[AxVis] updateOptions for zone=${this.zoneIndex} type=${this.type} needY=${needY} needY2=${needY2}`);
+												g.updateOptions({ axes: { y: { drawAxis: needY }, y2: { drawAxis: needY2 } } });
+											} catch (err) {
+												console.warn('[Diag] updateAxesVisibility suppressed dygraph error', err);
+											}
+
+										// Additionally, toggle visibility of axis title and tick labels in this graph's DOM
+										try {
+											const maindiv = g.maindiv_;
+											if (maindiv) {
+												const instZone = this.zoneIndex; const instType = this.type;
+												// Helper to (re)apply DOM visibility for this graph
+												const enforce = () => {
+													try {
+														const yTitle = maindiv.querySelector('.dygraph-label.dygraph-ylabel');
+														const y2Title = maindiv.querySelector('.dygraph-label.dygraph-y2label');
+														console.debug && console.debug(`[AxVis] enforce zone=${instZone} type=${instType} needY=${needY} needY2=${needY2} yTitle=${!!yTitle} y2Title=${!!y2Title}`);
+														if (yTitle) yTitle.style.display = needY ? '' : 'none';
+														if (y2Title) y2Title.style.display = needY2 ? '' : 'none';
+
+														const yTicks = maindiv.querySelectorAll('.dygraph-axis-label-y');
+														const y2Ticks = maindiv.querySelectorAll('.dygraph-axis-label-y2');
+														yTicks.forEach(el => { el.style.display = needY ? '' : 'none'; });
+														y2Ticks.forEach(el => { el.style.display = needY2 ? '' : 'none'; });
+													} catch (e) { /* ignore */ }
+												};
+
+												// Apply immediately
+												enforce();
+
+												// Store flags on the maindiv so other code can inspect if needed
+												try { maindiv.setAttribute('data-axes-hidden', JSON.stringify({ y: !needY, y2: !needY2 })); } catch(e) {}
+
+												// Attach a parent MutationObserver to detect newly inserted axis nodes
+												try {
+													if (!maindiv.__axisParentObserver) {
+														maindiv.__axisParentObserver = new MutationObserver((mutations) => {
+															let found = false;
+															for (const m of mutations) {
+																if (m.addedNodes && m.addedNodes.length) {
+																	for (const n of m.addedNodes) {
+																		try {
+																			if (!(n instanceof Element)) continue;
+																			if (n.matches && (n.matches('.dygraph-label.dygraph-ylabel') || n.matches('.dygraph-label.dygraph-y2label') || n.matches('.dygraph-axis-label-y') || n.matches('.dygraph-axis-label-y2'))) {
+																				found = true; break;
+																			}
+																			if (n.querySelector && (n.querySelector('.dygraph-label.dygraph-ylabel') || n.querySelector('.dygraph-label.dygraph-y2label') || n.querySelector('.dygraph-axis-label-y') || n.querySelector('.dygraph-axis-label-y2'))) {
+																				found = true; break;
+																			}
+																		} catch(e) {}
+																	}
+																}
+																if (found) break;
+															}
+															if (found) {
+																console.debug && console.debug(`[AxVis] mutation detected for zone=${instZone} type=${instType} — reapplying enforce`);
+																enforce();
+															}
+														});
+													maindiv.__axisParentObserver.observe(maindiv, { childList: true, subtree: true });
+													}
+
+													// Auto-disconnect after short time to avoid long-lived observers
+													if (maindiv.__axisObserverTimeout) clearTimeout(maindiv.__axisObserverTimeout);
+													maindiv.__axisObserverTimeout = setTimeout(() => {
+														try { if (maindiv.__axisParentObserver) { maindiv.__axisParentObserver.disconnect(); delete maindiv.__axisParentObserver; } } catch(e) {}
+													}, 1200);
+												} catch (e) {
+													/* ignore observer failures */
+												}
+											}
+										} catch (err2) {
+											console.debug && console.debug('[Diag] updateAxesVisibility DOM toggle failed', err2);
+										}
 									} catch (err) {
-										// Suppress noisy Dygraph internal errors here
-										console.warn('[Diag] updateAxesVisibility suppressed dygraph error', err);
+										console.warn('[Diag] updateAxesVisibility outer error', err);
 									}
 								} else {
 									console.debug && console.debug('[Diag] updateAxesVisibility skipped - dygraph DOM missing');
@@ -119,6 +193,21 @@ class GraphInstance {
 			// ignore errors
 		}
 	}
+}
+
+// Réappliquer updateAxesVisibility sur toutes les instances (avec retries)
+function reapplyAllAxesVisibility() {
+	const tries = [0, 200, 600, 1200];
+	tries.forEach((delay, idx) => {
+		setTimeout(() => {
+			try {
+				console.debug && console.debug(`[AxVis] reapplyAllAxesVisibility attempt ${idx} after ${delay}ms`);
+				Object.values(window.displayedGraphs || {}).forEach(d => {
+					try { if (d && d.template && typeof d.template.updateAxesVisibility === 'function') d.template.updateAxesVisibility.call(d); } catch(_) {}
+				});
+			} catch(e) {}
+		}, delay);
+	});
 }
 
 // NOTE: closing is handled via jQuery Mobile popup close button; custom close button removed.
@@ -2204,6 +2293,12 @@ function exportGraphCSV(zoneIndex) {
 					refreshStaticLegend(disp.dygraph);
 					// Also update axes visibility
 					try { disp.template.updateAxesVisibility.call(disp); } catch(e) { console.error('[Diag] updateAxesVisibility error', e); }
+											// Re-apply to all graphs to guard against Dygraph redraws that may re-create axis nodes
+											try {
+												Object.values(window.displayedGraphs || {}).forEach(d => {
+												try { if (d && d.template && typeof d.template.updateAxesVisibility === 'function') d.template.updateAxesVisibility.call(d); } catch(_) {}
+											});
+											} catch(_) {}
 									// Ensure resize/redraw scheduled
 													scheduleGraphResize();
 													// Close the selectmenu after a short period of inactivity so user
