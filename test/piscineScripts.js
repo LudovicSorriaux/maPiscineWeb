@@ -1914,6 +1914,54 @@ function refreshStaticLegend(g, data) {
         }
     }
     frame.innerHTML = html;
+
+	// --- X label near hovered point ---
+	try {
+		let xLabel = container.querySelector('.hover-x-label');
+		if (!xLabel) {
+			xLabel = document.createElement('div');
+			xLabel.className = 'hover-x-label';
+			xLabel.style.position = 'absolute';
+			xLabel.style.pointerEvents = 'none';
+			xLabel.style.zIndex = 9999;
+			xLabel.style.padding = '4px 8px';
+			xLabel.style.background = 'rgba(0,0,0,0.7)';
+			xLabel.style.color = '#fff';
+			xLabel.style.borderRadius = '6px';
+			xLabel.style.fontSize = '12px';
+			xLabel.style.whiteSpace = 'nowrap';
+			container.appendChild(xLabel);
+		}
+		if (isHovering) {
+			// Format date as DD/MM/YY HH:mm using dayjs if available, fallback to toLocaleString
+			let xVal = data.x;
+			let txt = '';
+			try {
+				if (typeof dayjs === 'function') txt = dayjs(xVal).format('DD/MM/YY HH:mm');
+				else {
+					const dt = new Date(xVal);
+					const pad = n => n.toString().padStart(2, '0');
+					txt = `${pad(dt.getDate())}/${pad(dt.getMonth()+1)}/${dt.getFullYear().toString().slice(-2)} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+				}
+			} catch(e) { txt = String(xVal); }
+			xLabel.textContent = txt;
+			// compute position: try to place near hovered point horizontally, and vertically above canvas
+			try {
+				const rect = container.getBoundingClientRect();
+				const canvas = container.querySelector('canvas');
+				const canvasRect = canvas ? canvas.getBoundingClientRect() : rect;
+				const domX = Math.round(g.toDomXCoord(data.x));
+				// convert domX (relative to maindiv clientLeft) to CSS left
+				const leftCss = Math.round(domX - (xLabel.offsetWidth || 60) / 2);
+				const topCss = Math.max(4, Math.round((canvasRect.top - rect.top) + 6));
+				xLabel.style.left = leftCss + 'px';
+				xLabel.style.top = topCss + 'px';
+				xLabel.style.display = '';
+			} catch(e) { xLabel.style.display = 'none'; }
+		} else {
+			try { xLabel.style.display = 'none'; } catch(e) {}
+		}
+	} catch(e) {}
 }
 
 /** Redessine tous les graphiques (utile après un resize) */
@@ -2734,70 +2782,70 @@ function exportGraphCSV(zoneIndex) {
 	    if (interactionTimeout) clearTimeout(interactionTimeout);
 	});
 
-// Update labels during pointer move when user drags handles or pans the range selector.
-$(document).on('pointermove', function(e) {
-	try {
-		const dy = window._navActiveGraph || null;
-		const activeIdx = (typeof window._navActiveHandleIndex !== 'undefined') ? window._navActiveHandleIndex : null;
-		if (!dy || activeIdx === null || typeof activeIdx === 'undefined') return; // nothing to update
-		const maindiv = dy.maindiv_;
-		if (!maindiv) return;
-		const leftEl = maindiv.querySelector('.nav-range-label-left');
-		const rightEl = maindiv.querySelector('.nav-range-label-right');
-		if (!leftEl || !rightEl) return;
-		// compute current dateWindow from dygraph
-		let dateWindow = null;
-		try { dateWindow = (typeof dy.xAxisRange === 'function') ? dy.xAxisRange() : (dy.getOption && dy.getOption('dateWindow') ? dy.getOption('dateWindow') : null); } catch(e) { dateWindow = null; }
-		if (!dateWindow) return;
-		const leftX = dateWindow[0];
-		const rightX = dateWindow[1];
-		const fmt = (dy.getOption && dy.getOption('xValueFormatter')) ? dy.getOption('xValueFormatter') : (v => {
-			try { const dt = new Date(v); return dt.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }); } catch(e) { return String(v); }
-		});
-		// update text: prefer computing from handle positions (live), fallback to dateWindow
+	// Update labels during pointer move when user drags handles or pans the range selector.
+	$(document).on('pointermove', function(e) {
 		try {
-			const handles = maindiv.querySelectorAll('.dygraph-rangesel-zoomhandle');
-			if (handles && handles.length >= 2) {
-				const h0 = handles[0].getBoundingClientRect();
-				const h1 = handles[1].getBoundingClientRect();
-				const pageXLeft = h0.left + (h0.width || 0) / 2 + (window.pageXOffset || window.scrollX || 0);
-				const pageXRight = h1.left + (h1.width || 0) / 2 + (window.pageXOffset || window.scrollX || 0);
-				try {
-					const dataLeft = dy.toDataXCoord ? dy.toDataXCoord(pageXLeft) : leftX;
-					const dataRight = dy.toDataXCoord ? dy.toDataXCoord(pageXRight) : rightX;
-					leftEl.textContent = fmt(dataLeft);
-					rightEl.textContent = fmt(dataRight);
-				} catch(e) {
+			const dy = window._navActiveGraph || null;
+			const activeIdx = (typeof window._navActiveHandleIndex !== 'undefined') ? window._navActiveHandleIndex : null;
+			if (!dy || activeIdx === null || typeof activeIdx === 'undefined') return; // nothing to update
+			const maindiv = dy.maindiv_;
+			if (!maindiv) return;
+			const leftEl = maindiv.querySelector('.nav-range-label-left');
+			const rightEl = maindiv.querySelector('.nav-range-label-right');
+			if (!leftEl || !rightEl) return;
+			// compute current dateWindow from dygraph
+			let dateWindow = null;
+			try { dateWindow = (typeof dy.xAxisRange === 'function') ? dy.xAxisRange() : (dy.getOption && dy.getOption('dateWindow') ? dy.getOption('dateWindow') : null); } catch(e) { dateWindow = null; }
+			if (!dateWindow) return;
+			const leftX = dateWindow[0];
+			const rightX = dateWindow[1];
+			const fmt = (dy.getOption && dy.getOption('xValueFormatter')) ? dy.getOption('xValueFormatter') : (v => {
+				try { const dt = new Date(v); return dt.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }); } catch(e) { return String(v); }
+			});
+			// update text: prefer computing from handle positions (live), fallback to dateWindow
+			try {
+				const handles = maindiv.querySelectorAll('.dygraph-rangesel-zoomhandle');
+				if (handles && handles.length >= 2) {
+					const h0 = handles[0].getBoundingClientRect();
+					const h1 = handles[1].getBoundingClientRect();
+					const pageXLeft = h0.left + (h0.width || 0) / 2 + (window.pageXOffset || window.scrollX || 0);
+					const pageXRight = h1.left + (h1.width || 0) / 2 + (window.pageXOffset || window.scrollX || 0);
+					try {
+						const dataLeft = dy.toDataXCoord ? dy.toDataXCoord(pageXLeft) : leftX;
+						const dataRight = dy.toDataXCoord ? dy.toDataXCoord(pageXRight) : rightX;
+						leftEl.textContent = fmt(dataLeft);
+						rightEl.textContent = fmt(dataRight);
+					} catch(e) {
+						leftEl.textContent = fmt(leftX);
+						rightEl.textContent = fmt(rightX);
+					}
+				} else {
 					leftEl.textContent = fmt(leftX);
 					rightEl.textContent = fmt(rightX);
 				}
-			} else {
-				leftEl.textContent = fmt(leftX);
-				rightEl.textContent = fmt(rightX);
-			}
-		} catch(e) { try { leftEl.textContent = fmt(leftX); rightEl.textContent = fmt(rightX); } catch(_) {} }
-		// update position using handles if available
-		try {
-			const rect = maindiv.getBoundingClientRect();
-			const handles = maindiv.querySelectorAll('.dygraph-rangesel-zoomhandle');
-			let leftHandleX = null, rightHandleX = null, handleWidthCss = 16;
-			if (handles && handles.length >= 2) {
-				const h0 = handles[0].getBoundingClientRect();
-				const h1 = handles[1].getBoundingClientRect();
-				handleWidthCss = Math.round(h0.width || handleWidthCss);
-				leftHandleX = Math.round(h0.left - rect.left + (h0.width || 0) / 2);
-				rightHandleX = Math.round(h1.left - rect.left + (h1.width || 0) / 2);
-			}
-			const leftPosCss = (leftHandleX !== null) ? leftHandleX : Math.round(dy.toDomXCoord(leftX));
-			const rightPosCss = (rightHandleX !== null) ? rightHandleX : Math.round(dy.toDomXCoord(rightX));
-			const lw = leftEl.offsetWidth || 80; const rw = rightEl.offsetWidth || 80;
-			const leftPos = leftPosCss + Math.round(handleWidthCss / 2) + 8;
-			const rightPos = rightPosCss - rw - Math.round(handleWidthCss / 2) - 8;
-			leftEl.style.left = Math.round(leftPos) + 'px';
-			rightEl.style.left = Math.round(rightPos) + 'px';
+			} catch(e) { try { leftEl.textContent = fmt(leftX); rightEl.textContent = fmt(rightX); } catch(_) {} }
+			// update position using handles if available
+			try {
+				const rect = maindiv.getBoundingClientRect();
+				const handles = maindiv.querySelectorAll('.dygraph-rangesel-zoomhandle');
+				let leftHandleX = null, rightHandleX = null, handleWidthCss = 16;
+				if (handles && handles.length >= 2) {
+					const h0 = handles[0].getBoundingClientRect();
+					const h1 = handles[1].getBoundingClientRect();
+					handleWidthCss = Math.round(h0.width || handleWidthCss);
+					leftHandleX = Math.round(h0.left - rect.left + (h0.width || 0) / 2);
+					rightHandleX = Math.round(h1.left - rect.left + (h1.width || 0) / 2);
+				}
+				const leftPosCss = (leftHandleX !== null) ? leftHandleX : Math.round(dy.toDomXCoord(leftX));
+				const rightPosCss = (rightHandleX !== null) ? rightHandleX : Math.round(dy.toDomXCoord(rightX));
+				const lw = leftEl.offsetWidth || 80; const rw = rightEl.offsetWidth || 80;
+				const leftPos = leftPosCss + Math.round(handleWidthCss / 2) + 8;
+				const rightPos = rightPosCss - rw - Math.round(handleWidthCss / 2) - 8;
+				leftEl.style.left = Math.round(leftPos) + 'px';
+				rightEl.style.left = Math.round(rightPos) + 'px';
+			} catch(e) {}
 		} catch(e) {}
-	} catch(e) {}
-});
+	});
 
 	$(document).on('pointerup pointercancel', function() {
 	    if (interactionTimeout) clearTimeout(interactionTimeout);
