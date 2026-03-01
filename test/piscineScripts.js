@@ -1,5 +1,28 @@
 
 // Global functions and variables
+/*
+================================================================================
+TABLE OF CONTENTS & ORGANISATION
+
+This file is organized into logical sections to improve readability and
+maintenance. Sections (in order):
+	1) Declarations (const, vars, classes)
+	2) Determine layout
+	3) Progress bar utilities
+	4) Data initialization
+	5) Data fetching / range modification
+	6) Dygraph-related functions
+	7) Interface / layout helpers
+	8) Exports (PNG/CSV)
+	9) User events
+ 10) Page lifecycle events
+ 11) Global events (resize, orientation)
+ 12) Misc / Helpers
+ 13) Ready / Launch
+
+Use these comment anchors to quickly navigate the file.
+================================================================================
+*/
 console.log("📌 piscineScripts.js VERSION 2026-02-26-22:20 loaded");
 
 // NOTE: CSS for the axes pulse indicator and close button is now placed in piscineGraphs.css
@@ -354,6 +377,9 @@ window.displayedGraphs = {};	// Mapping zoneIndex -> { type, dygraph, template, 
     ------------------------
 */
 
+// -----------------------------
+// 2) Determine layout
+// -----------------------------
 function determineLayout() {
 	const mode = getGraphMode();
 	console.debug && console.debug("mode est : "+mode)
@@ -375,10 +401,115 @@ function determineLayout() {
     return { count, orientation: isLandscape ? 'row' : 'column', isLandscape };
 }
 
+// ========================================
+// RESPONSIVE LAYOUT DETECTION
+// (Regrouped: helpers for responsive behaviour)
+// ========================================
+
+function getGraphMode() {
+		var mqDesktopLandscape = window.matchMedia('(min-width: 1101px) and (orientation: landscape)');
+		var mqDesktopPortrait = window.matchMedia('(min-height: 1101px) and (orientation: portrait)');
+		var mqTabletPortrait = window.matchMedia('(min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (orientation: portrait)');
+		var mqTabletLandscape = window.matchMedia('(min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (orientation: landscape)');
+		var mqMobilePortrait = window.matchMedia('(max-width: 700px) and (orientation: portrait)');
+		var mqMobileLandscape = window.matchMedia('(max-height: 700px) and (orientation: landscape)');
+
+		if (mqDesktopLandscape.matches) return 'desktop-landscape';
+		if (mqDesktopPortrait.matches)  return 'desktop-portrait';
+		if (mqTabletLandscape.matches)  return 'tablet-landscape';
+		if (mqTabletPortrait.matches)   return 'tablet-portrait';
+		if (mqMobileLandscape.matches)  return 'mobile-landscape';
+		if (mqMobilePortrait.matches)   return 'mobile-portrait';
+
+		// Fallback
+		// Breakpoints standards : 768px (iPad Mini/Mobile) et 1100px (iPad Pro/Laptop)
+		console.log("FailBack dans la detection des media")
+		if (width < 768) return isLandscape ? 'mobile-landscape' : 'mobile-portrait';
+		if (width < 1100) return isLandscape ? 'tablet-landscape' : 'tablet-portrait';
+		return isLandscape ? 'desktop-landscape' : 'desktop-portrait';
+}
+
+// Adaptation dynamique des grids jQuery Mobile
+function adaptJQueryMobileGrids() {
+		try {
+				if (debug) console.log('[RESPONSIVE] adaptJQueryMobileGrids currentLayout=', currentLayout);
+
+				// Pages à adapter (ne traiter que si présentes dans le DOM)
+				var pagesToAdapt = ['#pagePiscineParametres', '#pagePiscineMaintenance'];
+
+				pagesToAdapt.forEach(function(pageId) {
+						if (!$(pageId) || $(pageId).length === 0) {
+								// Page pas présente dans le DOM — ignorer silencieusement
+								return;
+						}
+
+						var selB = pageId + ' .ui-grid-b';
+						var selA_rev = pageId + ' .ui-grid-a';
+
+						if (currentLayout === 'desktop' || currentLayout === 'tablet-landscape') {
+								// Convertir ui-grid-b (33-33-33) en ui-grid-a (50-50)
+								var $el = $(selB);
+								if ($el && $el.length) {
+										$el.removeClass('ui-grid-b').addClass('ui-grid-a');
+										if (debug) console.log('[RESPONSIVE] adaptJQueryMobileGrids: converted', selB);
+								}
+						} else {
+								// Restaurer grids originales (si présents)
+								var $elRev = $(selA_rev);
+								if ($elRev && $elRev.length) {
+										$elRev.removeClass('ui-grid-a').addClass('ui-grid-b');
+										if (debug) console.log('[RESPONSIVE] adaptJQueryMobileGrids: reverted', selA_rev);
+								}
+						}
+				});
+
+				// Adapter les panels selon le layout
+				try { adaptPanels(); } catch(e) { if (debug) console.warn('[RESPONSIVE] adaptPanels failed', e); }
+		} catch (e) {
+				if (debug) console.error('[RESPONSIVE] adaptJQueryMobileGrids failed', e);
+		}
+}
+
+// Optimisation des panels pour desktop
+function adaptPanels() {
+	var $panels = $('[data-role="panel"]');
+  
+	if (currentLayout === 'desktop') {
+		// Desktop : panels en mode reveal persistant (non-overlay)
+		$panels.panel({
+			display: 'reveal',
+			dismissible: true,
+			swipeClose: false
+		});
+    
+		if (debug) {
+			console.log('[RESPONSIVE] Panels mode reveal (desktop)');
+		}
+	} else {
+		// Mobile/Tablette : panels en mode overlay
+		$panels.panel({
+			display: 'overlay',
+			dismissible: true,
+			swipeClose: true
+		});
+    
+		if (debug) {
+			console.log('[RESPONSIVE] Panels mode overlay (mobile/tablette)');
+		}
+	}
+  
+	// Redimensionner Dygraph si page Graphs active
+	//resizeDygraphIfNeeded();
+}
+
 /*  --------------------
     --- PROGRESS BAR ---
     --------------------
 */
+
+// -----------------------------
+// 3) Progress bar utilities
+// -----------------------------
 
 /**
  * Mise à jour progress bar graphique
@@ -521,6 +652,9 @@ function generateNavigatorData(start, end, options = {}) {
 	return rows;
 }
 
+// -----------------------------
+// 4) Data initialization
+// -----------------------------
 async function initData() {
 	currEnd = now = dayjs().set("minute",0).set("second",0);
 	// Initialisation: charger 3 jours complets en partant du début du jour (00:00)
@@ -825,6 +959,9 @@ function populateCache(data) {
  * @param {dayjs} fin - Date fin
  * @returns {Promise<Array>} Données CSV parsées
  */
+// -----------------------------
+// 5) Data fetching / range modification
+// -----------------------------
 async function fetchDataChunked(debut, fin) {
 	// PROTECTION: Bloquer re-chargement si déjà en cours (évite navigation jQuery Mobile)
 	if (window.chunkLoadingInProgress) {
@@ -1360,6 +1497,10 @@ function updateGraphsData(data) {
     --- LOGIQUE DYGRAPH ---
     -----------------------
 */
+
+// -----------------------------
+// 6) Dygraph-related functions
+// -----------------------------
 
 function initCharts() {
 
@@ -2062,6 +2203,10 @@ function updateGraphs(targetZone) {
 	requestAnimationFrame(() => {
 		try {
 			// detach synchronizer to prevent its callbacks from firing during updateOptions
+
+	// -----------------------------
+	// 7) Interface / layout helpers
+	// -----------------------------
 			let hadSync = false;
 			if (syncHandler) {
 				try { syncHandler.detach(); } catch (e) {}
@@ -2668,11 +2813,19 @@ function exportGraphCSV(zoneIndex) {
     }
 }
 
+// -----------------------------
+// 8) Exports (PNG / CSV)
+// -----------------------------
+
 
 /*  ------------------  
     --- ÉVÉNEMENTS ---
     ------------------
 */
+
+// -----------------------------
+// 9) User events (pointer, clicks...)
+// -----------------------------
 
 // A. Verrouillage (On garde la sécurité pour les mobiles lents)
 	$(document).on('pointerdown', '.dygraph-rangesel-fgcanvas, .dygraph-rangesel-zoomhandle', function(e) {
@@ -3128,6 +3281,10 @@ function exportGraphCSV(zoneIndex) {
 
 
 	// --- page PiscineGraphs Phase 1 : beforecreate ---
+
+// -----------------------------
+// 10) Page lifecycle events (pagebeforecreate, pageshow...)
+// -----------------------------
 	$(document).delegate("#pagePiscineGraphs","pagebeforecreate", function() {
 		console.log("pagebeforecreate: updating chart data");
 		$.mobile.loading('show', {
@@ -3186,108 +3343,12 @@ function exportGraphCSV(zoneIndex) {
 	});
 */
 
+/* Responsive helpers moved earlier (grouped under 'Determine layout') */
+
+
 // ========================================
-// RESPONSIVE LAYOUT DETECTION
+// READY / LAUNCH
 // ========================================
-
-function getGraphMode() {
-    var mqDesktopLandscape = window.matchMedia('(min-width: 1101px) and (orientation: landscape)');
-    var mqDesktopPortrait = window.matchMedia('(min-height: 1101px) and (orientation: portrait)');
-    var mqTabletPortrait = window.matchMedia('(min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (orientation: portrait)');
-    var mqTabletLandscape = window.matchMedia('(min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (orientation: landscape)');
-    var mqMobilePortrait = window.matchMedia('(max-width: 700px) and (orientation: portrait)');
-    var mqMobileLandscape = window.matchMedia('(max-height: 700px) and (orientation: landscape)');
-
-    if (mqDesktopLandscape.matches) return 'desktop-landscape';
-    if (mqDesktopPortrait.matches)  return 'desktop-portrait';
-    if (mqTabletLandscape.matches)  return 'tablet-landscape';
-    if (mqTabletPortrait.matches)   return 'tablet-portrait';
-    if (mqMobileLandscape.matches)  return 'mobile-landscape';
-    if (mqMobilePortrait.matches)   return 'mobile-portrait';
-
-    // Fallback
-    // Breakpoints standards : 768px (iPad Mini/Mobile) et 1100px (iPad Pro/Laptop)
-	console.log("FailBack dans la detection des media")
-    if (width < 768) return isLandscape ? 'mobile-landscape' : 'mobile-portrait';
-    if (width < 1100) return isLandscape ? 'tablet-landscape' : 'tablet-portrait';
-    return isLandscape ? 'desktop-landscape' : 'desktop-portrait';
-}
-
-// Adaptation dynamique des grids jQuery Mobile
-function adaptJQueryMobileGrids() {
-	try {
-		if (debug) console.log('[RESPONSIVE] adaptJQueryMobileGrids currentLayout=', currentLayout);
-
-		// Pages à adapter (ne traiter que si présentes dans le DOM)
-		var pagesToAdapt = ['#pagePiscineParametres', '#pagePiscineMaintenance'];
-
-		pagesToAdapt.forEach(function(pageId) {
-			if (!$(pageId) || $(pageId).length === 0) {
-				// Page pas présente dans le DOM — ignorer silencieusement
-				return;
-			}
-
-			var selB = pageId + ' .ui-grid-b';
-			var selA_rev = pageId + ' .ui-grid-a';
-
-			if (currentLayout === 'desktop' || currentLayout === 'tablet-landscape') {
-				// Convertir ui-grid-b (33-33-33) en ui-grid-a (50-50)
-				var $el = $(selB);
-				if ($el && $el.length) {
-					$el.removeClass('ui-grid-b').addClass('ui-grid-a');
-					if (debug) console.log('[RESPONSIVE] adaptJQueryMobileGrids: converted', selB);
-				}
-			} else {
-				// Restaurer grids originales (si présents)
-				var $elRev = $(selA_rev);
-				if ($elRev && $elRev.length) {
-					$elRev.removeClass('ui-grid-a').addClass('ui-grid-b');
-					if (debug) console.log('[RESPONSIVE] adaptJQueryMobileGrids: reverted', selA_rev);
-				}
-			}
-		});
-
-		// Adapter les panels selon le layout
-		try { adaptPanels(); } catch(e) { if (debug) console.warn('[RESPONSIVE] adaptPanels failed', e); }
-	} catch (e) {
-		if (debug) console.error('[RESPONSIVE] adaptJQueryMobileGrids failed', e);
-	}
-}
-
-// Optimisation des panels pour desktop
-function adaptPanels() {
-  var $panels = $('[data-role="panel"]');
-  
-  if (currentLayout === 'desktop') {
-    // Desktop : panels en mode reveal persistant (non-overlay)
-    $panels.panel({
-      display: 'reveal',
-      dismissible: true,
-      swipeClose: false
-    });
-    
-    if (debug) {
-      console.log('[RESPONSIVE] Panels mode reveal (desktop)');
-    }
-  } else {
-    // Mobile/Tablette : panels en mode overlay
-    $panels.panel({
-      display: 'overlay',
-      dismissible: true,
-      swipeClose: true
-    });
-    
-    if (debug) {
-      console.log('[RESPONSIVE] Panels mode overlay (mobile/tablette)');
-    }
-  }
-  
-  // Redimensionner Dygraph si page Graphs active
-  //resizeDygraphIfNeeded();
-}
-
-
-// ---------------------------------------- Ok ready ! ----------------------------------
 currentLayout = getGraphMode();
 $('body').attr('data-layout', currentLayout);
 setUserUI();
