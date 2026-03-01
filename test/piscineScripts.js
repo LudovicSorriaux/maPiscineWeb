@@ -1945,15 +1945,34 @@ function refreshStaticLegend(g, data) {
 				}
 			} catch(e) { txt = String(xVal); }
 			xLabel.textContent = txt;
-			// compute position: try to place near hovered point horizontally, and vertically above canvas
+			// compute position: prefer pointer position if available, otherwise place above canvas near domX
 			try {
+				// install lightweight global pointer tracker once
+				try {
+					if (!window._hoverPointerInstalled) {
+						window._hoverPointerInstalled = true;
+						document.addEventListener('pointermove', function(ev){
+							try { window._lastPointer = { pageX: ev.pageX, pageY: ev.pageY }; } catch(e) {}
+						}, { passive: true });
+					}
+				} catch(_) {}
+
 				const rect = container.getBoundingClientRect();
 				const canvas = container.querySelector('canvas');
 				const canvasRect = canvas ? canvas.getBoundingClientRect() : rect;
-				const domX = Math.round(g.toDomXCoord(data.x));
-				// convert domX (relative to maindiv clientLeft) to CSS left
-				const leftCss = Math.round(domX - (xLabel.offsetWidth || 60) / 2);
-				const topCss = Math.max(4, Math.round((canvasRect.top - rect.top) + 6));
+				const last = window._lastPointer || null;
+				let leftCss, topCss;
+				if (last && typeof last.pageX === 'number' && typeof last.pageY === 'number') {
+					// position next to the pointer with small offset
+					const relX = Math.round(last.pageX - rect.left);
+					const relY = Math.round(last.pageY - rect.top);
+					leftCss = relX + 12; // 12px to the right of pointer
+					topCss = Math.max(4, relY - (xLabel.offsetHeight || 24) - 8);
+				} else {
+					const domX = Math.round(g.toDomXCoord(data.x));
+					leftCss = Math.round(domX - (xLabel.offsetWidth || 60) / 2);
+					topCss = Math.max(4, Math.round((canvasRect.top - rect.top) + 6));
+				}
 				xLabel.style.left = leftCss + 'px';
 				xLabel.style.top = topCss + 'px';
 				xLabel.style.display = '';
