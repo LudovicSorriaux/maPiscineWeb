@@ -1,5 +1,3 @@
-
-// Global functions and variables
 /*
 ================================================================================
 TABLE OF CONTENTS & ORGANISATION
@@ -23,13 +21,17 @@ maintenance. Sections (in order):
 Use these comment anchors to quickly navigate the file.
 ================================================================================
 */
-console.log("📌 piscineScripts.js VERSION 2026-02-26-22:20 loaded");
 
-// NOTE: CSS for the axes pulse indicator and close button is now placed in piscineGraphs.css
 
+/*  ----------------------------------------------
+    --- 1) Declarations (const, vars, classes) ---
+    ----------------------------------------------
+*/
+
+// Global functions and variables
+console.info("📌 piscineScripts.js VERSION 2026-02-26-22:20 loaded");
 var debug = true;
-// Activer pour un run ciblé qui affiche les timestamps reçus/insérés (option 3)
-// debugDetailedRun removed - debug traces cleaned
+
 var statusErrorMap = {
 	'400' : "Server understood the request, but request content was invalid.",
 	'401' : "Unauthorized access.",
@@ -37,6 +39,97 @@ var statusErrorMap = {
 	// PiscineDebug removed: debug SSE and related handlers disabled in this build
 	};
 
+// Logger wrapper centralisé et dynamique : consulte `window.debug` à chaque appel.
+// Permet de basculer `debug` dynamiquement depuis la console (ex: `debug = false`).
+(function(){
+	try {
+		// Préserver les méthodes originales pour pouvoir les appeler conditionnellement
+		if (!console._orig_log) {
+			console._orig_log = console.log ? console.log.bind(console) : function(){};
+			console._orig_info = console.info ? console.info.bind(console) : console._orig_log;
+			console._orig_debug = console.debug ? console.debug.bind(console) : console._orig_log;
+		}
+
+		// Remplacer par des wrappers qui consultent `window.debug` au moment de l'appel.
+		console.log = function(...args) { if (window.debug) console._orig_log(...args); };
+		console.info = function(...args) { if (window.debug) console._orig_info(...args); };
+		console.debug = function(...args) { if (window.debug) console._orig_debug(...args); };
+	} catch(e) { /* Ne doit jamais empêcher le chargement */ }
+})();
+
+/* -- Global constants --- 
+   --- Colors, labels, mappings, and static configs for graphs and sensors --- 
+*/
+const PALETTE = {
+    RED_CORAL:    "#FF3B30",	// Famille des Rouges/Oranges (Alertes, Acidité, Chaleur)
+    RED_ROSE:     "#FF2D55",
+    ORANGE_NEON:  "#FF9500",
+    ORANGE_SOFT:  "#FF69B4",
+    AMBER:        "#FFCC00",
+    YELLOW_LIME:  "#E6FF00",
+    GREEN_EMERALD: "#32D74B",	// Famille des Verts (Stabilité, Flux, Énergie)
+    GREEN_MINT:    "#63E6BE",
+    GREEN_LIME:    "#A6FF00",
+    GREEN_SEA:     "#00FA9A",
+    CYAN_ELECTRIC: "#00FBFF",	// Famille des Bleus (Eau, Pression, Air)
+    BLUE_SKY:      "#5AC8FA",
+    BLUE_INDIGO:   "#5E5CE6",
+    BLUE_AZURE:    "#007AFF",
+    BLUE_DEEP:     "#0055FF",   
+    PURPLE_ROYAL:  "#BF5AF2",	 // Famille des Violets/Roses (Chimie, Électronique, Dosage)
+    PURPLE_LIGHT:  "#D087FF",
+    PINK_FUCHSIA:  "#FF00FF",
+    WHITE:         "#FFFFFF",	// Neutres (Navigation, Consignes, Moyennes)
+    SILVER:        "#A2A2A2",
+    GOLD:          "#FFD700"
+};
+const ALL_LABELS = [
+  "Date", "TempEau", "TempAir", "TempPAC", "TempInt", "PHVal", "RedoxVal", "CLVal", "PompePH", "PompeCL", "PompeALG", "PP", "PAC", "Auto", "Navigation"
+];
+// --- Mappings et configs statiques pour chaque graphe ---
+const MAPPINGS = {
+	chimie:     ["PHVal", "RedoxVal", "PompePH", "PompeCL", "PompeALG"],
+	temperature:["TempEau", "TempAir", "TempPAC", "TempInt", "PAC", "PP", "PHVal"],
+	equipment:  ["PP", "PAC", "PompePH", "PompeCL", "Auto", "PompeALG", "TempPAC", "TempEau", "PHVal"]
+};
+const DISPLAYED = {
+	chimie:     ["PHVal", "RedoxVal"],
+	temperature:["TempEau", "TempAir", "TempPAC", "TempInt"],
+	equipment:  ["PP", "PAC", "PompePH", "PompeCL"]
+};
+const SENSOR_CONFIG = {
+	"TempEau":  { label: "T° Eau",   unit: "°C",   color: PALETTE.BLUE_AZURE, min: 25,  max: 29,  axis: 'y2'},
+	"TempAir":  { label: "T° Air",   unit: "°C",   color: PALETTE.BLUE_SKY,                     axis: 'y2'}, 
+	"TempPAC":  { label: "T° PAC",   unit: "°C",   color: PALETTE.ORANGE_NEON,                 axis: 'y2'}, 
+	"TempInt":  { label: "T° Int",   unit: "°C",   color: PALETTE.PURPLE_ROYAL,                axis: 'y2'}, 
+    "PHVal":    { label: "pH",       unit: "pH",   color: PALETTE.RED_CORAL, min: 7.2, max: 7.6 },
+    "RedoxVal": { label: "Redox",    unit: "mV",   color: PALETTE.CYAN_ELECTRIC, min: 650, max: 750, axis: 'y2'}, // Valeurs réelles
+    "CLVal":    { label: "Chlore",   unit: "mg/l", color: PALETTE.PURPLE_ROYAL, min: 1.0, max: 2.0 },
+    "PompePH":  { label: "Pompe PH", unit: "", color: PALETTE.BLUE_INDIGO },
+    "PompeCL":  { label: "Pompe CL", unit: "", color: PALETTE.BLUE_SKY },
+    "PompeALG": { label: "Pompe ALG", unit: "", color: PALETTE.BLUE_DEEP },
+    "PP":       { label: "Pompe Piscine", unit: "", color: PALETTE.BLUE_AZURE},
+    "PAC":      { label: "PAC", unit: "", color: PALETTE.ORANGE_SOFT},
+	"Auto":     { label: "Auto", unit: "", color: PALETTE.ORANGE_NEON},
+    "Navigation": { label: "Nav",    unit: "",     color: PALETTE.SILVER }
+};
+
+/* --- Variables globales ---*/
+let syncHandler = null;
+let isInteracting = false;      
+let interactionTimeout = null; 
+var updateDebounceTimer = null;	// Timer de debounce pour les appels getNewData
+var graphProgressShown = false;
+
+// Global data structures
+var chartdata=[];
+var dataOrigin=[];
+var availableDays = new Set();	// availableDays: simple index (Set) contenant les jours (YYYY-MM-DD) déjà disponibles côté client
+var chartdataIndex = new Map(); // Index timestamp -> index dans chartdata pour accès rapide
+
+window.displayedGraphs = {};	// Mapping zoneIndex -> { type, dygraph, template, axesSelected }
+
+/* --- Classes ---*/
 // Encapsulation d'un graphe — class re-inserted after refactor
 class GraphInstance {
 	constructor(zoneIndex, type, data, mapping, config, displayed, y1Title, y2Title) {
@@ -50,10 +143,6 @@ class GraphInstance {
 		this.displayed = displayed;
 		this.axesSelected = Array.isArray(displayed) ? [...displayed] : (displayed ? [displayed] : []);
 		this.dygraph = null;
-	}
-
-	getData() {
-		return this.data;
 	}
 
 	createDygraph(container, options, displayZone) {
@@ -252,134 +341,12 @@ class GraphInstance {
 	}
 }
 
-// Helper runtime: appliquer une tranche (start/end) aux GraphInstance existantes
-// Usage (console): window.applyGraphSlice('2026-02-25', '2026-02-28') or pass Date/dayjs
-// applyGraphSlice helper removed (debugging helper)
 
-// Réappliquer updateAxesVisibility sur toutes les instances (avec retries)
-function reapplyAllAxesVisibility() {
-	const tries = [0, 200, 600, 1200];
-	tries.forEach((delay, idx) => {
-		setTimeout(() => {
-			try {
-				if (debug) console.info(`[AxVis] reapplyAllAxesVisibility attempt ${idx} after ${delay}ms`);
-				Object.values(window.displayedGraphs || {}).forEach(d => {
-					try { if (d && d.template && typeof d.template.updateAxesVisibility === 'function') d.template.updateAxesVisibility.call(d); } catch(_) {}
-				});
-			} catch(e) {}
-		}, delay);
-	});
-}
-
-// NOTE: closing is handled via jQuery Mobile popup close button; custom close button removed.
-
-const PALETTE = {
-    RED_CORAL:    "#FF3B30",	// Famille des Rouges/Oranges (Alertes, Acidité, Chaleur)
-    RED_ROSE:     "#FF2D55",
-    ORANGE_NEON:  "#FF9500",
-    ORANGE_SOFT:  "#FF69B4",
-    AMBER:        "#FFCC00",
-    YELLOW_LIME:  "#E6FF00",
-    GREEN_EMERALD: "#32D74B",	// Famille des Verts (Stabilité, Flux, Énergie)
-    GREEN_MINT:    "#63E6BE",
-    GREEN_LIME:    "#A6FF00",
-    GREEN_SEA:     "#00FA9A",
-    CYAN_ELECTRIC: "#00FBFF",	// Famille des Bleus (Eau, Pression, Air)
-    BLUE_SKY:      "#5AC8FA",
-    BLUE_INDIGO:   "#5E5CE6",
-    BLUE_AZURE:    "#007AFF",
-    BLUE_DEEP:     "#0055FF",   
-    PURPLE_ROYAL:  "#BF5AF2",	 // Famille des Violets/Roses (Chimie, Électronique, Dosage)
-    PURPLE_LIGHT:  "#D087FF",
-    PINK_FUCHSIA:  "#FF00FF",
-    WHITE:         "#FFFFFF",	// Neutres (Navigation, Consignes, Moyennes)
-    SILVER:        "#A2A2A2",
-    GOLD:          "#FFD700"
-};
-
-const ALL_LABELS = [
-  "Date", "TempEau", "TempAir", "TempPAC", "TempInt", "PHVal", "RedoxVal", "CLVal", "PompePH", "PompeCL", "PompeALG", "PP", "PAC", "Auto", "Navigation"
-];
-// --- Mappings et configs statiques pour chaque graphe ---
-
-/** Construire le menu utilisateur dans le panneau gauche */
-function setUserUI(){
-		try{
-				console.debug && console.debug("[DEBUG] In setUserUI - START");
-				let theHtml = '';
-				theHtml += '<div data-role="collapsible" data-collapsed-icon="plus" data-expanded-icon="minus" data-iconpos="right" data-theme="b" data-content-theme="b">';
-				theHtml += '  <h3 class="myh3">Piscine</h3>';
-				theHtml += '  <ul data-role="listview" data-inset="true">';
-				theHtml += '    <li><a href="#pagePiscinePrincipale" data-transition="slide"><h4 class="myh4">Piscine</h4></a></li>';
-				theHtml += '    <li><a href="#pagePiscineParametres" data-transition="slide"><h4 class="myh4">Piscine Parametres</h4></a></li>';
-				theHtml += '    <li><a href="#pagePiscineMaintenance" data-transition="slide"><h4 class="myh4">Piscine Maintenance</h4></a></li>';
-				theHtml += '    <li><a href="#pagePiscineGraphs" data-transition="slide"><h4 class="myh4">Piscine Graphs</h4></a></li>';
-				theHtml += '  </ul>';
-				theHtml += '</div>';
-				$('#leftpanelMenu').html(theHtml);
-				$('#leftpanelMenu').enhanceWithin();
-				console.debug && console.debug("[DEBUG] setUserUI - COMPLETE");
-		}catch(e){console.warn('[setUserUI] error',e);}
-}
-
-const MAPPINGS = {
-	chimie:     ["PHVal", "RedoxVal", "PompePH", "PompeCL", "PompeALG"],
-	temperature:["TempEau", "TempAir", "TempPAC", "TempInt", "PAC", "PP", "PHVal"],
-	equipment:  ["PP", "PAC", "PompePH", "PompeCL", "Auto", "PompeALG", "TempPAC", "TempEau", "PHVal"]
-};
-const DISPLAYED = {
-	chimie:     ["PHVal", "RedoxVal"],
-	temperature:["TempEau", "TempAir", "TempPAC", "TempInt"],
-	equipment:  ["PP", "PAC", "PompePH", "PompeCL"]
-};
-const SENSOR_CONFIG = {
-	"TempEau":  { label: "T° Eau",   unit: "°C",   color: PALETTE.BLUE_AZURE, min: 25,  max: 29,  axis: 'y2'},
-	"TempAir":  { label: "T° Air",   unit: "°C",   color: PALETTE.BLUE_SKY,                     axis: 'y2'}, 
-	"TempPAC":  { label: "T° PAC",   unit: "°C",   color: PALETTE.ORANGE_NEON,                 axis: 'y2'}, 
-	"TempInt":  { label: "T° Int",   unit: "°C",   color: PALETTE.PURPLE_ROYAL,                axis: 'y2'}, 
-    "PHVal":    { label: "pH",       unit: "pH",   color: PALETTE.RED_CORAL, min: 7.2, max: 7.6 },
-    "RedoxVal": { label: "Redox",    unit: "mV",   color: PALETTE.CYAN_ELECTRIC, min: 650, max: 750, axis: 'y2'}, // Valeurs réelles
-    "CLVal":    { label: "Chlore",   unit: "mg/l", color: PALETTE.PURPLE_ROYAL, min: 1.0, max: 2.0 },
-    "PompePH":  { label: "Pompe PH", unit: "", color: PALETTE.BLUE_INDIGO },
-    "PompeCL":  { label: "Pompe CL", unit: "", color: PALETTE.BLUE_SKY },
-    "PompeALG": { label: "Pompe ALG", unit: "", color: PALETTE.BLUE_DEEP },
-    "PP":       { label: "Pompe Piscine", unit: "", color: PALETTE.BLUE_AZURE},
-    "PAC":      { label: "PAC", unit: "", color: PALETTE.ORANGE_SOFT},
-	"Auto":     { label: "Auto", unit: "", color: PALETTE.ORANGE_NEON},
-    "Navigation": { label: "Nav",    unit: "",     color: PALETTE.SILVER }
-};
-
-
-let syncHandler = null;
-let isInteracting = false;      
-let interactionTimeout = null; 
-
-var updateDebounceTimer = null;	// Timer de debounce pour les appels getNewData
-
-// Progress bar threshold: show only if fetch lasts longer than this (ms)
-var graphProgressThresholdMs = 50;
-var graphProgressTimer = null;
-var graphProgressShown = false;
-// Visual reveal delay (ms): container is created immediately but becomes visible after this delay
-var graphProgressAppearMs = 50;
-var graphProgressRevealTimer = null;
-
-var chartdata=[];
-var dataOrigin=[];
-var dataCache = new Map();
-var availableDays = new Set();	// availableDays: simple index (Set) contenant les jours (YYYY-MM-DD) déjà disponibles côté client
-var chartdataIndex = new Map(); // Index timestamp -> index dans chartdata pour accès rapide
-window.displayedGraphs = {};	// Mapping zoneIndex -> { type, dygraph, template, axesSelected }
-
-
-/*  ------------------------
-    --- DETERMINE LAYOUT ---
-    ------------------------
+/*  ---------------------------
+    --- 2) Determine layout ---
+    ---------------------------
 */
-
-// -----------------------------
-// 2) Determine layout
-// -----------------------------
+// Déterminer le nombre de graphes à afficher simultanément et leur orientation (row vs column) en fonction du mode d'affichage (mobile/desktop, portrait/landscape)
 function determineLayout() {
 	const mode = getGraphMode();
 	console.debug && console.debug("mode est : "+mode)
@@ -401,122 +368,78 @@ function determineLayout() {
     return { count, orientation: isLandscape ? 'row' : 'column', isLandscape };
 }
 
-// ========================================
-// RESPONSIVE LAYOUT DETECTION
-// (Regrouped: helpers for responsive behaviour)
-// ========================================
+/** Calcule et applique les hauteurs CSS pour le plein écran */
+function applyChartHeights() {
+    const headerH = $('#graphHeader').outerHeight() || 40;
+    const periodH = $('#periodControlBox').outerHeight() || 0;
+    const navH = $('#navZone').outerHeight() || 65; // Hauteur fixe pour le Navigator (wrapper + marges)
+	const margin = 0; // Marges et paddings cumulés
+	
+	
+    const availableDataH = window.innerHeight - headerH - navH - periodH - margin;	// On calcule la hauteur disponible pour les graphiques Y1, Y2, Y3
+	console.debug("Window:",window.innerHeight, "headerH:",headerH,", periodH:", periodH, ", Nav:", navH, ", availableDataH:",availableDataH)
+    // 1. On force la hauteur pour les graphiques de données uniquement
+    $('.dashboard-card').css({
+        'height': (window.innerHeight - headerH - periodH - 5) + 'px',	//'height': Math.max(availableH, 200) + 'px',
+        'width': '100%' 
+    });
 
-function getGraphMode() {
-		var mqDesktopLandscape = window.matchMedia('(min-width: 1101px) and (orientation: landscape)');
-		var mqDesktopPortrait = window.matchMedia('(min-height: 1101px) and (orientation: portrait)');
-		var mqTabletPortrait = window.matchMedia('(min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (orientation: portrait)');
-		var mqTabletLandscape = window.matchMedia('(min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (orientation: landscape)');
-		var mqMobilePortrait = window.matchMedia('(max-width: 700px) and (orientation: portrait)');
-		var mqMobileLandscape = window.matchMedia('(max-height: 700px) and (orientation: landscape)');
-
-		if (mqDesktopLandscape.matches) return 'desktop-landscape';
-		if (mqDesktopPortrait.matches)  return 'desktop-portrait';
-		if (mqTabletLandscape.matches)  return 'tablet-landscape';
-		if (mqTabletPortrait.matches)   return 'tablet-portrait';
-		if (mqMobileLandscape.matches)  return 'mobile-landscape';
-		if (mqMobilePortrait.matches)   return 'mobile-portrait';
-
-		// Fallback
-		// Breakpoints standards : 768px (iPad Mini/Mobile) et 1100px (iPad Pro/Laptop)
-		console.log("FailBack dans la detection des media")
-		if (width < 768) return isLandscape ? 'mobile-landscape' : 'mobile-portrait';
-		if (width < 1100) return isLandscape ? 'tablet-landscape' : 'tablet-portrait';
-		return isLandscape ? 'desktop-landscape' : 'desktop-portrait';
-}
-
-// Adaptation dynamique des grids jQuery Mobile
-function adaptJQueryMobileGrids() {
-		try {
-				if (debug) console.log('[RESPONSIVE] adaptJQueryMobileGrids currentLayout=', currentLayout);
-
-				// Pages à adapter (ne traiter que si présentes dans le DOM)
-				var pagesToAdapt = ['#pagePiscineParametres', '#pagePiscineMaintenance'];
-
-				pagesToAdapt.forEach(function(pageId) {
-						if (!$(pageId) || $(pageId).length === 0) {
-								// Page pas présente dans le DOM — ignorer silencieusement
-								return;
-						}
-
-						var selB = pageId + ' .ui-grid-b';
-						var selA_rev = pageId + ' .ui-grid-a';
-
-						if (currentLayout === 'desktop' || currentLayout === 'tablet-landscape') {
-								// Convertir ui-grid-b (33-33-33) en ui-grid-a (50-50)
-								var $el = $(selB);
-								if ($el && $el.length) {
-										$el.removeClass('ui-grid-b').addClass('ui-grid-a');
-										if (debug) console.log('[RESPONSIVE] adaptJQueryMobileGrids: converted', selB);
-								}
-						} else {
-								// Restaurer grids originales (si présents)
-								var $elRev = $(selA_rev);
-								if ($elRev && $elRev.length) {
-										$elRev.removeClass('ui-grid-a').addClass('ui-grid-b');
-										if (debug) console.log('[RESPONSIVE] adaptJQueryMobileGrids: reverted', selA_rev);
-								}
-						}
-				});
-
-				// Adapter les panels selon le layout
-				try { adaptPanels(); } catch(e) { if (debug) console.warn('[RESPONSIVE] adaptPanels failed', e); }
-		} catch (e) {
-				if (debug) console.error('[RESPONSIVE] adaptJQueryMobileGrids failed', e);
-		}
-}
-
-// Optimisation des panels pour desktop
-function adaptPanels() {
-	var $panels = $('[data-role="panel"]');
-  
-	if (currentLayout === 'desktop') {
-		// Desktop : panels en mode reveal persistant (non-overlay)
-		$panels.panel({
-			display: 'reveal',
-			dismissible: true,
-			swipeClose: false
-		});
+    const layout = determineLayout();
     
-		if (debug) {
-			console.log('[RESPONSIVE] Panels mode reveal (desktop)');
-		}
-	} else {
-		// Mobile/Tablette : panels en mode overlay
-		$panels.panel({
-			display: 'overlay',
-			dismissible: true,
-			swipeClose: true
-		});
-    
-		if (debug) {
-			console.log('[RESPONSIVE] Panels mode overlay (mobile/tablette)');
+    // 2. Logique de wrapper pour la zone de données
+    $('.charts-wrapper').css({
+        'flex-direction': layout.orientation,
+        'width': '100%',
+		'height': availableDataH + 'px',
+		'align-items': 'stretch',
+        'box-sizing': 'border-box'
+    });
+	
+	// 3. On s'assure que le Navigator occupe bien sa place fixe
+    $('#navZone').css({
+        'height': '25px',
+        'width': '100%'
+    });
+
+    // 4. Ton loop de visibilité (y1, y2, y3) est conservé
+	for (let i = 1; i <= 3; i++) {
+		const $zone = $(`#graph-zone-${i}`);
+		// Si c'est la zone 1, on FORCE l'affichage quoi qu'il arrive
+		// Si c'est 2 ou 3, on suit le layout.count
+		if (i === 1 || i <= layout.count) {
+			// Ne pas écraser l'attribut style complet — appliquer seulement le display
+			$zone.show().css('display', 'flex');
+		} else {
+			$zone.hide();
 		}
 	}
-  
-	// Redimensionner Dygraph si page Graphs active
-	//resizeDygraphIfNeeded();
+
+	// 4. Si le layout est en ligne (row), répartir les largeurs équitablement
+	if (layout.orientation === 'row') {
+		const colPercent = Math.floor(100 / layout.count);
+		for (let i = 1; i <= 3; i++) {
+			const $zone = $(`#graph-zone-${i}`);
+			if (i === 1 || i <= layout.count) {
+				$zone.css({ 'width': colPercent + '%', 'min-width': 0 });
+			} else {
+				$zone.css({ 'width': '0%', 'min-width': 0 });
+			}
+		}
+	} else {
+		// En colonne, chaque zone prend toute la largeur
+		for (let i = 1; i <= 3; i++) {
+			$(`#graph-zone-${i}`).css({ 'width': '100%', 'min-width': 0 });
+		}
+	}
 }
 
-/*  --------------------
-    --- PROGRESS BAR ---
-    --------------------
+
+
+/*  ---------------------------------
+    --- 3) Progress bar utilities ---
+    ---------------------------------
 */
-
-// -----------------------------
-// 3) Progress bar utilities
-// -----------------------------
-
-/**
- * Mise à jour progress bar graphique
- * @param {number} current - Étape actuelle
- * @param {number} total - Total d'étapes
- * @param {string} message - Message à afficher
- */
+// Mise à jour progress bar graphique (création si nécessaire) — appelée depuis fetchDataRange pour les longues opérations de chargement
 function updateGraphProgress(current, total, message) {
 	let percent = 0;
 	try { percent = Math.round((current / total) * 100); } catch(e) { percent = 0; }
@@ -602,7 +525,6 @@ function hideGraphProgress() {
 	try {
 		const el = $('#graphProgressContainer');
 		// Cancel pending reveal
-		if (graphProgressRevealTimer) { clearTimeout(graphProgressRevealTimer); graphProgressRevealTimer = null; }
 		if (el.length) {
 			// Animate collapse: scaleX -> 0 then fade out container
 			try {
@@ -621,13 +543,10 @@ function hideGraphProgress() {
 	graphProgressShown = false;
 }
 
-// Show progress immediately (robust): ensure container exists and is visible
-// showGraphProgressNow removed — progress is shown via updateGraphProgress
 
-
-/*  ---------------------------  
-    --- GESTION DES DONNÉES ---
-    ---------------------------
+/*  ------------------------------  
+    --- 4) Data initialization ---
+    ------------------------------
 */
 // Génération des données pour le navigateur
 function generateNavigatorData(start, end, options = {}) {
@@ -651,10 +570,7 @@ function generateNavigatorData(start, end, options = {}) {
 	}
 	return rows;
 }
-
-// -----------------------------
-// 4) Data initialization
-// -----------------------------
+// Initialisation des données: charger les 3 derniers jours et préparer les graphiques
 async function initData() {
 	currEnd = now = dayjs().set("minute",0).set("second",0);
 	// Initialisation: charger 3 jours complets en partant du début du jour (00:00)
@@ -700,7 +616,7 @@ async function initData() {
 		});
 }
 
-// First call to get data
+// First step of data initialization: fetch or generate the origin data, then normalize it for charting
 async function getOriginData(start, now){
 	i=0;
 	// Si nous sommes en phase d'initialisation, forcer la borne start au début du jour
@@ -719,8 +635,7 @@ async function getOriginData(start, now){
 	populateCache(dataOrigin);
 }
 
-// Génération des données simulées via dataGenerator.js (usage global)
-// Assurez-vous d'inclure <script src="dataGenerator.js"></script> AVANT ce fichier dans main.html
+// Normalisation des données pour les graphiques: appliquer des offsets sur les séries d'équipements pour les différencier visuellement
 function getNormalizedData() {
 	return dataOrigin.map(row => {
 		let newRow = [...row];
@@ -738,7 +653,59 @@ function getNormalizedData() {
 
 }
 
-// Rebuild the timestamp->index map for chartdata
+// transformer les data from csv to array
+function csvToArray(csvText) {
+	const result = Papa.parse(csvText, {
+		delimiter: ";",
+		skipEmptyLines: true,
+		dynamicTyping: false  // On parse manuellement pour les dates
+	});
+	
+	let validRows = 0;
+	let skippedHeaders = 0;
+	let skippedInvalid = 0;
+	
+	// FIX: Filtrer les lignes invalides (headers, mauvais format, nb colonnes incorrect)
+	const dataRows = result.data.filter(row => {
+		// Skip si première colonne est exactement "date" (header CSV)
+		if (row[0] === "date") {
+			skippedHeaders++;
+			return false;
+		}
+		
+		// Skip si ligne vide ou mauvais nombre de colonnes (doit être exactement 14)
+		if (!row[0] || row.length !== 14) {
+			skippedInvalid++;
+			return false;
+		}
+		
+		// Validation format date (doit correspondre à D-M-YYYY H:m:s)
+		// Format ESP8266 corrigé: "8-2-2026 20:15:30" (pas de zéros initiaux)
+		const dateRegex = /^\d{1,2}-\d{1,2}-\d{4} \d{1,2}:\d{1,2}:\d{1,2}$/;
+		if (!dateRegex.test(row[0])) {
+			skippedInvalid++;
+			return false;
+		}
+		
+		validRows++;
+		return true;
+	});
+	
+	console.debug && console.debug(`✅ Parsing: ${validRows} lignes valides`);
+	
+	return dataRows.map(row => {
+		// Parse date avec format ESP8266 corrigé: "D-M-YYYY H:m:s"
+		row[0] = dayjs(row[0], "D-M-YYYY H:m:s").toDate();
+		
+		// Parse valeurs numériques
+		for(let i = 1; i < row.length; i++) {
+			row[i] = parseFloat(row[i]);
+		}
+		return row;
+	});
+}
+
+// Rebuild the chartdataIndex for fast timestamp lookups after any update to chartdata
 function rebuildChartdataIndex() {
 	chartdataIndex = new Map();
 	try {
@@ -749,48 +716,31 @@ function rebuildChartdataIndex() {
 	} catch (e) { /* ignore */ }
 }
 
-// Diagnostic helper: analyse la continuité des données dans chartdata et dataOrigin
-function analyzeDataContinuity() {
-	try {
-		if (!chartdata || chartdata.length === 0) {
-			console.info('[DataDiag] chartdata vide');
-			return;
+// Mettre à jour le cache de jours disponibles et les données d'origine avec de nouvelles données brutes (ex: après chargement chunké)
+function populateCache(data) {
+	// Nouvelle stratégie : availableDays est un Set de jours disponibles (format "YYYY-MM-DD") — on ajoute les jours présents dans data
+	// dataOrigin contient les lignes brutes (utiles pour export) — on met à jour dataOrigin
+	let addedDays = 0;
+	data.forEach(row => {
+		if (row && row[0]) {
+			const d = (row[0] instanceof Date) ? row[0] : new Date(row[0]);
+			if (isNaN(d)) return;
+			const dayKey = dayjs(d).format("YYYY-MM-DD");
+			if (!availableDays.has(dayKey)) { availableDays.add(dayKey); addedDays++; }
+			// Conserver dataOrigin comme source d'export: append si absent (dédup par timestamp)
+			try {
+				const ts = +d;
+				const exists = dataOrigin.some(r => +r[0] === ts);
+				if (!exists) dataOrigin.push([d, ...row.slice(1)]);
+			} catch (e) {}
 		}
-		// Determine expected interval (infer from mode: default 15min)
-		const diffs = [];
-		for (let i = 1; i < Math.min(chartdata.length, 500); i++) {
-			diffs.push(+chartdata[i][0] - +chartdata[i-1][0]);
-		}
-		const median = diffs.length ? diffs.sort((a,b)=>a-b)[Math.floor(diffs.length/2)] : 15*60000;
-		const expected = median || 15*60000;
-
-		// Scan for large gaps
-		const gaps = [];
-		for (let i = 1; i < chartdata.length; i++) {
-			const prev = +chartdata[i-1][0];
-			const cur = +chartdata[i][0];
-			const delta = cur - prev;
-			if (delta > expected * 1.5) {
-				gaps.push({ index: i-1, from: new Date(prev).toISOString(), to: new Date(cur).toISOString(), delta, missingPoints: Math.round(delta / expected) - 1 });
-			}
-		}
-
-		// Per-day counts from dataOrigin and from chartdata
-		const perDayOrigin = new Map();
-		(dataOrigin || []).forEach(r => { try { const k = dayjs(r[0]).format('YYYY-MM-DD'); perDayOrigin.set(k, (perDayOrigin.get(k)||0)+1); } catch(e){} });
-		const perDayChart = new Map();
-		(chartdata || []).forEach(r => { try { const k = dayjs(r[0]).format('YYYY-MM-DD'); perDayChart.set(k, (perDayChart.get(k)||0)+1); } catch(e){} });
-
-		console.info(`[DataDiag] chartdata=${chartdata.length} index=${chartdataIndex.size} expected_interval_ms=${expected} gaps=${gaps.length}`);
-		if (gaps.length) console.info('[DataDiag] sample gaps:', gaps.slice(0,6));
-		// Log per-day summary (few days)
-		const days = Array.from(new Set([...perDayOrigin.keys(), ...perDayChart.keys()])).sort();
-	} catch (e) {
-		console.warn('[DataDiag] erreur', e);
-	}
+	});
+	// keep dataOrigin sorted by timestamp
+	try { dataOrigin.sort((a,b)=> +a[0] - +b[0]); } catch(e) {}
+	if (addedDays) console.info(`[populateCache] ajout ${addedDays} jours à availableDays (total=${availableDays.size})`);
 }
 
-// --- Extrait la config des capteurs pour un type de graphe donné ---
+// Extrait la configuration des capteurs pour un type donné selon le mapping demandé
 function extractConfig(type, mapping) {
 	const result = {};
 	mapping.forEach(label => {
@@ -801,8 +751,7 @@ function extractConfig(type, mapping) {
 	return result;
 }
 
-
-// --- Extraction des colonnes utiles pour chaque graphe ---
+// Extrait les colonnes de chartdata correspondant au mapping demandé, avec filtrage optionnel par plage de dates (startDate, endDate) --- 
 function extractColumns(mapping, startDate = null, endDate = null) {
 	// mapping = liste des colonnes à extraire (ex: ["PHVal", "RedoxVal", ...])
 	// chartdata = tableau de lignes (chaque ligne = [Date, PHVal, ...])
@@ -832,7 +781,7 @@ function extractColumns(mapping, startDate = null, endDate = null) {
 	return (chartdata || []).map(row => indices.map(idx => row[idx]));
 }
 
-// Normalize a single raw row (apply equipment offsets) — same logic as getNormalizedData but per-row
+// Normalise une ligne de données brutes en appliquant les offsets nécessaires pour les séries d'é
 function normalizeRow(rawRow) {
 	if (!rawRow || !rawRow[0]) return null;
 	const row = [...rawRow];
@@ -848,7 +797,7 @@ function normalizeRow(rawRow) {
 	return row;
 }
 
-// Insert normalized rows into chartdata keeping sorted order and avoiding duplicates (by timestamp)
+// Insère une liste de lignes normalisées dans chartdata en maintenant l'ordre chronologique et en évitant les doublons (basé sur timestamp)
 function insertNormalizedRows(rawRows) {
 	if (!Array.isArray(rawRows) || rawRows.length === 0) return 0;
 	if (!chartdata) chartdata = [];
@@ -924,44 +873,283 @@ function insertNormalizedRows(rawRows) {
 	// Rebuild the index after batch insertion
 	try { rebuildChartdataIndex(); } catch(e) {}
 
-	try { console.log(`[insertNormalizedRows] normalized=${normalized.length} inserted=${inserted} chartdata=${chartdata.length} index=${chartdataIndex.size}`); } catch(e) {}
+	try { console.info(`[insertNormalizedRows] normalized=${normalized.length} inserted=${inserted} chartdata=${chartdata.length} index=${chartdataIndex.size}`); } catch(e) {}
 
 	return inserted;
 }
 
-// Remplir le cache Map avec un tableau de données
-function populateCache(data) {
-	// Nouvelle stratégie : le cache client garde uniquement la liste des jours présents.
-	// dataOrigin contient les lignes brutes (utiles pour export) — on met à jour dataOrigin
-	let addedDays = 0;
-	data.forEach(row => {
-		if (row && row[0]) {
-			const d = (row[0] instanceof Date) ? row[0] : new Date(row[0]);
-			if (isNaN(d)) return;
-			const dayKey = dayjs(d).format("YYYY-MM-DD");
-			if (!availableDays.has(dayKey)) { availableDays.add(dayKey); addedDays++; }
-			// Conserver dataOrigin comme source d'export: append si absent (dédup par timestamp)
-			try {
-				const ts = +d;
-				const exists = dataOrigin.some(r => +r[0] === ts);
-				if (!exists) dataOrigin.push([d, ...row.slice(1)]);
-			} catch (e) {}
+// Diagnostic helper: analyse la continuité des données dans chartdata et dataOrigin
+function analyzeDataContinuity() {
+	try {
+		if (!chartdata || chartdata.length === 0) {
+			console.info('[DataDiag] chartdata vide');
+			return;
 		}
-	});
-	// keep dataOrigin sorted by timestamp
-	try { dataOrigin.sort((a,b)=> +a[0] - +b[0]); } catch(e) {}
-	if (addedDays) console.log(`[populateCache] ajout ${addedDays} jours à availableDays (total=${availableDays.size})`);
+		// Determine expected interval (infer from mode: default 15min)
+		const diffs = [];
+		for (let i = 1; i < Math.min(chartdata.length, 500); i++) {
+			diffs.push(+chartdata[i][0] - +chartdata[i-1][0]);
+		}
+		const median = diffs.length ? diffs.sort((a,b)=>a-b)[Math.floor(diffs.length/2)] : 15*60000;
+		const expected = median || 15*60000;
+
+		// Scan for large gaps
+		const gaps = [];
+		for (let i = 1; i < chartdata.length; i++) {
+			const prev = +chartdata[i-1][0];
+			const cur = +chartdata[i][0];
+			const delta = cur - prev;
+			if (delta > expected * 1.5) {
+				gaps.push({ index: i-1, from: new Date(prev).toISOString(), to: new Date(cur).toISOString(), delta, missingPoints: Math.round(delta / expected) - 1 });
+			}
+		}
+
+		// Per-day counts from dataOrigin and from chartdata
+		const perDayOrigin = new Map();
+		(dataOrigin || []).forEach(r => { try { const k = dayjs(r[0]).format('YYYY-MM-DD'); perDayOrigin.set(k, (perDayOrigin.get(k)||0)+1); } catch(e){} });
+		const perDayChart = new Map();
+		(chartdata || []).forEach(r => { try { const k = dayjs(r[0]).format('YYYY-MM-DD'); perDayChart.set(k, (perDayChart.get(k)||0)+1); } catch(e){} });
+
+		console.info(`[DataDiag] chartdata=${chartdata.length} index=${chartdataIndex.size} expected_interval_ms=${expected} gaps=${gaps.length}`);
+		if (gaps.length) console.info('[DataDiag] sample gaps:', gaps.slice(0,6));
+		// Log per-day summary (few days)
+		const days = Array.from(new Set([...perDayOrigin.keys(), ...perDayChart.keys()])).sort();
+	} catch (e) {
+		console.warn('[DataDiag] erreur', e);
+	}
 }
 
-/**
- * Nouvelle fonction fetchDataChunked : Charge données par chunks (évite WDT ESP8266)
- * @param {dayjs} debut - Date début
- * @param {dayjs} fin - Date fin
- * @returns {Promise<Array>} Données CSV parsées
- */
-// -----------------------------
-// 5) Data fetching / range modification
-// -----------------------------
+/*  ---------------------------------------------  
+    --- 5) Data fetching / range modification ---
+    ---------------------------------------------
+*/
+// get and load new data to graphs
+function getNewData(debut, fin) {
+	// Annuler le timer précédent
+	if (updateDebounceTimer != null) clearTimeout(updateDebounceTimer);
+
+	updateDebounceTimer = setTimeout(async () => {
+		if (getNewData.__inProgress) {
+			console.warn('[getNewData] opération déjà en cours — skip');
+			return;
+		}
+		getNewData.__inProgress = true;
+		try {
+			console.debug && console.debug(`getNewData: fetching from ${debut.format("DD-MM-YYYY")} to ${fin.format("DD-MM-YYYY")}`);
+			// Timestamp pour diagnostic / fallback si la barre n'a pas pu s'afficher
+			const _gpStart = (window.performance && performance.now) ? performance.now() : Date.now();
+			// progress bar handling moved into fetchDataRange (fetch-level progress)
+
+			// 2) récupérer uniquement les jours nécessaires via fetchDataRange
+			const newRows = await fetchDataRange(debut, fin);
+
+			console.info(`[getNewData] fetchedRows=${newRows ? newRows.length : 0}`);
+
+			if (newRows && newRows.length) {
+				// 2) marquer les jours comme disponibles et mettre à jour dataOrigin
+				try { populateCache(newRows); } catch(e) { console.warn('[getNewData] populateCache failed', e); }
+
+				// 3) insérer incrémentalement les nouvelles lignes normalisées dans chartdata
+				try {
+					const inserted = insertNormalizedRows(newRows);
+					console.debug && console.debug(`[getNewData] inserted ${inserted} new normalized rows`);
+				} catch(e) { console.warn('[getNewData] insertNormalizedRows failed', e); }
+
+				// 4) mettre à jour chaque instance de graphe (fournir le dataset complet ou fenêtre adaptée)
+				try {
+					if (window.graphInstances && Array.isArray(window.graphInstances)) {
+						window.graphInstances.forEach(inst => {
+							try {
+								// Extraire uniquement les données correspondant à la plage demandée (début/fin)
+								const instData = extractColumns(inst.mapping || [], debut, fin);
+								inst.data = instData;
+								if (inst.dygraph && typeof inst.dygraph.updateOptions === 'function') {
+									inst.dygraph.updateOptions({ file: instData, dateWindow: [debut.toDate(), fin.toDate()] });
+									// Ensure any displayed dygraph linked to this instance/template is also updated
+									try {
+										Object.values(window.displayedGraphs || {}).forEach(d => {
+											if (!d) return;
+											// match by template object or by type
+											if (d.template === inst || d.type === inst.type) {
+												try {
+													if (d.dygraph && typeof d.dygraph.updateOptions === 'function') {
+														d.dygraph.updateOptions({ file: instData, dateWindow: [debut.toDate(), fin.toDate()] });
+													}
+												} catch(_) {}
+											}
+										});
+									} catch(_) {}
+								}
+							} catch(e) {}
+						});
+					}
+				} catch(e) { console.warn('[getNewData] update instances error', e); }
+			}
+
+			// Même s'il n'y a pas de nouvelles lignes (ex: réduction de plage), appliquer la découpe
+			try {
+				if (window.graphInstances && Array.isArray(window.graphInstances)) {
+					window.graphInstances.forEach(inst => {
+						try {
+							const instData = extractColumns(inst.mapping || [], debut, fin);
+							inst.data = instData;
+							if (inst.dygraph && typeof inst.dygraph.updateOptions === 'function') {
+								inst.dygraph.updateOptions({ file: instData, dateWindow: [debut.toDate(), fin.toDate()] });
+							}
+							// aussi appliquer aux displayedGraphs correspondants
+							try { Object.values(window.displayedGraphs || {}).forEach(d => {
+								if (!d) return;
+								if (d.template === inst || d.type === inst.type) {
+									try { if (d.dygraph && typeof d.dygraph.updateOptions === 'function') d.dygraph.updateOptions({ file: instData, dateWindow: [debut.toDate(), fin.toDate()] }); } catch(_) {}
+								}
+							}); } catch(_) {}
+					} catch(e) {}
+				});
+			}
+			} catch(e) { console.warn('[getNewData] post-update slice failed', e); }
+
+			// 5) Mettre à jour la plage courante et forcer la dateWindow (la vue visible)
+			try { CurrStart = debut; CurrEnd = fin; } catch(e){}
+			try {
+				Object.values(window.displayedGraphs || {}).forEach(d => {
+					try {
+						if (d && d.dygraph && CurrStart && CurrEnd) d.dygraph.updateOptions({ dateWindow: [CurrStart.toDate(), CurrEnd.toDate()] });
+					} catch(e) {}
+				});
+			} catch(e) {}
+
+			// 6) Notifier resize/sync si besoin
+			try { scheduleGraphResize(60); } catch(e) {}
+
+			// Progress overlay is managed by fetchDataRange; nothing to clean here
+
+			// Diagnostic: analyse de continuité si mode debug actif (Option 1)
+			try { if (debug) analyzeDataContinuity(); } catch(e) { console.warn('[getNewData] analyzeDataContinuity failed', e); }
+
+		} catch (e) {
+			console.error('[getNewData] erreur générale', e);
+		} finally {
+			getNewData.__inProgress = false;
+		}
+	}, 300);
+}
+
+// utilise availableDays pour identifier les jours manquants, tente de récupérer uniquement les jours nécessaires, et gère les cas de jours partiellement complets (bordures)
+async function fetchDataRange(debut, fin) {
+	const start = dayjs(debut).startOf('day');
+	const end = dayjs(fin).endOf('day');
+	const missingRanges = [];
+	const result = [];
+
+	// Parcourir chaque jour de la période demandée et utiliser availableDays
+	let current = start.clone();
+	while (current.isBefore(end) || current.isSame(end, 'day')) {
+		const dayKey = current.format("YYYY-MM-DD");
+		if (availableDays.has(dayKey)) {
+			// Extraire les lignes correspondantes depuis dataOrigin, mais NE PAS renvoyer celles déjà dans chartdataIndex
+			try {
+				const dayRows = dataOrigin.filter(r => {
+					try { return dayjs(r[0]).format("YYYY-MM-DD") === dayKey; } catch(e) { return false; }
+				});
+				// Filtrer les lignes déjà présentes dans chartdataIndex
+				const newRows = dayRows.filter(r => !chartdataIndex.has(+r[0]));
+				if (newRows && newRows.length) {
+					console.info(`[fetchDataRange] day=${dayKey} available=${dayRows.length} new=${newRows.length}`);
+					result.push(...newRows);
+				} else {
+					console.debug && console.debug(`[fetchDataRange] day=${dayKey} available=${dayRows.length} new=0`);
+				}
+
+				// Re-fetch bordures: si le jour est présent mais contient moins de points que prévu,
+				// tenter un fetch élargi +/- 1 heure afin de récupérer des points tronqués aux bords.
+				try {
+					const intervalMinutes = 15; // cohérent avec usage courant
+					const expectedPerDay = Math.round((24 * 60) / intervalMinutes);
+					if ((dayRows.length || 0) > 0 && (dayRows.length < expectedPerDay)) {
+						console.info(`[fetchDataRange] day=${dayKey} incomplete (${dayRows.length}/${expectedPerDay}), attempting border re-fetch +/-1h`);
+						const dayStart = current.startOf('day');
+						const genStart = dayStart.subtract(1, 'hour').toDate();
+						const genEnd = dayStart.endOf('day').add(1, 'hour').toDate();
+						const fetched = await window.generatePoolData(genStart, genEnd, { intervalMinutes, debug });
+						if (fetched && fetched.length) {
+							// Extraire uniquement les lignes appartenant au jourKey et non présentes
+							const dayFetched = fetched.filter(r => {
+								try { return dayjs(r[0]).format('YYYY-MM-DD') === dayKey; } catch(e) { return false; }
+							});
+							const additional = dayFetched.filter(r => !chartdataIndex.has(+r[0]) && !dayRows.some(rr => +rr[0] === +r[0]));
+							if (additional.length) {
+								console.info(`[fetchDataRange] day=${dayKey} border-refetch added=${additional.length}`);
+								try { populateCache(additional); } catch(e) { console.warn('[fetchDataRange] populateCache failed for border-refetch', e); }
+								result.push(...additional);
+							}
+						}
+					}
+				} catch(e) { console.warn('[fetchDataRange] border re-fetch failed', e); }
+			} catch(e) { /* ignore */ }
+		} else {
+			// Jour manquant -> construire une plage manquante contiguë
+			const rangeStart = current.clone();
+			while (!availableDays.has(current.format("YYYY-MM-DD")) && (current.isBefore(end) || current.isSame(end, 'day'))) {
+				current = current.add(1, 'day');
+			}
+			missingRanges.push({ start: rangeStart, end: current.subtract(1, 'day') });
+			current = current.subtract(1, 'day');
+		}
+		current = current.add(1, 'day');
+	}
+	// Diagnostics: log missing ranges and availableDays summary
+	try {
+		const missingDays = missingRanges.flatMap(r => {
+			const arr = [];
+			let d = r.start.clone();
+			while (d.isBefore(r.end) || d.isSame(r.end, 'day')) { arr.push(d.format('YYYY-MM-DD')); d = d.add(1,'day'); }
+			return arr;
+		});
+		console.debug(`[fetchDataRange] availableDays=${Array.from(availableDays).slice(0,6).join(',')}... total=${availableDays.size} missingDays=${missingDays.slice(0,10).join(',')}`);
+	} catch(e) {}
+
+	// Calculer nombre total de jours manquants (inclusifs)
+	let totalDaysToFetch = 0;
+	missingRanges.forEach(r => {
+		let d = r.start.clone();
+		while (d.isBefore(r.end) || d.isSame(r.end, 'day')) { totalDaysToFetch++; d = d.add(1, 'day'); }
+	});
+	console.info(`[fetchDataRange] totalDaysToFetch=${totalDaysToFetch} missingRanges=${missingRanges.length}`);
+	let progressActive = false;
+	let fetchedDays = 0;
+
+	// Télécharger les plages manquantes avec API chunked
+	for (const range of missingRanges) {
+		console.debug && console.debug(`Fetching missing data from ${range.start.format("DD-MM-YYYY")} to ${range.end.format("DD-MM-YYYY")} (full-day)`);
+		// Passer des Date complets au générateur: startOf('day') -> endOf('day') pour couvrir la journée entière
+		const genStart = range.start.startOf('day').toDate();
+		const genEnd = range.end.endOf('day').toDate();
+		const newData = await window.generatePoolData(genStart, genEnd, { intervalMinutes: 15, debug });
+//		const newData = await fetchDataChunked(range.start, range.end);  // ← Utilise API chunked
+		// fetchDataChunked retourne déjà des lignes parsées via csvToArray
+		if (newData && newData.length) {
+			try { populateCache(newData); } catch(e) { console.warn('[fetchDataRange] populateCache failed', e); }
+			result.push(...newData);
+			if (progressActive) {	// Mettre à jour la barre de progression par jour de plage traitée
+				fetchedDays += 1;
+				console.info(`[fetchDataRange] fetchedDays=${fetchedDays}/${totalDaysToFetch}`);
+			}
+		}
+	}
+	
+	// Trier les résultats par date
+	result.sort((a, b) => a[0] - b[0]);	
+	return result;
+}
+
+// 1) obtenir la liste des jours disponibles, 
+// 2) pour chaque jour, vérifier l'existence du fichier et son découpage en chunks, 
+// 3) charger les chunks un par un et concaténer les données CSV, 
+// 4) parser le CSV complet en tableau de lignes
+// Note: Cette fonction suppose que le serveur expose les endpoints suivants :
+// POST /api/graph/plan { sess, start, end } -> { total_days, available_days, dates[] }
+// GET /api/graph/file-info?sess=&date=2024-01-01&chunk_size=1024 -> { exists, size, chunks }
+// GET /api/graph/chunk?sess=&date=2024-01-01&index=0&size=1024 -> chunk de données CSV	
 async function fetchDataChunked(debut, fin) {
 	// PROTECTION: Bloquer re-chargement si déjà en cours (évite navigation jQuery Mobile)
 	if (window.chunkLoadingInProgress) {
@@ -1056,44 +1244,37 @@ async function fetchDataChunked(debut, fin) {
 						data: "sess=" + sessID + "&date=" + fileInfo.date + "&index=" + chunkIndex + "&size=1024",
 						dataType: "text",
 					timeout: 10000  // Timeout 10s
-				});
+					});
 				
-				// Vérifier que réponse est CSV valide (pas message d'erreur)
-				if (chunkData.startsWith("404:") || chunkData.startsWith("400:") || chunkData.startsWith("500:")) {
-					loadedChunks++;
-					continue;  // Skip chunk invalide
-				}
-				
-				// FIX: Skip header CSV dans premier chunk de chaque fichier (sauf tout premier fichier)
-				if (chunkIndex === 0 && fileIdx > 0 && chunkData.startsWith("date;")) {
-					// Retirer première ligne (header dupliqué)
-					const firstLineEnd = chunkData.indexOf('\n');
-					if (firstLineEnd !== -1) {
-						chunkData = chunkData.substring(firstLineEnd + 1);
+					// Vérifier que réponse est CSV valide (pas message d'erreur)
+					if (chunkData.startsWith("404:") || chunkData.startsWith("400:") || chunkData.startsWith("500:")) {
+						loadedChunks++;
+						continue;  // Skip chunk invalide
 					}
+					
+					// FIX: Skip header CSV dans premier chunk de chaque fichier (sauf tout premier fichier)
+					if (chunkIndex === 0 && fileIdx > 0 && chunkData.startsWith("date;")) {
+						// Retirer première ligne (header dupliqué)
+						const firstLineEnd = chunkData.indexOf('\n');
+						if (firstLineEnd !== -1) {
+							chunkData = chunkData.substring(firstLineEnd + 1);
+						}
+					}
+					
+					allData += chunkData;
+					loadedChunks++;
+					if(progressActive) try { updateGraphProgress(loadedChunks, totalChunks, `Téléchargement ${loadedChunks}/${totalChunks} chunks…`); } catch(e) {}
+				} catch (error) {
+					loadedChunks++;
+					// Continue avec chunk suivant
 				}
-				
-				allData += chunkData;
-				loadedChunks++;
-				if(progressActive) try { updateGraphProgress(loadedChunks, totalChunks, `Téléchargement ${loadedChunks}/${totalChunks} chunks…`); } catch(e) {}
-			} catch (error) {
-				loadedChunks++;
-				// Continue avec chunk suivant
 			}
 		}
-		}
-		
-	// Étape 4 : Parser données
-		
 		// Étape 4 : Parser données
-	const parsedData = csvToArray(allData.trim());
-	
-	datas.push(...parsedData);
-	
-	// La progression (si affichée) est gérée par l'appelant principal (fetchDataRange)
+		const parsedData = csvToArray(allData.trim());
+		datas.push(...parsedData);
 		
 		showToast(`✅ ${availableDays} jours chargés (${totalChunks} chunks)`, 'success');
-		
 		console.info && console.info(`✅ [CHUNKED API] Success: ${datas.length} lignes chargées`);
 		
 	} catch (e) {
@@ -1113,395 +1294,12 @@ async function fetchDataChunked(debut, fin) {
 	
 	return datas;
 }
-
-// Nouvelle fonction simplifiée pour récupérer les données avec cache Map
-async function fetchDataRange(debut, fin) {
-	const start = dayjs(debut).startOf('day');
-	const end = dayjs(fin).endOf('day');
-	const missingRanges = [];
-	const result = [];
-
-	// Parcourir chaque jour de la période demandée et utiliser availableDays
-	let current = start.clone();
-	while (current.isBefore(end) || current.isSame(end, 'day')) {
-		const dayKey = current.format("YYYY-MM-DD");
-		if (availableDays.has(dayKey)) {
-			// Extraire les lignes correspondantes depuis dataOrigin, mais NE PAS renvoyer celles déjà dans chartdataIndex
-			try {
-				const dayRows = dataOrigin.filter(r => {
-					try { return dayjs(r[0]).format("YYYY-MM-DD") === dayKey; } catch(e) { return false; }
-				});
-				// Filtrer les lignes déjà présentes dans chartdataIndex
-				const newRows = dayRows.filter(r => !chartdataIndex.has(+r[0]));
-				if (newRows && newRows.length) {
-					console.info(`[fetchDataRange] day=${dayKey} available=${dayRows.length} new=${newRows.length}`);
-					result.push(...newRows);
-				} else {
-					console.debug && console.debug(`[fetchDataRange] day=${dayKey} available=${dayRows.length} new=0`);
-				}
-
-						// Re-fetch bordures: si le jour est présent mais contient moins de points que prévu,
-						// tenter un fetch élargi +/- 1 heure afin de récupérer des points tronqués aux bords.
-						try {
-							const intervalMinutes = 15; // cohérent avec usage courant
-							const expectedPerDay = Math.round((24 * 60) / intervalMinutes);
-							if ((dayRows.length || 0) > 0 && (dayRows.length < expectedPerDay)) {
-								console.info(`[fetchDataRange] day=${dayKey} incomplete (${dayRows.length}/${expectedPerDay}), attempting border re-fetch +/-1h`);
-								const dayStart = current.startOf('day');
-								const genStart = dayStart.subtract(1, 'hour').toDate();
-								const genEnd = dayStart.endOf('day').add(1, 'hour').toDate();
-								const fetched = await window.generatePoolData(genStart, genEnd, { intervalMinutes, debug });
-								if (fetched && fetched.length) {
-									// Extraire uniquement les lignes appartenant au jourKey et non présentes
-									const dayFetched = fetched.filter(r => {
-										try { return dayjs(r[0]).format('YYYY-MM-DD') === dayKey; } catch(e) { return false; }
-									});
-									const additional = dayFetched.filter(r => !chartdataIndex.has(+r[0]) && !dayRows.some(rr => +rr[0] === +r[0]));
-									if (additional.length) {
-										console.info(`[fetchDataRange] day=${dayKey} border-refetch added=${additional.length}`);
-										try { populateCache(additional); } catch(e) { console.warn('[fetchDataRange] populateCache failed for border-refetch', e); }
-										result.push(...additional);
-									}
-								}
-							}
-						} catch(e) { console.warn('[fetchDataRange] border re-fetch failed', e); }
-			} catch(e) { /* ignore */ }
-		} else {
-			// Jour manquant -> construire une plage manquante contiguë
-			const rangeStart = current.clone();
-			while (!availableDays.has(current.format("YYYY-MM-DD")) && (current.isBefore(end) || current.isSame(end, 'day'))) {
-				current = current.add(1, 'day');
-			}
-			missingRanges.push({ start: rangeStart, end: current.subtract(1, 'day') });
-			current = current.subtract(1, 'day');
-		}
-		current = current.add(1, 'day');
-	}
-	// Diagnostics: log missing ranges and availableDays summary
-	try {
-		const missingDays = missingRanges.flatMap(r => {
-			const arr = [];
-			let d = r.start.clone();
-			while (d.isBefore(r.end) || d.isSame(r.end, 'day')) { arr.push(d.format('YYYY-MM-DD')); d = d.add(1,'day'); }
-			return arr;
-		});
-		console.log(`[fetchDataRange] availableDays=${Array.from(availableDays).slice(0,6).join(',')}... total=${availableDays.size} missingDays=${missingDays.slice(0,10).join(',')}`);
-	} catch(e) {}
-
-	// Calculer nombre total de jours manquants (inclusifs)
-	let totalDaysToFetch = 0;
-	missingRanges.forEach(r => {
-		let d = r.start.clone();
-		while (d.isBefore(r.end) || d.isSame(r.end, 'day')) { totalDaysToFetch++; d = d.add(1, 'day'); }
-	});
-	console.log(`[fetchDataRange] totalDaysToFetch=${totalDaysToFetch} missingRanges=${missingRanges.length}`);
-	let progressActive = false;
-	let fetchedDays = 0;
-
-	// Télécharger les plages manquantes avec API chunked
-	for (const range of missingRanges) {
-		console.debug && console.debug(`Fetching missing data from ${range.start.format("DD-MM-YYYY")} to ${range.end.format("DD-MM-YYYY")} (full-day)`);
-		// Passer des Date complets au générateur: startOf('day') -> endOf('day') pour couvrir la journée entière
-		const genStart = range.start.startOf('day').toDate();
-		const genEnd = range.end.endOf('day').toDate();
-		const newData = await window.generatePoolData(genStart, genEnd, { intervalMinutes: 15, debug });
-//		const newData = await fetchDataChunked(range.start, range.end);  // ← Utilise API chunked
-		// fetchDataChunked retourne déjà des lignes parsées via csvToArray
-		if (newData && newData.length) {
-			try { populateCache(newData); } catch(e) { console.warn('[fetchDataRange] populateCache failed', e); }
-			result.push(...newData);
-			if (progressActive) {	// Mettre à jour la barre de progression par jour de plage traitée
-				fetchedDays += 1;
-				console.log(`[fetchDataRange] fetchedDays=${fetchedDays}/${totalDaysToFetch}`);
-			}
-		}
-	}
 	
-	// Trier les résultats par date
-	result.sort((a, b) => a[0] - b[0]);	
-	return result;
-}
-
-// transformer les data from csv to array
-function csvToArray(csvText) {
-	const result = Papa.parse(csvText, {
-		delimiter: ";",
-		skipEmptyLines: true,
-		dynamicTyping: false  // On parse manuellement pour les dates
-	});
-	
-	let validRows = 0;
-	let skippedHeaders = 0;
-	let skippedInvalid = 0;
-	
-	// FIX: Filtrer les lignes invalides (headers, mauvais format, nb colonnes incorrect)
-	const dataRows = result.data.filter(row => {
-		// Skip si première colonne est exactement "date" (header CSV)
-		if (row[0] === "date") {
-			skippedHeaders++;
-			return false;
-		}
-		
-		// Skip si ligne vide ou mauvais nombre de colonnes (doit être exactement 14)
-		if (!row[0] || row.length !== 14) {
-			skippedInvalid++;
-			return false;
-		}
-		
-		// Validation format date (doit correspondre à D-M-YYYY H:m:s)
-		// Format ESP8266 corrigé: "8-2-2026 20:15:30" (pas de zéros initiaux)
-		const dateRegex = /^\d{1,2}-\d{1,2}-\d{4} \d{1,2}:\d{1,2}:\d{1,2}$/;
-		if (!dateRegex.test(row[0])) {
-			skippedInvalid++;
-			return false;
-		}
-		
-		validRows++;
-		return true;
-	});
-	
-	console.debug && console.debug(`✅ Parsing: ${validRows} lignes valides`);
-	
-	return dataRows.map(row => {
-		// Parse date avec format ESP8266 corrigé: "D-M-YYYY H:m:s"
-		row[0] = dayjs(row[0], "D-M-YYYY H:m:s").toDate();
-		
-		// Parse valeurs numériques
-		for(let i = 1; i < row.length; i++) {
-			row[i] = parseFloat(row[i]);
-		}
-		return row;
-	});
-}
-
-// Mettre à jour les données des graphiques existants
-function updateGraphsData(data) {
-	var mode = currentMode || getGraphMode();
-	
-	if (mode === 'mobile' && charts.mobile) {
-		var graphType = $('#graphSelector').val() || 'all';
-		var graphData = data;
-		
-		if (graphType === 'chemistry') {
-			graphData = extractChemistryData(data);
-		} else if (graphType === 'temperature') {
-			graphData = extractTemperatureData(data);
-		} else if (graphType === 'equipment') {
-			graphData = applyEquipmentOffset(data);
-		}
-		
-		charts.mobile.updateOptions({file: graphData});
-		
-	} else if (mode === 'tablet') {
-		var graphs = selectedGraphs.tablet || ['chemistry', 'temperature'];
-		
-		graphs.forEach(function(graphType) {
-			if (charts[graphType]) {
-				var graphData;
-				if (graphType === 'chemistry') {
-					graphData = extractChemistryData(data);
-				} else if (graphType === 'temperature') {
-					graphData = extractTemperatureData(data);
-				} else if (graphType === 'equipment') {
-					graphData = applyEquipmentOffset(data);
-				}
-				charts[graphType].updateOptions({file: graphData});
-			}
-		});
-		
-	} else if (mode === 'desktop') {
-		if (charts.chemistry) {
-			charts.chemistry.updateOptions({file: extractChemistryData(data)});
-		}
-		if (charts.temperature) {
-			charts.temperature.updateOptions({file: extractTemperatureData(data)});
-		}
-		if (charts.equipment) {
-			charts.equipment.updateOptions({file: applyEquipmentOffset(data)});
-		}
-	}
-}
-
-// get and load new data to graphs
-function getNewData(debut, fin) {
-	// Annuler le timer précédent
-	if (updateDebounceTimer != null) clearTimeout(updateDebounceTimer);
-
-	updateDebounceTimer = setTimeout(async () => {
-		if (getNewData.__inProgress) {
-			console.log('[getNewData] opération déjà en cours — skip');
-			return;
-		}
-		getNewData.__inProgress = true;
-		try {
-			console.debug && console.debug(`getNewData: fetching from ${debut.format("DD-MM-YYYY")} to ${fin.format("DD-MM-YYYY")}`);
-			// Timestamp pour diagnostic / fallback si la barre n'a pas pu s'afficher
-			const _gpStart = (window.performance && performance.now) ? performance.now() : Date.now();
-			// progress bar handling moved into fetchDataRange (fetch-level progress)
-
-			// 2) récupérer uniquement les jours nécessaires via fetchDataRange
-			const newRows = await fetchDataRange(debut, fin);
-
-			console.log(`[getNewData] fetchedRows=${newRows ? newRows.length : 0}`);
-
-			if (newRows && newRows.length) {
-				// 2) marquer les jours comme disponibles et mettre à jour dataOrigin
-				try { populateCache(newRows); } catch(e) { console.warn('[getNewData] populateCache failed', e); }
-
-				// 3) insérer incrémentalement les nouvelles lignes normalisées dans chartdata
-				try {
-					const inserted = insertNormalizedRows(newRows);
-					console.debug && console.debug(`[getNewData] inserted ${inserted} new normalized rows`);
-				} catch(e) { console.warn('[getNewData] insertNormalizedRows failed', e); }
-
-				// 4) mettre à jour chaque instance de graphe (fournir le dataset complet ou fenêtre adaptée)
-				try {
-					if (window.graphInstances && Array.isArray(window.graphInstances)) {
-						window.graphInstances.forEach(inst => {
-							try {
-								// Extraire uniquement les données correspondant à la plage demandée (début/fin)
-								const instData = extractColumns(inst.mapping || [], debut, fin);
-								inst.data = instData;
-								if (inst.dygraph && typeof inst.dygraph.updateOptions === 'function') {
-									inst.dygraph.updateOptions({ file: instData, dateWindow: [debut.toDate(), fin.toDate()] });
-									// Ensure any displayed dygraph linked to this instance/template is also updated
-									try {
-										Object.values(window.displayedGraphs || {}).forEach(d => {
-											if (!d) return;
-											// match by template object or by type
-											if (d.template === inst || d.type === inst.type) {
-												try {
-													if (d.dygraph && typeof d.dygraph.updateOptions === 'function') {
-														d.dygraph.updateOptions({ file: instData, dateWindow: [debut.toDate(), fin.toDate()] });
-													}
-												} catch(_) {}
-											}
-										});
-									} catch(_) {}
-								}
-							} catch(e) {}
-						});
-					}
-				} catch(e) { console.warn('[getNewData] update instances error', e); }
-			}
-
-			// Même s'il n'y a pas de nouvelles lignes (ex: réduction de plage), appliquer la découpe
-			try {
-				if (window.graphInstances && Array.isArray(window.graphInstances)) {
-					window.graphInstances.forEach(inst => {
-						try {
-							const instData = extractColumns(inst.mapping || [], debut, fin);
-							inst.data = instData;
-							if (inst.dygraph && typeof inst.dygraph.updateOptions === 'function') {
-								inst.dygraph.updateOptions({ file: instData, dateWindow: [debut.toDate(), fin.toDate()] });
-							}
-							// aussi appliquer aux displayedGraphs correspondants
-							try { Object.values(window.displayedGraphs || {}).forEach(d => {
-								if (!d) return;
-								if (d.template === inst || d.type === inst.type) {
-									try { if (d.dygraph && typeof d.dygraph.updateOptions === 'function') d.dygraph.updateOptions({ file: instData, dateWindow: [debut.toDate(), fin.toDate()] }); } catch(_) {}
-								}
-							}); } catch(_) {}
-					} catch(e) {}
-				});
-			}
-			} catch(e) { console.warn('[getNewData] post-update slice failed', e); }
-
-			// 5) Mettre à jour la plage courante et forcer la dateWindow (la vue visible)
-			try { CurrStart = debut; CurrEnd = fin; } catch(e){}
-			try {
-				Object.values(window.displayedGraphs || {}).forEach(d => {
-					try {
-						if (d && d.dygraph && CurrStart && CurrEnd) d.dygraph.updateOptions({ dateWindow: [CurrStart.toDate(), CurrEnd.toDate()] });
-					} catch(e) {}
-				});
-			} catch(e) {}
-
-			// 6) Notifier resize/sync si besoin
-			try { scheduleGraphResize(60); } catch(e) {}
-
-			// Progress overlay is managed by fetchDataRange; nothing to clean here
-
-			// Diagnostic: analyse de continuité si mode debug actif (Option 1)
-			try { if (debug) analyzeDataContinuity(); } catch(e) { console.warn('[getNewData] analyzeDataContinuity failed', e); }
-
-		} catch (e) {
-			console.error('[getNewData] erreur générale', e);
-		} finally {
-			getNewData.__inProgress = false;
-		}
-	}, 300);
-}
-
-// Fonction appelée après changement de période (daterange picker)
-function updateGraphsDateRange(startDate, endDate) {
-	console.log("Updating graphs date range: " + startDate.format('DD/MMM/YY') + " to " + endDate.format('DD/MMM/YY'));
-	
-	Object.keys(charts).forEach(function(key) {
-		if (charts[key] && typeof charts[key].updateOptions === 'function') {
-			charts[key].updateOptions({
-				dateWindow: [startDate.toDate(), endDate.toDate()]
-			});
-		}
-	});
-}
-
-// Mettre à jour les données des graphiques existants
-function updateGraphsData(data) {
-	var mode = currentMode || getGraphMode();
-    
-	if (graphModeBase(mode) === 'mobile') {
-		// Mobile : mettre à jour le graphique de la zone actuellement visible
-		var selectedGraph = $('#graph-zone-1').attr('data-graph-type') || 'chemistry';
-		
-		if (charts[selectedGraph]) {
-			var graphData;
-			
-			if (selectedGraph === 'chemistry') {
-				graphData = extractChemistryData(data);
-			} else if (selectedGraph === 'temperature') {
-				graphData = extractTemperatureData(data);
-			} else if (selectedGraph === 'equipment') {
-				graphData = applyEquipmentOffset(data);
-			}
-			
-			charts[selectedGraph].updateOptions({file: graphData});
-		}
-		
-	} else if (graphModeBase(mode) === 'tablet') {
-		// Tablette : mettre à jour chemistry + temperature
-		if (charts.chemistry) {
-			charts.chemistry.updateOptions({file: extractChemistryData(data)});
-		}
-		if (charts.temperature) {
-			charts.temperature.updateOptions({file: extractTemperatureData(data)});
-		}
-		
-	} else if (graphModeBase(mode) === 'desktop') {
-		// Desktop : mettre à jour les 3 graphiques
-		if (charts.chemistry) {
-			charts.chemistry.updateOptions({file: extractChemistryData(data)});
-		}
-		if (charts.temperature) {
-			charts.temperature.updateOptions({file: extractTemperatureData(data)});
-		}
-		if (charts.equipment) {
-			charts.equipment.updateOptions({file: applyEquipmentOffset(data)});
-		}
-	}
-}
-
-
-
-/*  -----------------------
-    --- LOGIQUE DYGRAPH ---
-    -----------------------
+/*  ------------------------------------
+    --- 6) Dygraph-related functions ---
+    ------------------------------------
 */
-
-// -----------------------------
-// 6) Dygraph-related functions
-// -----------------------------
-
+// Initialisation des graphiques : appliquer les hauteurs, créer les selecteurs d'axes, instancier les Dygraphs, gérer la synchro et le ResizeObserver
 function initCharts() {
 
 	const layout = determineLayout();
@@ -1523,7 +1321,7 @@ function initCharts() {
 	for (let z = 1; z <= 3; z++) {
 		// Zone 1 is always created; other zones follow layout.count
 		if (z !== 1 && z > layout.count) {
-			console.log(`[initCharts] skipping creation for zone ${z} due to layout.count=${layout.count}`);
+			console.info(`[initCharts] skipping creation for zone ${z} due to layout.count=${layout.count}`);
 			continue;
 		}
 		dygraphPromises.push(createDygraphForZone(z));
@@ -1557,7 +1355,7 @@ function initCharts() {
 			// On attend un raf pour laisser le navigateur finaliser le layout
 			requestAnimationFrame(() => {
 				try {
-					console.log('[ResizeObserver] déclenché, entries:', entries.map(e => e.target && (e.target.id || e.target.className)));
+					console.debug('[ResizeObserver] déclenché, entries:', entries.map(e => e.target && (e.target.id || e.target.className)));
 				} catch (e) {}
 					// Utiliser le scheduler pour coalescer les resizes
 					scheduleGraphResize();
@@ -1567,40 +1365,8 @@ function initCharts() {
 	}
 }
 
-function synchronizeGraphs() {
-	console.log('[synchronizeGraphs] État des zones affichées :');
-	const activeGraphs = [];
-	Object.keys(window.displayedGraphs || {}).forEach(zone => {
-		const d = window.displayedGraphs[zone];
-		const containerId = zone == 4 ? 'graph-canvas-nav' : `graph-canvas-${zone}`;
-		const container = document.getElementById(containerId);
-		console.log(`  zone=${zone} type=${d && d.type} dygraph=`, !!(d && d.dygraph), 'container=', !!container);
-		if (d && d.dygraph) activeGraphs.push(d.dygraph);
-	});
-	console.log('[synchronizeGraphs] Dygraph valides trouvés :', activeGraphs.length, activeGraphs);
-	if (activeGraphs.length === 0) {
-		console.warn('[synchronizeGraphs] Aucun Dygraph valide à synchroniser.');
-		return;
-	}
-	window.requestAnimationFrame(() => {
-		try {
-			// Détacher l'ancien handler s'il existe pour éviter les duplications
-			if (syncHandler) {
-				try { syncHandler.detach(); } catch (e) {}
-				syncHandler = null;
-			}
-			syncHandler = Dygraph.synchronize(activeGraphs, {
-				selection: true,
-				zoom: true,
-				range: false
-			});
-		} catch (e) {
-			console.error('[synchronizeGraphs] Erreur Dygraph.synchronize:', e);
-		}
-	});
-}
-
 /** Calcule l'objet options complet pour l'instanciation ou l'update */
+// instance = objet GraphInstance déjà préparé, isNavigator = bool, zoneIndex = 1..3 (pour logs)
 function getGraphOptions(instance, isNavigator, zoneIndex) {
 	let labels, vis, seriesConfig, y1Title, y2Title;
 	// Init variables communes
@@ -2005,6 +1771,193 @@ function getGraphOptions(instance, isNavigator, zoneIndex) {
 	};
 }
 
+// Met à jour les graphiques existants en fonction de l'état actuel (window.displayedGraphs) et du layout
+// Si targetZone est défini, ne mettre à jour que cette zone (optimisation pour les changements d'axes)
+function updateGraphs(targetZone) {
+	// Log d'appel pour debug double invocation
+	console.debug('[updateGraphs] Appel updateGraphs', new Error().stack.split('\n')[1].trim());
+	// Verrou de sécurité
+	if (isInteracting) return;
+
+	const layout = determineLayout();
+
+	// 1. Affiche/masque les zones graphiques selon le layout (zones 1..3)
+	for (let i = 1; i <= 3; i++) {
+		const $zone = $(`#graph-zone-${i}`);
+		if (i === 1 || i <= layout.count) {
+			$zone.show().css('display', 'flex');
+		} else {
+			$zone.hide();
+		}
+	}
+
+	// 2. Mettre à jour chaque dygraph existant à partir de l'état par-zone (window.displayedGraphs)
+	// Detach synchronizer to avoid concurrent callbacks while we update options
+	if (syncHandler) {
+		try { syncHandler.detach(); } catch (e) {}
+		syncHandler = null;
+	}
+	const pendingUpdates = [];
+	Object.keys(window.displayedGraphs || {}).forEach(zoneKey => {
+		try {
+			const zone = parseInt(zoneKey, 10);
+			if (typeof targetZone !== 'undefined' && zone !== targetZone) return;
+			const disp = window.displayedGraphs[zone];
+			if (!disp || !disp.dygraph) return;
+			// Skip dygraphs that were just created and not yet finalized to avoid races
+			if (disp.initialized === false) {
+				console.warn(`[Dygraph][updateGraphs] Skipping zone ${zone} because dygraph not initialized yet`);
+				return;
+			}
+			const containerId = zone === 4 ? 'graph-canvas-nav' : `graph-canvas-${zone}`;
+			const container = document.getElementById(containerId);
+			// Ajuster explicitement le container selon la zone parent
+			if (container) {
+				let zoneEl = document.getElementById(`graph-zone-${zone}`);
+				if (zone === 4) zoneEl = document.getElementById('navZone') || zoneEl;
+				if (zoneEl) {
+					const zRect = zoneEl.getBoundingClientRect();
+					const w = Math.round(zRect.width);
+					const h = Math.round(zRect.height - (zoneEl.querySelector('.graph-header-mini') ? zoneEl.querySelector('.graph-header-mini').offsetHeight : 0));
+					if (w > 0) {
+						if (Math.abs(container.clientWidth - w) > 1) {
+							container.style.width = w + 'px';
+							console.info(`[Dygraph][updateGraphs] Applied explicit width to ${containerId}: ${w}px (from zone ${zoneEl.id})`);
+						}
+						if (h > 0 && Math.abs(container.clientHeight - h) > 1) {
+							container.style.height = h + 'px';
+							console.info(`[Dygraph][updateGraphs] Applied explicit height to ${containerId}: ${h}px (from zone ${zoneEl.id})`);
+						}
+					} else {
+						console.warn(`[Dygraph][updateGraphs] zone ${zoneEl.id} not yet sized: ${zRect.width}x${zRect.height}`);
+					}
+				} else {
+					console.warn(`[Dygraph][updateGraphs] zone element for ${containerId} introuvable`);
+				}
+			} else {
+				console.warn(`[Dygraph][updateGraphs] ${containerId} introuvable`);
+			}
+
+			// Prepare update for this zone (deferred to next RAF)
+			const template = disp.template;
+			let options = getGraphOptions(template, template.type === 'navigator', zone);
+			if (options && options.dateWindow) delete options.dateWindow;
+			pendingUpdates.push({ zone, disp, container, containerId, options });
+
+		} catch (e) { console.error('[Dygraph][updateGraphs] unexpected error per zone:', e); }
+	});
+
+	// Execute all updates in the next animation frame to avoid re-entrancy with dygraph/synchronizer callbacks
+	requestAnimationFrame(() => {
+		try {
+			// detach synchronizer to prevent its callbacks from firing during updateOptions
+			let hadSync = false;
+			if (syncHandler) {
+				try { syncHandler.detach(); } catch (e) {}
+				syncHandler = null;
+				hadSync = true;
+			}
+			const dpr = window.devicePixelRatio || 1;
+			pendingUpdates.forEach(item => {
+				try {
+					const { zone, disp, container, containerId, options } = item;
+					if (!disp || !disp.dygraph) return;
+					const maindiv = disp.dygraph && disp.dygraph.maindiv_ ? disp.dygraph.maindiv_ : null;
+					const safeContainer = container && container.clientHeight && container.clientWidth;
+					if (!maindiv || !safeContainer) {
+						console.warn(`[Dygraph][updateGraphs] Skipping deferred updateOptions for zone=${zone} - maindiv or container not ready`, { maindiv: !!maindiv, containerSize: safeContainer ? `${container.clientWidth}x${container.clientHeight}` : '0x0' });
+						return;
+					}
+					try {
+						disp.dygraph.updateOptions({ file: disp.template.data, ...options });
+						try { updateAxesSelectorsVisual(zone); } catch(e){}
+					} catch (err) {
+						console.warn(`[Dygraph][updateGraphs] updateOptions immediate failed for zone=${zone}, scheduling one retry`, err);
+						try {
+							// single retry flag to avoid loops
+							disp._updateRetry = disp._updateRetry ? disp._updateRetry + 1 : 1;
+							if (disp._updateRetry <= 1) {
+								requestAnimationFrame(() => {
+									try {
+										console.info(`[Dygraph][updateGraphs] executing retry updateOptions for zone=${zone}`);
+										disp.dygraph.updateOptions({ file: disp.template.data, ...options });
+										try { updateAxesSelectorsVisual(zone); } catch(e){}
+										// also adjust canvases after retry
+										try {
+											const maindiv2 = disp.dygraph && disp.dygraph.maindiv_ ? disp.dygraph.maindiv_ : null;
+											if (maindiv2) {
+												const canvases2 = maindiv2.querySelectorAll('canvas');
+												const dpr2 = window.devicePixelRatio || 1;
+												canvases2.forEach(c2 => {
+													try {
+														const cssW2 = Math.round(container.clientWidth || c2.clientWidth || 0);
+														const cssH2 = Math.round(container.clientHeight || c2.clientHeight || 0);
+														if (cssW2 > 0 && cssH2 > 0) {
+															c2.style.width = cssW2 + 'px';
+															c2.style.height = cssH2 + 'px';
+															const pixW2 = Math.round(cssW2 * dpr2);
+															const pixH2 = Math.round(cssH2 * dpr2);
+															if (c2.width !== pixW2 || c2.height !== pixH2) {
+																c2.width = pixW2;
+																c2.height = pixH2;
+															}
+														}
+													} catch (e) { /* ignore */ }
+												});
+											}
+										} catch (e) { /* ignore */ }
+										// retry succeeded — clear retry flag and log
+										try { disp._updateRetry = 0; } catch(e){}
+										try { console.info(`[Dygraph][updateGraphs] retry updateOptions succeeded for zone=${zone}`); } catch(e){}
+									} catch (err2) {
+										console.error('[Dygraph][updateGraphs] retry updateOptions failed', err2);
+									}
+								});
+							}
+						} catch (e2) { console.error('[Dygraph][updateGraphs] scheduling retry failed', e2); }
+					}
+					// Ajuster les canvases internes pour la largeur/hauteur physique (devicePixelRatio)
+					try {
+						if (maindiv) {
+							const canvases = maindiv.querySelectorAll('canvas');
+							canvases.forEach(c => {
+								try {
+									const cssW = Math.round(container.clientWidth || c.clientWidth || 0);
+									const cssH = Math.round(container.clientHeight || c.clientHeight || 0);
+									if (cssW > 0 && cssH > 0) {
+										c.style.width = cssW + 'px';
+										c.style.height = cssH + 'px';
+										const pixW = Math.round(cssW * dpr);
+										const pixH = Math.round(cssH * dpr);
+										if (c.width !== pixW || c.height !== pixH) {
+											c.width = pixW;
+											c.height = pixH;
+											console.debug(`[Dygraph][updateGraphs] Set canvas pixels for ${containerId}: ${pixW}x${pixH} (dpr=${dpr})`);
+										}
+									}
+								} catch (e) { /* ignore individual canvas errors */ }
+							});
+						}
+					} catch (e) { console.error('[Dygraph][updateGraphs] canvas adjust erreur:', e); }
+				} catch (e) { console.error('[Dygraph][updateGraphs] deferred update error:', e); }
+			});
+			// reattach synchronizer if it existed before
+			if (hadSync) {
+				try {
+					requestAnimationFrame(() => {
+						try { synchronizeGraphs(); } catch (e) { console.error('[Dygraph][updateGraphs] synchronizeGraphs reattach error', e); }
+					});
+				} catch (e) { console.error('[Dygraph][updateGraphs] reattach scheduling error', e); }
+			}
+		} catch (e) { console.error('[Dygraph][updateGraphs] deferred updates frame error:', e); }
+	});
+
+	// 3. Lancer le redimensionnement intelligent pour les containers visibles (debounced)
+	requestAnimationFrame(() => {
+		scheduleGraphResize();
+	});
+}
+
 /** Génère le code HTML de la légende statique sous le graphique */
 function refreshStaticLegend(g, data) {
     if (!g || !g.maindiv_) return;
@@ -2124,322 +2077,7 @@ function refreshStaticLegend(g, data) {
 	} catch(e) {}
 }
 
-/** Redessine tous les graphiques (utile après un resize) */
-function updateGraphs(targetZone) {
-	// Log d'appel pour debug double invocation
-	console.log('[updateGraphs] Appel updateGraphs', new Error().stack.split('\n')[1].trim());
-	// Verrou de sécurité
-	if (isInteracting) return;
-
-	const layout = determineLayout();
-
-	// 1. Affiche/masque les zones graphiques selon le layout (zones 1..3)
-	for (let i = 1; i <= 3; i++) {
-		const $zone = $(`#graph-zone-${i}`);
-		if (i === 1 || i <= layout.count) {
-			$zone.show().css('display', 'flex');
-		} else {
-			$zone.hide();
-		}
-	}
-
-	// 2. Mettre à jour chaque dygraph existant à partir de l'état par-zone (window.displayedGraphs)
-	// Detach synchronizer to avoid concurrent callbacks while we update options
-	if (syncHandler) {
-		try { syncHandler.detach(); } catch (e) {}
-		syncHandler = null;
-	}
-	const pendingUpdates = [];
-	Object.keys(window.displayedGraphs || {}).forEach(zoneKey => {
-		try {
-			const zone = parseInt(zoneKey, 10);
-			if (typeof targetZone !== 'undefined' && zone !== targetZone) return;
-			const disp = window.displayedGraphs[zone];
-			if (!disp || !disp.dygraph) return;
-			// Skip dygraphs that were just created and not yet finalized to avoid races
-			if (disp.initialized === false) {
-				console.log(`[Dygraph][updateGraphs] Skipping zone ${zone} because dygraph not initialized yet`);
-				return;
-			}
-			const containerId = zone === 4 ? 'graph-canvas-nav' : `graph-canvas-${zone}`;
-			const container = document.getElementById(containerId);
-			// Ajuster explicitement le container selon la zone parent
-			if (container) {
-				let zoneEl = document.getElementById(`graph-zone-${zone}`);
-				if (zone === 4) zoneEl = document.getElementById('navZone') || zoneEl;
-				if (zoneEl) {
-					const zRect = zoneEl.getBoundingClientRect();
-					const w = Math.round(zRect.width);
-					const h = Math.round(zRect.height - (zoneEl.querySelector('.graph-header-mini') ? zoneEl.querySelector('.graph-header-mini').offsetHeight : 0));
-					if (w > 0) {
-						if (Math.abs(container.clientWidth - w) > 1) {
-							container.style.width = w + 'px';
-							console.log(`[Dygraph][updateGraphs] Applied explicit width to ${containerId}: ${w}px (from zone ${zoneEl.id})`);
-						}
-						if (h > 0 && Math.abs(container.clientHeight - h) > 1) {
-							container.style.height = h + 'px';
-							console.log(`[Dygraph][updateGraphs] Applied explicit height to ${containerId}: ${h}px (from zone ${zoneEl.id})`);
-						}
-					} else {
-						console.log(`[Dygraph][updateGraphs] zone ${zoneEl.id} not yet sized: ${zRect.width}x${zRect.height}`);
-					}
-				} else {
-					console.log(`[Dygraph][updateGraphs] zone element for ${containerId} introuvable`);
-				}
-			} else {
-				console.log(`[Dygraph][updateGraphs] ${containerId} introuvable`);
-			}
-
-			// Prepare update for this zone (deferred to next RAF)
-			const template = disp.template;
-			let options = getGraphOptions(template, template.type === 'navigator', zone);
-			if (options && options.dateWindow) delete options.dateWindow;
-			pendingUpdates.push({ zone, disp, container, containerId, options });
-
-		} catch (e) { console.error('[Dygraph][updateGraphs] unexpected error per zone:', e); }
-	});
-
-	// Execute all updates in the next animation frame to avoid re-entrancy with dygraph/synchronizer callbacks
-	requestAnimationFrame(() => {
-		try {
-			// detach synchronizer to prevent its callbacks from firing during updateOptions
-
-	// -----------------------------
-	// 7) Interface / layout helpers
-	// -----------------------------
-			let hadSync = false;
-			if (syncHandler) {
-				try { syncHandler.detach(); } catch (e) {}
-				syncHandler = null;
-				hadSync = true;
-			}
-			const dpr = window.devicePixelRatio || 1;
-			pendingUpdates.forEach(item => {
-				try {
-					const { zone, disp, container, containerId, options } = item;
-					if (!disp || !disp.dygraph) return;
-					const maindiv = disp.dygraph && disp.dygraph.maindiv_ ? disp.dygraph.maindiv_ : null;
-					const safeContainer = container && container.clientHeight && container.clientWidth;
-					if (!maindiv || !safeContainer) {
-						console.warn(`[Dygraph][updateGraphs] Skipping deferred updateOptions for zone=${zone} - maindiv or container not ready`, { maindiv: !!maindiv, containerSize: safeContainer ? `${container.clientWidth}x${container.clientHeight}` : '0x0' });
-						return;
-					}
-					try {
-						disp.dygraph.updateOptions({ file: disp.template.data, ...options });
-						try { updateAxesSelectorsVisual(zone); } catch(e){}
-					} catch (err) {
-						console.warn(`[Dygraph][updateGraphs] updateOptions immediate failed for zone=${zone}, scheduling one retry`, err);
-						try {
-							// single retry flag to avoid loops
-							disp._updateRetry = disp._updateRetry ? disp._updateRetry + 1 : 1;
-							if (disp._updateRetry <= 1) {
-								requestAnimationFrame(() => {
-									try {
-										console.log(`[Dygraph][updateGraphs] executing retry updateOptions for zone=${zone}`);
-										disp.dygraph.updateOptions({ file: disp.template.data, ...options });
-										try { updateAxesSelectorsVisual(zone); } catch(e){}
-										// also adjust canvases after retry
-										try {
-											const maindiv2 = disp.dygraph && disp.dygraph.maindiv_ ? disp.dygraph.maindiv_ : null;
-											if (maindiv2) {
-												const canvases2 = maindiv2.querySelectorAll('canvas');
-												const dpr2 = window.devicePixelRatio || 1;
-												canvases2.forEach(c2 => {
-													try {
-														const cssW2 = Math.round(container.clientWidth || c2.clientWidth || 0);
-														const cssH2 = Math.round(container.clientHeight || c2.clientHeight || 0);
-														if (cssW2 > 0 && cssH2 > 0) {
-															c2.style.width = cssW2 + 'px';
-															c2.style.height = cssH2 + 'px';
-															const pixW2 = Math.round(cssW2 * dpr2);
-															const pixH2 = Math.round(cssH2 * dpr2);
-															if (c2.width !== pixW2 || c2.height !== pixH2) {
-																c2.width = pixW2;
-																c2.height = pixH2;
-															}
-														}
-													} catch (e) { /* ignore */ }
-												});
-											}
-										} catch (e) { /* ignore */ }
-										// retry succeeded — clear retry flag and log
-										try { disp._updateRetry = 0; } catch(e){}
-										try { console.log(`[Dygraph][updateGraphs] retry updateOptions succeeded for zone=${zone}`); } catch(e){}
-									} catch (err2) {
-										console.error('[Dygraph][updateGraphs] retry updateOptions failed', err2);
-									}
-								});
-							}
-						} catch (e2) { console.error('[Dygraph][updateGraphs] scheduling retry failed', e2); }
-					}
-					// Ajuster les canvases internes pour la largeur/hauteur physique (devicePixelRatio)
-					try {
-						if (maindiv) {
-							const canvases = maindiv.querySelectorAll('canvas');
-							canvases.forEach(c => {
-								try {
-									const cssW = Math.round(container.clientWidth || c.clientWidth || 0);
-									const cssH = Math.round(container.clientHeight || c.clientHeight || 0);
-									if (cssW > 0 && cssH > 0) {
-										c.style.width = cssW + 'px';
-										c.style.height = cssH + 'px';
-										const pixW = Math.round(cssW * dpr);
-										const pixH = Math.round(cssH * dpr);
-										if (c.width !== pixW || c.height !== pixH) {
-											c.width = pixW;
-											c.height = pixH;
-											console.log(`[Dygraph][updateGraphs] Set canvas pixels for ${containerId}: ${pixW}x${pixH} (dpr=${dpr})`);
-										}
-									}
-								} catch (e) { /* ignore individual canvas errors */ }
-							});
-						}
-					} catch (e) { console.error('[Dygraph][updateGraphs] canvas adjust erreur:', e); }
-				} catch (e) { console.error('[Dygraph][updateGraphs] deferred update error:', e); }
-			});
-			// reattach synchronizer if it existed before
-			if (hadSync) {
-				try {
-					requestAnimationFrame(() => {
-						try { synchronizeGraphs(); } catch (e) { console.error('[Dygraph][updateGraphs] synchronizeGraphs reattach error', e); }
-					});
-				} catch (e) { console.error('[Dygraph][updateGraphs] reattach scheduling error', e); }
-			}
-		} catch (e) { console.error('[Dygraph][updateGraphs] deferred updates frame error:', e); }
-	});
-
-	// 3. Lancer le redimensionnement intelligent pour les containers visibles (debounced)
-	requestAnimationFrame(() => {
-		scheduleGraphResize();
-	});
-}
-
-/**
- * Resize uniquement les graphiques visibles et retenter si le layout n'est pas encore calculé
- * retries: nombre de tentatives déjà effectuées
- */
-function resizeVisibleGraphs(retries = 0) {
-	const MAX_RETRIES = 4;
-	const visibleContainers = [];
-	Object.keys(window.displayedGraphs || {}).forEach(zone => {
-		const containerId = zone == 4 ? 'graph-canvas-nav' : `graph-canvas-${zone}`;
-		const container = document.getElementById(containerId);
-		if (!container) return;
-		const rect = container.getBoundingClientRect();
-		if (rect.width > 0 && rect.height > 0) {
-			visibleContainers.push({ zone, container, rect });
-		}
-	});
-
-	if (visibleContainers.length === 0 && retries < MAX_RETRIES) {
-		// Peut-être que le layout n'est pas encore appliqué — retenter sur la prochaine frame
-		requestAnimationFrame(() => resizeVisibleGraphs(retries + 1));
-		return;
-	}
-
-	// Appliquer resize seulement sur les containers avec une taille valide
-	visibleContainers.forEach(({zone, container, rect}) => {
-		try {
-			console.log(`[Dygraph][resizeVisibleGraphs] Resizing ${container.id}: ${rect.width}x${rect.height}`);
-			const displayed = window.displayedGraphs && window.displayedGraphs[zone];
-			if (displayed && displayed.dygraph && typeof displayed.dygraph.resize === 'function') {
-				displayed.dygraph.resize();
-				// Log après resize (une frame plus tard pour laisser le DOM se stabiliser)
-				requestAnimationFrame(() => {
-					try {
-						const afterRect = container.getBoundingClientRect();
-						console.log(`[Dygraph][afterResize] ${container.id}: ${afterRect.width}x${afterRect.height}`);
-					} catch (e) {
-						console.error('[Dygraph][afterResize] erreur lecture rect:', e);
-					}
-				});
-			}
-		} catch (e) {
-			console.error('[Dygraph][resizeVisibleGraphs] erreur resize:', e);
-		}
-	});
-
-	// Après resize, resynchroniser
-	requestAnimationFrame(() => synchronizeGraphs());
-}
-
-// Scheduler pour regrouper/annuler les multiples demandes de resize (debounce)
-window._graphResizeTimer = null;
-function scheduleGraphResize(delay = 80) {
-	if (window._graphResizeTimer) clearTimeout(window._graphResizeTimer);
-	window._graphResizeTimer = setTimeout(() => {
-		window._graphResizeTimer = null;
-		try { resizeVisibleGraphs(0); } catch (e) { console.error('[scheduleGraphResize] erreur:', e); }
-	}, delay);
-}
-
-/** Create (or recreate) a Dygraph for a given zone based on the selected type */
-function createDygraphForZone(zone) {
-	return new Promise((resolve) => {
-		try {
-			const sel = $(`#graphSelector${zone}`).val();
-			console.log(`[Diag] createDygraphForZone zone=${zone} graphSelector val=`, sel);
-			function mapDisplayToType(v) {
-				if (!v) return v;
-				const s = v.toString().toLowerCase();
-				if (s.indexOf('chimie') !== -1) return 'chimie';
-				if (s.indexOf('temp') !== -1) return 'temperature';
-				if (s.indexOf('équip') !== -1 || s.indexOf('equip') !== -1) return 'equipment';
-				if (s.indexOf('nav') !== -1) return 'navigator';
-				return s.replace(/[^a-z0-9]/g, '');
-			}
-			const type = mapDisplayToType(sel);
-			const template = window.graphInstances.find(inst => inst.type === type);
-			const container = document.getElementById(`graph-canvas-${zone}`);
-			if (!template) console.warn(`[Diag] createDygraphForZone: template not found for type='${sel}' zone=${zone}`);
-			if (!container) console.warn(`[Diag] createDygraphForZone: container not found for zone=${zone}`);
-			if (!template || !container) { resolve(null); return; }
-			const options = getGraphOptions(template, template.type === 'navigator', zone);
-			// Destroy previous dygraph if exists
-			if (window.displayedGraphs && window.displayedGraphs[zone] && window.displayedGraphs[zone].dygraph) {
-				try { window.displayedGraphs[zone].dygraph.destroy(); } catch (e) {}
-			}
-			template.createDygraph(container, options, zone).then((dy) => {
-				console.log(`[Diag] Dygraph created for zone=${zone} dy=`, !!dy);
-				if (!window.displayedGraphs) window.displayedGraphs = {};
-				window.displayedGraphs[zone] = { type: type, template: template, dygraph: dy, axesSelected: [...(template.displayed || [])], initialized: false };
-				if (dy) refreshStaticLegend(dy);
-				// Refresh axes selector visual state to match template.displayed
-				try { updateAxesSelectorsVisual(zone); } catch(e){}
-
-				// Prefer Dygraph.ready() if available to ensure internals are initialized
-				const finalize = () => {
-					try { if (dy && typeof dy.resize === 'function') { dy.resize(); } } catch(e) {}
-					// second RAF resize to be safe
-					requestAnimationFrame(() => {
-						try { if (dy && typeof dy.resize === 'function') { dy.resize(); } } catch(e) {}
-						// schedule global resize as well to sync canvases
-						scheduleGraphResize(60);
-						try { if (window.displayedGraphs && window.displayedGraphs[zone]) window.displayedGraphs[zone].initialized = true; } catch(e){}
-						resolve(dy);
-					});
-				};
-
-				try {
-					if (dy && typeof dy.ready === 'function') {
-						try {
-							dy.ready(() => {
-								finalize();
-							});
-						} catch (e) {
-							// fallback to RAF strategy
-							finalize();
-						}
-					} else {
-						// No ready hook — use double RAF as before
-						requestAnimationFrame(() => requestAnimationFrame(() => finalize()));
-					}
-				} catch (e) { finalize(); }
-			}).catch(() => resolve(null));
-		} catch (e) { resolve(null); }
-	});
-}
-
+// Fonction pour dessiner les lignes de limites (min/max) sur le graphique en fonction de la configuration SENSOR_CONFIG et de la visibilité des séries. Appelée dans underlayCallback de Dygraph.
 function drawLimitLines(canvas, area, g) {
     const labels = g.getLabels();
     const visibility = g.visibility();
@@ -2486,12 +2124,184 @@ function drawLimitLines(canvas, area, g) {
 	}
 }
 
+// Synchroniser les graphiques (si plusieurs) — à faire après création de tous les dygraphs pour éviter les erreurs de synchronisation
+function synchronizeGraphs() {
+	console.info('[synchronizeGraphs] État des zones affichées :');
+	const activeGraphs = [];
+	Object.keys(window.displayedGraphs || {}).forEach(zone => {
+		const d = window.displayedGraphs[zone];
+		const containerId = zone == 4 ? 'graph-canvas-nav' : `graph-canvas-${zone}`;
+		const container = document.getElementById(containerId);
+		console.debug(`  zone=${zone} type=${d && d.type} dygraph=`, !!(d && d.dygraph), 'container=', !!container);
+		if (d && d.dygraph) activeGraphs.push(d.dygraph);
+	});
+	console.info('[synchronizeGraphs] Dygraph valides trouvés :', activeGraphs.length, activeGraphs);
+	if (activeGraphs.length === 0) {
+		console.warn('[synchronizeGraphs] Aucun Dygraph valide à synchroniser.');
+		return;
+	}
+	window.requestAnimationFrame(() => {
+		try {
+			// Détacher l'ancien handler s'il existe pour éviter les duplications
+			if (syncHandler) {
+				try { syncHandler.detach(); } catch (e) {}
+				syncHandler = null;
+			}
+			syncHandler = Dygraph.synchronize(activeGraphs, {
+				selection: true,
+				zoom: true,
+				range: false
+			});
+		} catch (e) {
+			console.error('[synchronizeGraphs] Erreur Dygraph.synchronize:', e);
+		}
+	});
+}
 
-/*  ----------------------------------
-    --- LOGIQUE INTERFACE & LAYOUT ---
-    ----------------------------------
+// Cette fonction est appelée après updateGraphs pour s'assurer que les graphiques visibles sont redimensionnés correctement, même si le layout n'était pas encore appliqué lors de l'appel initial.
+// Elle vérifie les containers des graphiques visibles et applique resize() uniquement à ceux qui ont une taille valide, avec un mécanisme de retry limité si aucun container n'est prêt.
+function resizeVisibleGraphs(retries = 0) {
+	const MAX_RETRIES = 4;
+	const visibleContainers = [];
+	Object.keys(window.displayedGraphs || {}).forEach(zone => {
+		const containerId = zone == 4 ? 'graph-canvas-nav' : `graph-canvas-${zone}`;
+		const container = document.getElementById(containerId);
+		if (!container) return;
+		const rect = container.getBoundingClientRect();
+		if (rect.width > 0 && rect.height > 0) {
+			visibleContainers.push({ zone, container, rect });
+		}
+	});
+
+	if (visibleContainers.length === 0 && retries < MAX_RETRIES) {
+		// Peut-être que le layout n'est pas encore appliqué — retenter sur la prochaine frame
+		requestAnimationFrame(() => resizeVisibleGraphs(retries + 1));
+		return;
+	}
+
+	// Appliquer resize seulement sur les containers avec une taille valide
+	visibleContainers.forEach(({zone, container, rect}) => {
+		try {
+			console.debug(`[Dygraph][resizeVisibleGraphs] Resizing ${container.id}: ${rect.width}x${rect.height}`);
+			const displayed = window.displayedGraphs && window.displayedGraphs[zone];
+			if (displayed && displayed.dygraph && typeof displayed.dygraph.resize === 'function') {
+				displayed.dygraph.resize();
+				// Log après resize (une frame plus tard pour laisser le DOM se stabiliser)
+				requestAnimationFrame(() => {
+					try {
+						const afterRect = container.getBoundingClientRect();
+						console.debug(`[Dygraph][afterResize] ${container.id}: ${afterRect.width}x${afterRect.height}`);
+					} catch (e) {
+						console.error('[Dygraph][afterResize] erreur lecture rect:', e);
+					}
+				});
+			}
+		} catch (e) {
+			console.error('[Dygraph][resizeVisibleGraphs] erreur resize:', e);
+		}
+	});
+
+	// Après resize, resynchroniser
+	requestAnimationFrame(() => synchronizeGraphs());
+}
+
+// Fonction appelée après changement de période (daterange picker)
+function updateGraphsDateRange(startDate, endDate) {
+	console.info("Updating graphs date range: " + startDate.format('DD/MMM/YY') + " to " + endDate.format('DD/MMM/YY'));
+	
+	Object.keys(charts).forEach(function(key) {
+		if (charts[key] && typeof charts[key].updateOptions === 'function') {
+			charts[key].updateOptions({
+				dateWindow: [startDate.toDate(), endDate.toDate()]
+			});
+		}
+	});
+}
+
+// Fonction pour créer un dygraph dans une zone donnée en fonction du sélecteur de graphique choisi
+function createDygraphForZone(zone) {
+	return new Promise((resolve) => {
+		try {
+			const sel = $(`#graphSelector${zone}`).val();
+			console.debug(`[Diag] createDygraphForZone zone=${zone} graphSelector val=`, sel);
+			function mapDisplayToType(v) {
+				if (!v) return v;
+				const s = v.toString().toLowerCase();
+				if (s.indexOf('chimie') !== -1) return 'chimie';
+				if (s.indexOf('temp') !== -1) return 'temperature';
+				if (s.indexOf('équip') !== -1 || s.indexOf('equip') !== -1) return 'equipment';
+				if (s.indexOf('nav') !== -1) return 'navigator';
+				return s.replace(/[^a-z0-9]/g, '');
+			}
+			const type = mapDisplayToType(sel);
+			const template = window.graphInstances.find(inst => inst.type === type);
+			const container = document.getElementById(`graph-canvas-${zone}`);
+			if (!template) console.warn(`[Diag] createDygraphForZone: template not found for type='${sel}' zone=${zone}`);
+			if (!container) console.warn(`[Diag] createDygraphForZone: container not found for zone=${zone}`);
+			if (!template || !container) { resolve(null); return; }
+			const options = getGraphOptions(template, template.type === 'navigator', zone);
+			// Destroy previous dygraph if exists
+			if (window.displayedGraphs && window.displayedGraphs[zone] && window.displayedGraphs[zone].dygraph) {
+				try { window.displayedGraphs[zone].dygraph.destroy(); } catch (e) {}
+			}
+			template.createDygraph(container, options, zone).then((dy) => {
+				console.debug(`[Diag] Dygraph created for zone=${zone} dy=`, !!dy);
+				if (!window.displayedGraphs) window.displayedGraphs = {};
+				window.displayedGraphs[zone] = { type: type, template: template, dygraph: dy, axesSelected: [...(template.displayed || [])], initialized: false };
+				if (dy) refreshStaticLegend(dy);
+				// Refresh axes selector visual state to match template.displayed
+				try { updateAxesSelectorsVisual(zone); } catch(e){}
+
+				// Prefer Dygraph.ready() if available to ensure internals are initialized
+				const finalize = () => {
+					try { if (dy && typeof dy.resize === 'function') { dy.resize(); } } catch(e) {}
+					// second RAF resize to be safe
+					requestAnimationFrame(() => {
+						try { if (dy && typeof dy.resize === 'function') { dy.resize(); } } catch(e) {}
+						// schedule global resize as well to sync canvases
+						scheduleGraphResize(60);
+						try { if (window.displayedGraphs && window.displayedGraphs[zone]) window.displayedGraphs[zone].initialized = true; } catch(e){}
+						resolve(dy);
+					});
+				};
+
+				try {
+					if (dy && typeof dy.ready === 'function') {
+						try {
+							dy.ready(() => {
+								finalize();
+							});
+						} catch (e) {
+							// fallback to RAF strategy
+							finalize();
+						}
+					} else {
+						// No ready hook — use double RAF as before
+						requestAnimationFrame(() => requestAnimationFrame(() => finalize()));
+					}
+				} catch (e) { finalize(); }
+			}).catch(() => resolve(null));
+		} catch (e) { resolve(null); }
+	});
+}
+
+
+// Scheduler pour regrouper/annuler les multiples demandes de resize (debounce)
+// Cette fonction peut être appelée fréquemment (ex: lors de redimensionnements rapides) et s'assure que resizeVisibleGraphs n'est appelé qu'une fois après que les changements se sont stabilisés, avec un délai configurable.
+window._graphResizeTimer = null;
+function scheduleGraphResize(delay = 80) {
+	if (window._graphResizeTimer) clearTimeout(window._graphResizeTimer);
+	window._graphResizeTimer = setTimeout(() => {
+		window._graphResizeTimer = null;
+		try { resizeVisibleGraphs(0); } catch (e) { console.error('[scheduleGraphResize] erreur:', e); }
+	}, delay);
+}
+
+
+/*  -------------------------------------
+    --- 7) Interface / layout helpers ---
+    -------------------------------------
 */
-
 // Cette fonction reconstruit le contenu du sélecteur d'axes
 function updateAxesSelectorsVisual(zone, groupName) {
 	const disp = window.displayedGraphs && window.displayedGraphs[zone];
@@ -2548,110 +2358,6 @@ function createAxesSelectorForZone(zone) {
 	updateAxesSelectorsVisual(zone);
 }
 
-/** Crée et injecte le select multi axes pour une instance de graphe */
-function createAxesSelectorForInstance(instance) {
-	if (!instance) return;
-	const zone = instance.zoneIndex;
-	const $zone = $(`#graph-zone-${zone}`);
-	const $container = $zone.find('.axes-container');
-	if (!$container || $container.length === 0) return;
-
-	// Construire le select (id unique par zone)
-	const selectId = `axesSelector${zone}`;
-	// Remove existing if any
-	// Remove only existing select elements to preserve static HTML (eg. close button)
-	$container.find('select.axes-multi-selector').remove();
-	const $select = $(`<select id="${selectId}" class="axes-multi-selector" data-zone="${zone}" multiple="multiple" data-native-menu="false" data-theme="b" data-icon="gear" data-iconpos="left"></select>`);
-
-	// Placeholder option
-	$select.append(`<option data-placeholder="true">Courbes...</option>`);
-
-	// Populate options from instance.mapping
-	const mapping = instance.mapping || [];
-	mapping.forEach(labelKey => {
-		const cfg = SENSOR_CONFIG[labelKey] || {};
-		const text = cfg.label || labelKey;
-		// value must be internal labelKey so updateAxesSelectorsVisual works
-		$select.append(`<option value="${labelKey}">${text}</option>`);
-	});
-
-	$container.append($select);
-
-	// Initialize jQuery Mobile selectmenu if available
-	try {
-		if ($select.selectmenu) {
-			$select.selectmenu();
-			// Apply current selection state
-			updateAxesSelectorsVisual(zone);
-		}
-	} catch (e) { /* ignore */ }
-}
-
-/** Calcule et applique les hauteurs CSS pour le plein écran */
-function applyChartHeights() {
-    const headerH = $('#graphHeader').outerHeight() || 40;
-    const periodH = $('#periodControlBox').outerHeight() || 0;
-    const navH = $('#navZone').outerHeight() || 65; // Hauteur fixe pour le Navigator (wrapper + marges)
-	const margin = 0; // Marges et paddings cumulés
-	
-	
-    const availableDataH = window.innerHeight - headerH - navH - periodH - margin;	// On calcule la hauteur disponible pour les graphiques Y1, Y2, Y3
-    console.log("Window:",window.innerHeight, "headerH:",headerH,", periodH:", periodH, ", Nav:", navH, ", availableDataH:",availableDataH)
-    // 1. On force la hauteur pour les graphiques de données uniquement
-    $('.dashboard-card').css({
-        'height': (window.innerHeight - headerH - periodH - 5) + 'px',	//'height': Math.max(availableH, 200) + 'px',
-        'width': '100%' 
-    });
-
-    const layout = determineLayout();
-    
-    // 2. Logique de wrapper pour la zone de données
-    $('.charts-wrapper').css({
-        'flex-direction': layout.orientation,
-        'width': '100%',
-		'height': availableDataH + 'px',
-		'align-items': 'stretch',
-        'box-sizing': 'border-box'
-    });
-	
-	// 3. On s'assure que le Navigator occupe bien sa place fixe
-    $('#navZone').css({
-        'height': '25px',
-        'width': '100%'
-    });
-
-    // 4. Ton loop de visibilité (y1, y2, y3) est conservé
-	for (let i = 1; i <= 3; i++) {
-		const $zone = $(`#graph-zone-${i}`);
-		// Si c'est la zone 1, on FORCE l'affichage quoi qu'il arrive
-		// Si c'est 2 ou 3, on suit le layout.count
-		if (i === 1 || i <= layout.count) {
-			// Ne pas écraser l'attribut style complet — appliquer seulement le display
-			$zone.show().css('display', 'flex');
-		} else {
-			$zone.hide();
-		}
-	}
-
-	// 4. Si le layout est en ligne (row), répartir les largeurs équitablement
-	if (layout.orientation === 'row') {
-		const colPercent = Math.floor(100 / layout.count);
-		for (let i = 1; i <= 3; i++) {
-			const $zone = $(`#graph-zone-${i}`);
-			if (i === 1 || i <= layout.count) {
-				$zone.css({ 'width': colPercent + '%', 'min-width': 0 });
-			} else {
-				$zone.css({ 'width': '0%', 'min-width': 0 });
-			}
-		}
-	} else {
-		// En colonne, chaque zone prend toute la largeur
-		for (let i = 1; i <= 3; i++) {
-			$(`#graph-zone-${i}`).css({ 'width': '100%', 'min-width': 0 });
-		}
-	}
-}
-
 /* Afficher la periode dans le bon formet */
 function updatePeriodDisplay() {
     const period = $("#periodSelector1").val();
@@ -2686,6 +2392,7 @@ function updatePeriodDisplay() {
     // Lancement du fetch avec les dates calculées
  //   fetchGraphData(range.start, range.end);
 }
+
 /* traduire tes 9 options du selecteur de periode en dates réelles */
 function getPeriodDates(periodValue) {
     let start = new Date();
@@ -2723,9 +2430,9 @@ function getPeriodDates(periodValue) {
 }
 
 
-/*  ---------------  
-    --- EXPORTS ---
-    ---------------
+/*  ----------------------------  
+    --- 8) Exports (PNG/CSV) ---
+    ----------------------------
 */
 
 // pour exporter l'image d'un graphe
@@ -2813,25 +2520,19 @@ function exportGraphCSV(zoneIndex) {
     }
 }
 
-// -----------------------------
-// 8) Exports (PNG / CSV)
-// -----------------------------
+// --------------------------------  EVENEMENTS ---------------------------------------------------
 
 
-/*  ------------------  
-    --- ÉVÉNEMENTS ---
-    ------------------
+/*  ----------------------  
+    --- 9) User events ---
+    ----------------------
 */
-
-// -----------------------------
-// 9) User events (pointer, clicks...)
-// -----------------------------
-
-// A. Verrouillage (On garde la sécurité pour les mobiles lents)
+	// A. Gestion pointeur pour les labels de sélection de plage du navigateur (navigator range selector labels)
+	// --- NAVIGATOR LABELS INTERACTION (pointerdown to set moving state, pointermove to update label position live, pointerup to clear state) ---
 	$(document).on('pointerdown', '.dygraph-rangesel-fgcanvas, .dygraph-rangesel-zoomhandle', function(e) {
 	    isInteracting = true;
 	    try { window.isInteracting = true; } catch(e) {}
-	    console.log('[Diag] pointerdown - isInteracting=true');
+		console.debug('[Diag] pointerdown - isInteracting=true');
 	    try {
 				// Find the closest graph container (navigator) to scope labels
 				let $container = $(this).closest('[id^="graph-canvas-"], #graph-canvas-nav');
@@ -2954,7 +2655,7 @@ function exportGraphCSV(zoneIndex) {
 	    if (interactionTimeout) clearTimeout(interactionTimeout);
 	});
 
-	// Update labels during pointer move when user drags handles or pans the range selector.
+	// During pointermove, if we have an active handle and graph stored from pointerdown, update the label positions live based on handle positions or dateWindow (for pan)
 	$(document).on('pointermove', function(e) {
 		try {
 			const dy = window._navActiveGraph || null;
@@ -3019,6 +2720,7 @@ function exportGraphCSV(zoneIndex) {
 		} catch(e) {}
 	});
 
+	// On pointerup or pointercancel, clear moving state and reset label positions, with a short delay to allow any final pointermove updates to apply before we consider interaction fully ended.
 	$(document).on('pointerup pointercancel', function() {
 	    if (interactionTimeout) clearTimeout(interactionTimeout);
 		// Remove visual moving state immediately so UI feels responsive and clear active handle
@@ -3049,11 +2751,11 @@ function exportGraphCSV(zoneIndex) {
 						} catch(e) { try { $('.nav-range-label').css('transform', `translateY(-${vo}px)`); } catch(_) {} }
 					} catch (e) {}
 				} catch(e) {}
-		interactionTimeout = setTimeout(() => { isInteracting = false; try { window.isInteracting = false; } catch(e) {} console.log('[Diag] pointerup -> isInteracting=false'); }, 150);
+		 interactionTimeout = setTimeout(() => { isInteracting = false; try { window.isInteracting = false; } catch(e) {} console.debug('[Diag] pointerup -> isInteracting=false'); }, 150);
 	});
 
-// B. Changements utilisateur
-	// quand on clique sur le titre
+	// B. Changements utilisateur
+	// Ouvrir le select JQM quand on clique sur le titre du graphe (pour mobile, plus facile que de viser le petit bouton de roue crantée)
 	$(document).on('click', '.graph-title-button', function(e) {
 	    e.preventDefault();
 	    const zone = $(this).data('zone');
@@ -3066,14 +2768,14 @@ function exportGraphCSV(zoneIndex) {
 	    }
 	});
 
-	// A. Quand on change de graphe (ex: de Chimie à Températures)
+	// Quand on change de graphe (ex: de Chimie à Températures)
 	$(document).on('change', '.zone-graph-selector', function() {
 		const zone = $(this).data('zone');
 		// Ensure layout heights are applied first (same flow as orientation change)
 		try { applyChartHeights(); } catch(e) { console.error('[GRAPH CHANGE] applyChartHeights error', e); }
 		// Double RAF to ensure browser applied styles/layout, then recreate selector + dygraph
 		requestAnimationFrame(() => requestAnimationFrame(() => {
-			console.log('[GRAPH CHANGE] zone', zone, '- RAF double, recreating axes selector and dygraph');
+			console.info('[GRAPH CHANGE] zone', zone, '- RAF double, recreating axes selector and dygraph');
 			try { createAxesSelectorForZone(zone); } catch(e) { console.error('[GRAPH CHANGE] createAxesSelectorForZone error', e); }
 			createDygraphForZone(zone).then(() => {
 				// After creation, update only this zone to avoid touching other graphs
@@ -3082,11 +2784,11 @@ function exportGraphCSV(zoneIndex) {
 		}));
 	});
 	
-	// quand on selectionne de axes 
+	// quand on selectionne des axes 
 	$(document).on('change', '.axes-multi-selector', function() {
 		const zone = $(this).data('zone');
 		const labels = $(this).val();
-		console.log('[Diag] axes-multi-selector change zone=', zone, 'labels=', labels);
+		console.debug('[Diag] axes-multi-selector change zone=', zone, 'labels=', labels);
 		if (!window.displayedGraphs || !window.displayedGraphs[zone]) return;
 		const disp = window.displayedGraphs[zone];
 		disp.axesSelected = Array.isArray(labels) ? labels : [labels];
@@ -3095,7 +2797,7 @@ function exportGraphCSV(zoneIndex) {
 		if (disp.dygraph) {
 				// Compute visibility array and log diagnostic info
 				const visibilityArray = disp.template.mapping.map(l => disp.template.displayed.includes(l));
-				console.log('[Diag] axes change visibilityArray for zone=', zone, 'mapping=', disp.template.mapping, 'displayed=', disp.template.displayed, 'visibility=', visibilityArray);
+				console.debug('[Diag] axes change visibilityArray for zone=', zone, 'mapping=', disp.template.mapping, 'displayed=', disp.template.displayed, 'visibility=', visibilityArray);
 					try {
 					disp.dygraph.updateOptions({ visibility: visibilityArray });
 					refreshStaticLegend(disp.dygraph);
@@ -3137,7 +2839,6 @@ function exportGraphCSV(zoneIndex) {
 		}
 	});
 	
-	// choix du type d'export
 	// Emphase du bouton fermer JQM et pulsation quand le menu est ouvert
 	$(document).on('selectmenuopen', '.axes-multi-selector', function() {
 		const zone = $(this).data('zone');
@@ -3154,6 +2855,7 @@ function exportGraphCSV(zoneIndex) {
 		} catch(e){}
 	});
 
+	// Nettoyage de l'emphase et pulsation quand le menu se ferme
 	$(document).on('selectmenuclose', '.axes-multi-selector', function() {
 		const zone = $(this).data('zone');
 		if (!zone) return;
@@ -3169,6 +2871,7 @@ function exportGraphCSV(zoneIndex) {
 		} catch(e){}
 	});
 
+	// Quand on clique sur Exporter et qu'on choisit PNG ou CSV
 	$(document).on("change", ".export-selector", function() {
 	    // Force la conversion en nombre pour éviter les erreurs de type "1" vs 1
 	    const zoneIndex = parseInt($(this).data("zone"), 10); 
@@ -3178,7 +2881,7 @@ function exportGraphCSV(zoneIndex) {
 	
 	    // Log de debug pour vérifier qui appelle quoi
 		const disp = (window.displayedGraphs && window.displayedGraphs[zoneIndex]) || null;
-		console.log("Zone détectée :", zoneIndex, "Mode :", mode, "Displayed:", !!disp, disp && disp.type);
+		console.debug("Zone détectée :", zoneIndex, "Mode :", mode, "Displayed:", !!disp, disp && disp.type);
 	
 	    if (mode === "png") {
 	        exportGraphPNG(zoneIndex); 
@@ -3193,7 +2896,7 @@ function exportGraphCSV(zoneIndex) {
     $(document).on("change", "#periodSelector1", function() {
         updatePeriodDisplay();
         var period = $(this).val();
-        if (debug) console.log("[PERIOD] Nouvelle période sélectionnée :", period);
+		if (debug) console.debug("[PERIOD] Nouvelle période sélectionnée :", period);
 
         // 1. On calcule les dates start/end
         var range = getPeriodDates(period);
@@ -3212,81 +2915,14 @@ function exportGraphCSV(zoneIndex) {
 		} catch(e) { console.warn('[PERIOD] getNewData call failed', e); }
     });
 
-    $(document).on("click", "#btnRefreshGraph", function(e) {
-        e.preventDefault();
-        updatePeriodDisplay();
-    });
 
-
-// --------------------------------  global init ---------------------------------------------------
-	$(document).on("mobileinit", function (event, ui) {
-		$.mobile.defaultPageTransition = "slidefade";
-		$.mobile.dialog.prototype.options.closeBtnText = "Retour";
-		$.mobile.loader.prototype.options.theme = "b";
-		$.mobile.eventLogger({deprecated:!0,showAlert:!0,events:{page:!0,navigation:!0},widgets:{page:!0,pagecontainer:!0}});
-	});
-
-	// Layout / Orientation Change
-	$(window).on('resize orientationchange', function() {
-		currentLayout = getGraphMode();
-		if ($('#pagePiscineGraphs').hasClass('ui-page-active')) {
-			applyChartHeights();
-			// Double RAF pour s'assurer que le navigateur a appliqué les styles/layout
-			requestAnimationFrame(() => requestAnimationFrame(() => {
-				console.log('[RESPONSIVE] resize/orientation - RAF double, calling updateGraphs');
-				updateGraphs();
-			}));
-		}
-	});
-
-
-	// Event handler for left panel opening
-	$(document).on("panelbeforeopen", "#leftpanel", function(event, ui) {
-		console.log("[DEBUG] panelbeforeopen - leftpanel triggered, userMenu=", userMenu);
-		if(!userMenu){
-			console.log("[DEBUG] calling setUserUI from panelbeforeopen");
-			setUserUI();
-			userMenu = true;
-		}
-	});
-
-	// Event handler for Options button - open panel of active page
-	$(document).on("vclick", "a[href='#optionsPiscineManager']", function(event) {
-		event.preventDefault();
-		event.stopPropagation();
-		
-		console.log("[DEBUG] Options button vclick!");
-		
-		// Find panel in the button's parent page
-		var currentPage = $(this).closest("[data-role='page']");
-		var pageId = currentPage.attr("id");
-		console.log("[DEBUG] Current page ID:", pageId);
-		
-		// Select panel within this specific page (use .find() instead of .children())
-		var activePanel = currentPage.find("#optionsPiscineManager");
-		console.log("[DEBUG] Panel found:", activePanel.length);
-		
-		if (activePanel.length) {
-			console.log("[DEBUG] Opening panel on page:", pageId);
-			activePanel.panel('open');
-		} else {
-			console.warn("[WARN] No panel found on page:", pageId);
-		}
-		
-		return false;
-	});
-
-	
-// -------------- pages create inits (once for all ... )  ------------
-
-
-	// --- page PiscineGraphs Phase 1 : beforecreate ---
-
-// -----------------------------
-// 10) Page lifecycle events (pagebeforecreate, pageshow...)
-// -----------------------------
+/*  ---------------------------------  
+    --- 10) Page lifecycle events ---
+    ---------------------------------
+*/
+ 	// --- page PiscineGraphs Phase 1 : beforecreate ---
 	$(document).delegate("#pagePiscineGraphs","pagebeforecreate", function() {
-		console.log("pagebeforecreate: updating chart data");
+		console.info("pagebeforecreate: updating chart data");
 		$.mobile.loading('show', {
 			text: "Fetch des Données pour les graphiques...",
 			textVisible: true,
@@ -3327,11 +2963,73 @@ function exportGraphCSV(zoneIndex) {
 		}, 200);
 	});
 
+
+
+/*  -----------------------------------------------  
+    --- 11) Global events (resize, orientation) ---
+    -----------------------------------------------
+*/
+	$(document).on("mobileinit", function (event, ui) {
+		$.mobile.defaultPageTransition = "slidefade";
+		$.mobile.dialog.prototype.options.closeBtnText = "Retour";
+		$.mobile.loader.prototype.options.theme = "b";
+		$.mobile.eventLogger({deprecated:!0,showAlert:!0,events:{page:!0,navigation:!0},widgets:{page:!0,pagecontainer:!0}});
+	});
+
+	// Layout / Orientation Change
+	$(window).on('resize orientationchange', function() {
+		currentLayout = getGraphMode();
+		if ($('#pagePiscineGraphs').hasClass('ui-page-active')) {
+			applyChartHeights();
+			// Double RAF pour s'assurer que le navigateur a appliqué les styles/layout
+			requestAnimationFrame(() => requestAnimationFrame(() => {
+				console.info('[RESPONSIVE] resize/orientation - RAF double, calling updateGraphs');
+				updateGraphs();
+			}));
+		}
+	});
+
+	// Event handler for left panel opening
+	$(document).on("panelbeforeopen", "#leftpanel", function(event, ui) {
+		console.debug("[DEBUG] panelbeforeopen - leftpanel triggered, userMenu=", userMenu);
+		if(!userMenu){
+			console.debug("[DEBUG] calling setUserUI from panelbeforeopen");
+			setUserUI();
+			userMenu = true;
+		}
+	});
+
+	// Event handler for Options button - open panel of active page
+	$(document).on("vclick", "a[href='#optionsPiscineManager']", function(event) {
+		event.preventDefault();
+		event.stopPropagation();
+		
+		console.debug("[DEBUG] Options button vclick!");
+		
+		// Find panel in the button's parent page
+		var currentPage = $(this).closest("[data-role='page']");
+		var pageId = currentPage.attr("id");
+		console.debug("[DEBUG] Current page ID:", pageId);
+		
+		// Select panel within this specific page (use .find() instead of .children())
+		var activePanel = currentPage.find("#optionsPiscineManager");
+		console.debug("[DEBUG] Panel found:", activePanel.length);
+		
+		if (activePanel.length) {
+			console.debug("[DEBUG] Opening panel on page:", pageId);
+			activePanel.panel('open');
+		} else {
+			console.warn("[WARN] No panel found on page:", pageId);
+		}
+		
+		return false;
+	});
+
 /*  //Appeler adaptJQueryMobileGrids / adaptPanels lors des transitions de page pertinentes
 	$(document).on('pagebeforeshow', '#pagePiscineParametres, #pagePiscineMaintenance, #pagePiscinePrincipale, #pagePiscineGraphs', function() {
 		// Lire le variant précis pour diagnostics (getGraphMode met à jour currentLayout)
 		var detectedVariant = getGraphMode();
-		if (debug) console.log('[RESPONSIVE] pagebeforeshow for', this.id, 'variant=', detectedVariant, 'currentLayout=', currentLayout);
+		if (debug) console.debug('[RESPONSIVE] pagebeforeshow for', this.id, 'variant=', detectedVariant, 'currentLayout=', currentLayout);
 		try { adaptJQueryMobileGrids(); } catch(e) { if (debug) console.warn('[RESPONSIVE] adaptJQueryMobileGrids failed on pagebeforeshow', e); }
 		try { adaptPanels(); } catch(e) { if (debug) console.warn('[RESPONSIVE] adaptPanels failed on pagebeforeshow', e); }
 
@@ -3342,17 +3040,142 @@ function exportGraphCSV(zoneIndex) {
 		}
 	});
 */
+	
 
-/* Responsive helpers moved earlier (grouped under 'Determine layout') */
+/*  -------------------------------------------  
+    --- 12) Global Misc / Helpers fonctions ---
+    -------------------------------------------
+*/
+
+/** Construire le menu utilisateur dans le panneau gauche */
+function setUserUI(){
+		try{
+				console.debug && console.debug("[DEBUG] In setUserUI - START");
+				let theHtml = '';
+				theHtml += '<div data-role="collapsible" data-collapsed-icon="plus" data-expanded-icon="minus" data-iconpos="right" data-theme="b" data-content-theme="b">';
+				theHtml += '  <h3 class="myh3">Piscine</h3>';
+				theHtml += '  <ul data-role="listview" data-inset="true">';
+				theHtml += '    <li><a href="#pagePiscinePrincipale" data-transition="slide"><h4 class="myh4">Piscine</h4></a></li>';
+				theHtml += '    <li><a href="#pagePiscineParametres" data-transition="slide"><h4 class="myh4">Piscine Parametres</h4></a></li>';
+				theHtml += '    <li><a href="#pagePiscineMaintenance" data-transition="slide"><h4 class="myh4">Piscine Maintenance</h4></a></li>';
+				theHtml += '    <li><a href="#pagePiscineGraphs" data-transition="slide"><h4 class="myh4">Piscine Graphs</h4></a></li>';
+				theHtml += '  </ul>';
+				theHtml += '</div>';
+				$('#leftpanelMenu').html(theHtml);
+				$('#leftpanelMenu').enhanceWithin();
+				console.debug && console.debug("[DEBUG] setUserUI - COMPLETE");
+		}catch(e){console.warn('[setUserUI] error',e);}
+}
+
+// Détection du mode graphique (desktop/tablet/mobile + orientation) pour ajustements responsives
+function getGraphMode() {
+    var mqDesktopLandscape = window.matchMedia('(min-width: 1101px) and (orientation: landscape)');
+    var mqDesktopPortrait = window.matchMedia('(min-height: 1101px) and (orientation: portrait)');
+    var mqTabletPortrait = window.matchMedia('(min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (orientation: portrait)');
+    var mqTabletLandscape = window.matchMedia('(min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (orientation: landscape)');
+    var mqMobilePortrait = window.matchMedia('(max-width: 700px) and (orientation: portrait)');
+    var mqMobileLandscape = window.matchMedia('(max-height: 700px) and (orientation: landscape)');
+
+    if (mqDesktopLandscape.matches) return 'desktop-landscape';
+    if (mqDesktopPortrait.matches)  return 'desktop-portrait';
+    if (mqTabletLandscape.matches)  return 'tablet-landscape';
+    if (mqTabletPortrait.matches)   return 'tablet-portrait';
+    if (mqMobileLandscape.matches)  return 'mobile-landscape';
+    if (mqMobilePortrait.matches)   return 'mobile-portrait';
+
+    // Fallback
+    // Breakpoints standards : 768px (iPad Mini/Mobile) et 1100px (iPad Pro/Laptop)
+	console.warn("FailBack dans la detection des media")
+    if (width < 768) return isLandscape ? 'mobile-landscape' : 'mobile-portrait';
+    if (width < 1100) return isLandscape ? 'tablet-landscape' : 'tablet-portrait';
+    return isLandscape ? 'desktop-landscape' : 'desktop-portrait';
+}
+
+// Adaptation dynamique des grids jQuery Mobile
+function adaptJQueryMobileGrids() {
+	try {
+		if (debug) console.debug('[RESPONSIVE] adaptJQueryMobileGrids currentLayout=', currentLayout);
+
+		// Pages à adapter (ne traiter que si présentes dans le DOM)
+		var pagesToAdapt = ['#pagePiscineParametres', '#pagePiscineMaintenance'];
+
+		pagesToAdapt.forEach(function(pageId) {
+			if (!$(pageId) || $(pageId).length === 0) {
+				// Page pas présente dans le DOM — ignorer silencieusement
+				return;
+			}
+
+			var selB = pageId + ' .ui-grid-b';
+			var selA_rev = pageId + ' .ui-grid-a';
+
+			if (currentLayout === 'desktop' || currentLayout === 'tablet-landscape') {
+				// Convertir ui-grid-b (33-33-33) en ui-grid-a (50-50)
+				var $el = $(selB);
+				if ($el && $el.length) {
+					$el.removeClass('ui-grid-b').addClass('ui-grid-a');
+					if (debug) console.debug('[RESPONSIVE] adaptJQueryMobileGrids: converted', selB);
+				}
+			} else {
+				// Restaurer grids originales (si présents)
+				var $elRev = $(selA_rev);
+				if ($elRev && $elRev.length) {
+					$elRev.removeClass('ui-grid-a').addClass('ui-grid-b');
+					if (debug) console.debug('[RESPONSIVE] adaptJQueryMobileGrids: reverted', selA_rev);
+				}
+			}
+		});
+
+		// Adapter les panels selon le layout
+		try { adaptPanels(); } catch(e) { if (debug) console.warn('[RESPONSIVE] adaptPanels failed', e); }
+	} catch (e) {
+		if (debug) console.error('[RESPONSIVE] adaptJQueryMobileGrids failed', e);
+	}
+}
+
+// Optimisation des panels pour desktop
+function adaptPanels() {
+  var $panels = $('[data-role="panel"]');
+  
+  if (currentLayout === 'desktop') {
+    // Desktop : panels en mode reveal persistant (non-overlay)
+    $panels.panel({
+      display: 'reveal',
+      dismissible: true,
+      swipeClose: false
+    });
+    
+    if (debug) {
+	console.info('[RESPONSIVE] Panels mode reveal (desktop)');
+    }
+  } else {
+    // Mobile/Tablette : panels en mode overlay
+    $panels.panel({
+      display: 'overlay',
+      dismissible: true,
+      swipeClose: true
+    });
+    
+    if (debug) {
+	console.info('[RESPONSIVE] Panels mode overlay (mobile/tablette)');
+    }
+  }
+  
+  // Redimensionner Dygraph si page Graphs active
+  //resizeDygraphIfNeeded();
+}
 
 
-// ========================================
-// READY / LAUNCH
-// ========================================
+// ---------------------------------------- Ok ready ! ----------------------------------
+
+/*  ---------------------------  
+    --- 13) Ready / Launch ---
+    ---------------------------
+*/
+
 currentLayout = getGraphMode();
 $('body').attr('data-layout', currentLayout);
 setUserUI();
-console.log( "ready to go !" );
+console.info( "ready to go !" );
 // navigate to the graphs page
 try {
 	if ($ && $.mobile && $.mobile.changePage) {
