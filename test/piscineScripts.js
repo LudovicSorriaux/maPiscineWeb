@@ -31,6 +31,8 @@ Use these comment anchors to quickly navigate the file.
 // Global functions and variables
 console.info("📌 piscineScripts.js VERSION 2026-02-26-22:20 loaded");
 var debug = true;
+// Application settings (can be toggled by UI later)
+window.appSettings = window.appSettings || { fillMissing: 'nan' }; // 'none'|'nan'|'interpolate'
 
 var statusErrorMap = {
 	'400' : "Server understood the request, but request content was invalid.",
@@ -573,9 +575,12 @@ function generateNavigatorData(start, end, options = {}) {
 // Initialisation des données: charger les 3 derniers jours et préparer les graphiques
 async function initData() {
 	currEnd = now = dayjs().set("minute",0).set("second",0);
-	// Initialisation: charger 3 jours complets en partant du début du jour (00:00)
-	CurrStart = start = dayjs().subtract(3, "day").startOf('day');  // ← API CHUNKED: Maintenant on peut charger 7 jours sans WDT !
-	console.debug && console.debug("Fetching Origin Data: start:"+start.format("DD-MM-YYYY")+" end:"+now.format("DD-MM-YYYY"));
+	// Initialisation: charger 3 derniers jours en respectant la règle serveur (jours := 01:00..00:00)
+	const rawStart = dayjs().subtract(3, "day");
+	const normalized = normalizeRangeForServer(rawStart, now);
+	CurrStart = start = normalized.ds;
+	currEnd = now = normalized.de.isBefore(now) ? normalized.de : now;
+	console.debug && console.debug("Fetching Origin Data: start:"+start.format()+" end:"+now.format());
 
 		// 1. Générer les données simulées (ou les charger depuis le serveur)
 		// Marquer la phase d'initialisation pour que getOriginData puisse forcer la borne 'start' au début du jour
@@ -843,6 +848,94 @@ function insertNormalizedRows(rawRows) {
 	} catch(e) {}
 
 	let inserted = 0;
+	// Gap-filling: optionally insert placeholders (NaN) or interpolated values for missing timestamps
+	try {
+		const fillMode = (window.appSettings && window.appSettings.fillMissing) ? window.appSettings.fillMissing : 'none';
+		if (fillMode && fillMode !== 'none') {
+			// Determine expected interval from normalized timestamps (median diff) or default 15min
+			const timestamps = normalized.map(r => +r[0]);
+			let expected = 15 * 60000;
+			if (timestamps.length >= 2) {
+				const diffs = [];
+				for (let i = 1; i < timestamps.length; i++) diffs.push(timestamps[i] - timestamps[i-1]);
+				diffs.sort((a,b)=>a-b);
+				expected = diffs[Math.floor(diffs.length/2)] || expected;
+			}
+
+			// Build a set of times already provided in this batch
+			const normalizedSet = new Set(timestamps);
+			// Determine min/max range for filling
+			const minT = Math.min(...timestamps);
+			const maxT = Math.max(...timestamps);
+			// Generate expected timeline between minT and maxT inclusive
+			const placeholders = [];
+			for (let t = minT; t <= maxT; t += expected) {
+				if (!normalizedSet.has(t) && !chartdataIndex.has(t)) {
+					placeholders.push(t);
+				}
+			}
+
+			// Helper to retrieve nearest known value for interpolation
+			function findNeighborValue(ts, colIndex, direction) {
+				// direction: -1 => previous, +1 => next
+				// Search in normalized (new) first, then in existing chartdata
+				if (direction === -1) {
+					// previous
+					for (let i = timestamps.length - 1; i >= 0; i--) if (timestamps[i] < ts) {
+						const row = normalized[i]; if (row && row[colIndex] != null) return { t: timestamps[i], v: row[colIndex] };
+					}
+					// fallback to chartdata
+					for (let [tt, idx] of chartdataIndex) {
+						if (tt < ts) {
+							const r = chartdata[idx]; if (r && r[colIndex] != null) return { t: tt, v: r[colIndex] };
+						}
+					}
+				} else {
+					// next
+					for (let i = 0; i < timestamps.length; i++) if (timestamps[i] > ts) {
+						const row = normalized[i]; if (row && row[colIndex] != null) return { t: timestamps[i], v: row[colIndex] };
+					}
+					for (let [tt, idx] of chartdataIndex) {
+						if (tt > ts) {
+							const r = chartdata[idx]; if (r && r[colIndex] != null) return { t: tt, v: r[colIndex] };
+						}
+					}
+				}
+				return null;
+			}
+
+			// Create placeholder rows
+			const createdPlaceholders = [];
+			for (const t of placeholders) {
+				const rowTemplate = new Array(normalized[0].length).fill(null);
+				rowTemplate[0] = new Date(t);
+				if (fillMode === 'interpolate') {
+					// Try to interpolate each numeric column
+					for (let c = 1; c < rowTemplate.length; c++) {
+						const prev = findNeighborValue(t, c, -1);
+						const next = findNeighborValue(t, c, +1);
+						if (prev && next && prev.t !== next.t) {
+							const ratio = (t - prev.t) / (next.t - prev.t);
+							const val = prev.v + (next.v - prev.v) * ratio;
+							rowTemplate[c] = Number.isFinite(val) ? +val : null;
+						} else {
+							rowTemplate[c] = null;
+						}
+					}
+				}
+				// for 'nan' mode, keep nulls
+				createdPlaceholders.push(rowTemplate);
+			}
+
+			if (createdPlaceholders.length) {
+				// Merge placeholders into normalized array and re-sort
+				for (const ph of createdPlaceholders) normalized.push(ph);
+				normalized.sort((a,b)=> +a[0] - +b[0]);
+				// Update diagnostics
+				try { console.info(`[insertNormalizedRows] fillMode=${fillMode} placeholdersAdded=${createdPlaceholders.length}`); } catch(e) {}
+			}
+		}
+	} catch(e) { console.warn('[insertNormalizedRows] gap-filling failed', e); }
 	for (const nr of normalized) {
 		try {
 			const t = +nr[0];
@@ -874,6 +967,29 @@ function insertNormalizedRows(rawRows) {
 	try { rebuildChartdataIndex(); } catch(e) {}
 
 	try { console.info(`[insertNormalizedRows] normalized=${normalized.length} inserted=${inserted} chartdata=${chartdata.length} index=${chartdataIndex.size}`); } catch(e) {}
+
+	// Notify user and add badge if placeholders were added by gap-filling
+	try {
+		if (window.appSettings && window.appSettings.fillMissing && window.appSettings.fillMissing !== 'none') {
+			// Count placeholders by checking entries with mostly-null values
+			const placeholderCount = normalized.filter(r => {
+				let nn = 0; for (let i = 1; i < r.length; i++) if (r[i] == null) nn++;
+				return nn >= (r.length - 2); // heuristique: nearly all null => placeholder
+			}).length - (rawRows ? rawRows.length : 0);
+			if (placeholderCount > 0) {
+				const msg = `Données incomplètes: ${placeholderCount} points ajoutés (mode ${window.appSettings.fillMissing})`;
+				try { if (typeof showToast === 'function') showToast(msg, 'warning'); else console.warn(msg); } catch(e) { console.warn(msg); }
+				try {
+					$('#dataIncompleteBadge').remove();
+					$('#dateRangeText').append(`<span id="dataIncompleteBadge" style="color:orange;margin-left:8px;cursor:pointer">⚠️ ${placeholderCount}</span>`);
+					$('#dataIncompleteBadge').off('click').on('click', function(){
+						const sample = normalized.filter(r=>{ let nn=0; for(let i=1;i<r.length;i++) if(r[i]==null) nn++; return nn>=(r.length-2); }).slice(0,20).map(r=> new Date(r[0]).toISOString());
+						alert(`Données incomplètes — exemples de timestamps manquants (max 20):\n` + sample.join('\n'));
+					});
+				} 
+			}
+		}
+	} catch(e) { /* non-blocking */ }
 
 	return inserted;
 }
@@ -1048,8 +1164,15 @@ async function fetchDataRange(debut, fin) {
 		if (availableDays.has(dayKey)) {
 			// Extraire les lignes correspondantes depuis dataOrigin, mais NE PAS renvoyer celles déjà dans chartdataIndex
 			try {
+				// Define server-aligned day window: day starts at 01:00 and ends at next-day 00:00
+				const dayStartServer = current.clone().hour(1).minute(0).second(0).millisecond(0);
+				const dayEndServer = current.clone().add(1, 'day').hour(0).minute(0).second(0).millisecond(0);
 				const dayRows = dataOrigin.filter(r => {
-					try { return dayjs(r[0]).format("YYYY-MM-DD") === dayKey; } catch(e) { return false; }
+					try {
+						const t = dayjs(r[0]);
+						// include rows with timestamps in [dayStartServer, dayEndServer)
+						return (!t.isBefore(dayStartServer)) && t.isBefore(dayEndServer);
+					} catch(e) { return false; }
 				});
 				// Filtrer les lignes déjà présentes dans chartdataIndex
 				const newRows = dayRows.filter(r => !chartdataIndex.has(+r[0]));
@@ -1064,12 +1187,12 @@ async function fetchDataRange(debut, fin) {
 				// tenter un fetch élargi +/- 1 heure afin de récupérer des points tronqués aux bords.
 				try {
 					const intervalMinutes = 15; // cohérent avec usage courant
-					const expectedPerDay = Math.round((24 * 60) / intervalMinutes);
+					// Server day is 01:00..00:00 (23 hours)
+					const expectedPerDay = Math.round((23 * 60) / intervalMinutes);
 					if ((dayRows.length || 0) > 0 && (dayRows.length < expectedPerDay)) {
 						console.info(`[fetchDataRange] day=${dayKey} incomplete (${dayRows.length}/${expectedPerDay}), attempting border re-fetch +/-1h`);
-						const dayStart = current.startOf('day');
-						const genStart = dayStart.subtract(1, 'hour').toDate();
-						const genEnd = dayStart.endOf('day').add(1, 'hour').toDate();
+						const genStart = dayStartServer.subtract(1, 'hour').toDate();
+						const genEnd = dayEndServer.add(1, 'hour').toDate();
 						const fetched = await window.generatePoolData(genStart, genEnd, { intervalMinutes, debug });
 						if (fetched && fetched.length) {
 							// Extraire uniquement les lignes appartenant au jourKey et non présentes
@@ -1121,9 +1244,9 @@ async function fetchDataRange(debut, fin) {
 	// Télécharger les plages manquantes avec API chunked
 	for (const range of missingRanges) {
 		console.debug && console.debug(`Fetching missing data from ${range.start.format("DD-MM-YYYY")} to ${range.end.format("DD-MM-YYYY")} (full-day)`);
-		// Passer des Date complets au générateur: startOf('day') -> endOf('day') pour couvrir la journée entière
-		const genStart = range.start.startOf('day').toDate();
-		const genEnd = range.end.endOf('day').toDate();
+		// Passer des Date alignées sur la logique serveur: each day => 01:00 .. next-day 00:00
+		const genStart = range.start.hour(1).minute(0).second(0).millisecond(0).toDate();
+		const genEnd = range.end.add(1, 'day').hour(0).minute(0).second(0).millisecond(0).toDate();
 		const newData = await window.generatePoolData(genStart, genEnd, { intervalMinutes: 15, debug });
 //		const newData = await fetchDataChunked(range.start, range.end);  // ← Utilise API chunked
 		// fetchDataChunked retourne déjà des lignes parsées via csvToArray
@@ -2556,18 +2679,35 @@ function handleDateRangeSelected(start, end, label){
 		// Appel direct vers la récupération de données : conversion Moment -> dayjs
 		try {
 			if (typeof getNewData === 'function') {
-				// Start: beginning of selected day (00:00)
-				const ds = dayjs(start.format('YYYY-MM-DD')).startOf('day');
-
-				// End: if the selected end day is today, use (currentHour - 1):00,
-				// otherwise use the selected day at 23:00 (end of day in full-hour granularity)
+				// Apply server-aligned day rules:
+				// - Server produces hourly lines where the "0:00" row covers 23:00-0:00,
+				//   therefore a logical "day" runs from 01:00 (inclusive) to 00:00 (exclusive
+				//   of the next day). We map a selected calendar date to the interval
+				//   start = date 01:00 and end = (date+1) 00:00. Exception: if the end date
+				//   is today, use (currentHour - 1):00 as the end hour to avoid future hours.
 				const today = dayjs();
+				// Start at 01:00 of the selected start day
+				let ds = dayjs(start.format('YYYY-MM-DD')).hour(1).minute(0).second(0).millisecond(0);
+
+				// End: if end is today -> use currentHour-1, otherwise use next-day 00:00
 				let de;
 				if (dayjs(end.format('YYYY-MM-DD')).isSame(today, 'day')) {
 					const h = Math.max(0, today.hour() - 1);
-					de = today.hour(h).minute(0).second(0).millisecond(0);
+					de = dayjs(end.format('YYYY-MM-DD')).hour(h).minute(0).second(0).millisecond(0);
 				} else {
-					de = dayjs(end.format('YYYY-MM-DD')).hour(23).minute(0).second(0).millisecond(0);
+					// map end date to the midnight that ends that logical day (next day 00:00)
+					de = dayjs(end.format('YYYY-MM-DD')).add(1, 'day').hour(0).minute(0).second(0).millisecond(0);
+				}
+
+				// Defensive: if computed ds is after de (can happen when selecting today very early),
+				// clamp ds to the earliest valid hour (00:00) and ensure ds <= de.
+				if (ds.isAfter(de)) {
+					console.warn('[handleDateRangeSelected] computed start is after computed end — adjusting start to 00:00 of start day');
+					ds = dayjs(start.format('YYYY-MM-DD')).startOf('day');
+					if (ds.isAfter(de)) {
+						// As a last resort, swap them
+						const tmp = ds; ds = de; de = tmp;
+					}
 				}
 
 				// Marquer le select sur 'custom' pour refléter l'état
@@ -2579,6 +2719,37 @@ function handleDateRangeSelected(start, end, label){
 			}
 		} catch(err) { console.warn('appel getNewData échoué', err); }
 	} catch(e){ console.warn('daterangepicker callback error', e); }
+}
+
+// Normalize a selected start/end (Moment or dayjs) to server-aligned intervals
+// Rules:
+// - A logical day runs from 01:00 (inclusive) to next-day 00:00 (exclusive)
+// - For an end date equal to today, end = today at (currentHour - 1):00
+// Returns { ds: dayjs, de: dayjs }
+function normalizeRangeForServer(start, end) {
+	try {
+		const s = dayjs(start.format ? start.format('YYYY-MM-DD') : dayjs(start).format('YYYY-MM-DD'));
+		const e = dayjs(end.format ? end.format('YYYY-MM-DD') : dayjs(end).format('YYYY-MM-DD'));
+		const today = dayjs();
+		let ds = s.hour(1).minute(0).second(0).millisecond(0);
+		let de;
+		if (e.isSame(today, 'day')) {
+			const h = Math.max(0, today.hour() - 1);
+			de = e.hour(h).minute(0).second(0).millisecond(0);
+		} else {
+			de = e.add(1, 'day').hour(0).minute(0).second(0).millisecond(0);
+		}
+		if (ds.isAfter(de)) {
+			ds = s.startOf('day');
+			if (ds.isAfter(de)) {
+				const tmp = ds; ds = de; de = tmp;
+			}
+		}
+		return { ds, de };
+	} catch (e) {
+		console.warn('[normalizeRangeForServer] failed', e);
+		return { ds: dayjs(start).startOf('day'), de: dayjs(end).endOf('day') };
+	}
 }
 
 // Ouvre le date range picker avec des dates initiales optionnelles, et gère la sélection pour mettre à jour l'affichage et émettre un événement personnalisé
@@ -3062,12 +3233,9 @@ function openRangePicker(initialStart, initialEnd){
         // ou on passe directement les dates à la fonction fetch
 		// Appeler getNewData avec des objets dayjs (range.* est en secondes)
 		try {
-			// Forcer la requête à couvrir des jours complets
-			let ds = dayjs.unix(range.start).startOf('day');
-			let de = dayjs.unix(range.end).endOf('day');
-			const now = dayjs();
-			if (de.isAfter(now)) de = now;
-			if (debug) console.debug(`[PERIOD] calling getNewData full-days: ${ds.format()} -> ${de.format()}`);
+			// Normalize to server-aligned hours (01:00..00:00 next day)
+			const { ds, de } = normalizeRangeForServer(dayjs.unix(range.start), dayjs.unix(range.end));
+			if (debug) console.debug(`[PERIOD] calling getNewData normalized: ${ds.format()} -> ${de.format()}`);
 			getNewData(ds, de);
 		} catch(e) { console.warn('[PERIOD] getNewData call failed', e); }
     });
