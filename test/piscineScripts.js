@@ -986,7 +986,7 @@ function insertNormalizedRows(rawRows) {
 						const sample = normalized.filter(r=>{ let nn=0; for(let i=1;i<r.length;i++) if(r[i]==null) nn++; return nn>=(r.length-2); }).slice(0,20).map(r=> new Date(r[0]).toISOString());
 						alert(`Données incomplètes — exemples de timestamps manquants (max 20):\n` + sample.join('\n'));
 					});
-				} 
+				} catch(e) { console.warn('[insertNormalizedRows] badge DOM update failed', e); }
 			}
 		}
 	} catch(e) { /* non-blocking */ }
