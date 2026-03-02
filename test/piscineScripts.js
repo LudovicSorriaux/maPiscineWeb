@@ -2375,7 +2375,7 @@ function updatePeriodDisplay() {
 			return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear().toString().slice(-2)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 		};
 		const text = formatD(ds) + " ➜ " + formatD(de);
-		$("#dateDisplayRange").text(text);
+		$("#dateRangeText").text(text);
 		if (debug) console.debug("[PERIOD] Update UI (full-days):", text);
 	} catch (e) {
 		// fallback simple
@@ -2385,7 +2385,7 @@ function updatePeriodDisplay() {
 			return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear().toString().slice(-2)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 		};
 		const text = format(range.start) + " ➜ " + format(range.end);
-		$("#dateDisplayRange").text(text);
+		$("#dateRangeText").text(text);
 		if (debug) console.debug("[PERIOD] Update UI (fallback):", text);
 	}
 
@@ -2527,6 +2527,156 @@ function exportGraphCSV(zoneIndex) {
     --- 9) User events ---
     ----------------------
 */
+// --- DateRangePicker helpers (integration du daterangepicker.js) ---
+
+
+// Formatage sécurisé d'un objet Moment pour affichage, avec fallback en cas d'erreur ou de format inattendu
+function fmtMoment(m){ 
+	try { return m && m.format ? m.format('DD/MM/YYYY') : '—'; } catch(e){ return '—'; } 
+}
+
+// Callback externalisée pour la sélection de plage (séparée pour réutilisation et tests)
+function handleDateRangeSelected(start, end, label){
+	try {
+		// Log raw parameters passed to this handler
+		console.log('[handleDateRangeSelected] parameters:', { start: start, end: end, label: label });
+		console.info('daterangepicker selected:', start.format(), '->', end.format(), label);
+
+		// Ensure start is not after end. If user somehow picked start> end, swap them.
+		if (start.isAfter && end.isValid && start.isAfter(end)) {
+			console.warn('[handleDateRangeSelected] start is after end — swapping values');
+			const _s = start.clone ? start.clone() : moment(start);
+			start = end.clone ? end.clone() : moment(end);
+			end = _s;
+			console.info('[handleDateRangeSelected] after swap:', start.format(), '->', end.format());
+		}
+		$('#dateRangeText').text(fmtMoment(start) + ' → ' + fmtMoment(end));
+		$('#dateDisplayRange').attr('data-start', start.format()).attr('data-end', end.format());
+
+		// Appel direct vers la récupération de données : conversion Moment -> dayjs
+		try {
+			if (typeof getNewData === 'function') {
+				// Start: beginning of selected day (00:00)
+				const ds = dayjs(start.format('YYYY-MM-DD')).startOf('day');
+
+				// End: if the selected end day is today, use (currentHour - 1):00,
+				// otherwise use the selected day at 23:00 (end of day in full-hour granularity)
+				const today = dayjs();
+				let de;
+				if (dayjs(end.format('YYYY-MM-DD')).isSame(today, 'day')) {
+					const h = Math.max(0, today.hour() - 1);
+					de = today.hour(h).minute(0).second(0).millisecond(0);
+				} else {
+					de = dayjs(end.format('YYYY-MM-DD')).hour(23).minute(0).second(0).millisecond(0);
+				}
+
+				// Marquer le select sur 'custom' pour refléter l'état
+				try { $('#periodSelector1').val('custom').selectmenu('refresh'); } catch(_) {}
+				// Logs: afficher les dates calculées (début/fin) avant appel éventuel
+				console.info('[handleDateRangeSelected] computed start (ds):', ds.format('YYYY-MM-DD HH:mm'));
+				console.info('[handleDateRangeSelected] computed end   (de):', de.format('YYYY-MM-DD HH:mm'));
+				getNewData(ds, de);
+			}
+		} catch(err) { console.warn('appel getNewData échoué', err); }
+	} catch(e){ console.warn('daterangepicker callback error', e); }
+}
+
+// Ouvre le date range picker avec des dates initiales optionnelles, et gère la sélection pour mettre à jour l'affichage et émettre un événement personnalisé
+function openRangePicker(initialStart, initialEnd){
+	let $inp = $('#_rangePickerInput');
+	if (!$inp.length) {
+		$inp = $('<input id="_rangePickerInput" type="text" style="position:absolute;left:-9999px;top:auto;opacity:0;pointer-events:none;" />').appendTo('body');
+	} else {
+		const inst = $inp.data('daterangepicker');
+		if (inst && typeof inst.remove === 'function') inst.remove();
+	}
+
+	// If no initial dates provided, try to read them from the visible display
+	if (!initialStart || !initialEnd) {
+		try {
+			const displayed = ($('#dateRangeText').text() || '').trim();
+			if (displayed && (displayed.includes('→') || displayed.includes('➜'))) {
+				const sep = displayed.includes('→') ? '→' : '➜';
+				const parts = displayed.split(sep).map(p => p.trim());
+				if (!initialStart) {
+					const m = moment(parts[0], 'DD/MM/YY HH:mm');
+					if (m.isValid()) initialStart = m;
+				}
+				if (!initialEnd && parts[1]) {
+					const m2 = moment(parts[1], 'DD/MM/YY HH:mm');
+					if (m2.isValid()) initialEnd = m2;
+				}
+			}
+		} catch (e) { /* ignore parse errors */ }
+	}
+
+	console.debug && console.debug('[openRangePicker] initialStart/raw:', initialStart, 'initialEnd/raw:', initialEnd);
+
+	$inp.daterangepicker({
+		startDate: initialStart || moment().startOf('day'),
+		endDate: initialEnd || moment().endOf('day'),
+		locale: { format: 'DD/MM/YYYY', applyLabel: 'Appliquer', cancelLabel: 'Annuler', separator: ' - ' },
+		opens: 'right',
+		autoUpdateInput: false,
+		alwaysShowCalendars: true,
+        // Auto-apply selection immediately and remove Apply/Cancel buttons
+        autoApply: true,
+		// Enable month/year dropdowns so user can quickly jump months/years.
+		showDropdowns: true,
+		// Allow start and end calendars to be navigated independently so ranges > 1 year are selectable
+		linkedCalendars: false,
+		// Prevent selecting future dates
+		maxDate: moment().endOf('day'),
+		// Allow selecting far past dates (expands year dropdown range)
+		minDate: moment().subtract(10, 'year').startOf('year'),
+		// No time picker: we only operate on whole days in the app. Times are derived in callback.
+		timePicker: false
+	}, handleDateRangeSelected);
+
+	// show the picker
+	try { $inp.data('daterangepicker').show(); } catch(e) {}
+
+	// Diagnostic logs: inspect the picker's runtime state (help debug stuck right calendar)
+	try {
+		const picker = $inp.data('daterangepicker');
+		if (picker) {
+			console.debug && console.debug('[openRangePicker] picker.startDate', picker.startDate && picker.startDate.format ? picker.startDate.format('YYYY-MM-DD') : picker.startDate,
+										   'picker.endDate', picker.endDate && picker.endDate.format ? picker.endDate.format('YYYY-MM-DD') : picker.endDate);
+			try {
+				console.debug && console.debug('[openRangePicker] leftCalendar.month', picker.leftCalendar && picker.leftCalendar.month && picker.leftCalendar.month.format && picker.leftCalendar.month.format('YYYY-MM'),
+											   'rightCalendar.month', picker.rightCalendar && picker.rightCalendar.month && picker.rightCalendar.month.format && picker.rightCalendar.month.format('YYYY-MM'));
+			} catch(_) {}
+			console.debug && console.debug('[openRangePicker] linkedCalendars, showDropdowns, minDate, maxDate', picker.linkedCalendars, picker.showDropdowns,
+										   picker.minDate && picker.minDate.format ? picker.minDate.format('YYYY-MM-DD') : picker.minDate,
+										   picker.maxDate && picker.maxDate.format ? picker.maxDate.format('YYYY-MM-DD') : picker.maxDate);
+		}
+	} catch(err) { console.warn('openRangePicker diagnostics failed', err); }
+}
+
+	// Click handlers to open the picker from the visible display area or its button
+	$(document).on('click', '#dateDisplayRange', function(e){
+		e.preventDefault();
+		// parse existing displayed value if present (try multiple formats)
+		const txt = ($('#dateRangeText').text() || '').trim();
+		let s = null, eD = null;
+		if (txt && (txt.includes('→') || txt.includes('➜'))){
+			const sep = txt.includes('→') ? '→' : '➜';
+			const parts = txt.split(sep).map(t => t.trim());
+			const formats = ['DD/MM/YYYY HH:mm','DD/MM/YY HH:mm','DD/MM/YYYY','DD/MM/YY'];
+			const parseFlexible = (str) => {
+				for (const f of formats){
+					const m = moment(str, f, true);
+					if (m.isValid()) return m;
+				}
+				return null;
+			};
+			try { s = parseFlexible(parts[0]); } catch(_) { s = null; }
+			try { if (parts[1]) eD = parseFlexible(parts[1]); } catch(_) { eD = null; }
+		}
+		openRangePicker(s, eD);
+	});
+
+
 	// A. Gestion pointeur pour les labels de sélection de plage du navigateur (navigator range selector labels)
 	// --- NAVIGATOR LABELS INTERACTION (pointerdown to set moving state, pointermove to update label position live, pointerup to clear state) ---
 	$(document).on('pointerdown', '.dygraph-rangesel-fgcanvas, .dygraph-rangesel-zoomhandle', function(e) {
@@ -2893,9 +3043,16 @@ function exportGraphCSV(zoneIndex) {
 	});
 
     // Détection du changement de période
-    $(document).on("change", "#periodSelector1", function() {
-        updatePeriodDisplay();
-        var period = $(this).val();
+	$(document).on("change", "#periodSelector1", function() {
+		updatePeriodDisplay();
+		var period = $(this).val();
+
+		// Si l'utilisateur choisit l'option personnalisée, ouvrir le date range picker
+		if (period === 'custom'){
+			try { openRangePicker(); } catch(e){ console.warn('openRangePicker failed', e); }
+			return; // ne pas exécuter le traitement par défaut
+		}
+
 		if (debug) console.debug("[PERIOD] Nouvelle période sélectionnée :", period);
 
         // 1. On calcule les dates start/end

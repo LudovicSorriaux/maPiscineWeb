@@ -685,7 +685,12 @@
             // Display the calendar
             //
 
-            var minDate = side == 'left' ? this.minDate : this.startDate;
+            // Use the global minDate for month/year dropdown bounds so the right
+            // calendar can also display the full selectable year range. The
+            // per-side startDate-based restriction is still applied when
+            // disabling individual days (see checks below) so end dates before
+            // the start won't be selectable.
+            var minDate = this.minDate;
             var maxDate = this.maxDate;
             var selected = side == 'left' ? this.startDate : this.endDate;
             var arrow = this.locale.direction == 'ltr' ? {left: 'chevron-left', right: 'chevron-right'} : {left: 'chevron-right', right: 'chevron-left'};
