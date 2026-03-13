@@ -44,12 +44,284 @@
     line-height: 1.2;
 }
 
-.display-side {
-    flex: 1;
-    display: flex;
-    justify-content: flex-end;
-    margin-left: 15px;
+/* Date range clickable affordance */
+/* Date display: single-line with ellipsis if too long */
+#dateDisplayRange {
+	display: inline-block;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	padding: 6px 12px;
+	background: rgba(255,255,255,0.03);
+	border: 1px solid rgba(255,255,255,0.03);
+	cursor: pointer;
 }
+
+#dateDisplayRange:hover {
+	background: rgba(0,251,255,0.04);
+	border-color: rgba(0,251,255,0.12);
+}
+
+/* Container for the hidden input that the daterangepicker attaches to.
+   Keeping it in the flow ensures the picker can align to the selector + display. */
+.rangePicker-side {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	vertical-align: middle;
+	width: 18%; /* responsive fraction between selector and display */
+	max-width: 180px;
+	min-width: 60px;
+	height: 44px; /* match control height */
+	position: relative; /* anchor for absolute input */
+	box-sizing: border-box;
+	padding: 0 6px;
+}
+
+/* The input itself remains visually hidden but positioned inside the .rangePicker-side
+   so the datepicker positions correctly near the controls. */
+#_rangePickerInput {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	width: 1px;
+	height: 1px;
+	opacity: 0;
+	pointer-events: none;
+}
+
+/* Small-screen adjustments: make the rangePicker area larger for touch targets */
+@media (max-width: 600px) {
+	.rangePicker-side {
+		width: 30% !important;
+		min-width: 90px !important;
+		max-width: none !important;
+		padding: 0 10px !important;
+	}
+	/* Ensure the display-side doesn't squeeze the picker on very small widths */
+	.display-side {
+		margin-left: 8px !important;
+	}
+}
+
+.display-side {
+	flex: 1;
+	display: flex;
+	justify-content: flex-end;
+	margin-left: 15px;
+}
+
+/* Dark theme overrides for daterangepicker to match app look */
+.daterangepicker {
+	background: #0b0f10 !important;
+	color: #dffeff !important;
+	border: 1px solid #222 !important;
+	box-shadow: 0 8px 30px rgba(0,0,0,0.8) !important;
+}
+
+.daterangepicker .drp-calendar {
+	background: transparent !important;
+	color: inherit !important;
+}
+
+
+/* More specific dark styling for internal calendar tables and cells */
+.daterangepicker .drp-calendar .calendar-table,
+.daterangepicker table.calendar-table {
+	background: transparent !important;
+	color: #cfeff0 !important;
+}
+
+.daterangepicker table.calendar-table td,
+.daterangepicker table.calendar-table th {
+	border: none !important;
+	color: #cfeff0 !important;
+}
+
+.daterangepicker table.calendar-table td.off,
+.daterangepicker table.calendar-table td.week {
+	color: #6b7b7b !important;
+}
+
+/* Dates hors mois : rendre plus sombres et en retrait (mode sombre) */
+.daterangepicker table.calendar-table td.off {
+	color: #475153 !important; /* subtilement plus clair que le fond mais désactivé */
+	opacity: 0.6 !important;
+	background: transparent !important;
+}
+
+/* Enforce no white pill for out-of-month days: remove background, shadow and rounding */
+.daterangepicker table.calendar-table td.off,
+.daterangepicker table.calendar-table td.off a,
+.daterangepicker table.calendar-table td.off span,
+.daterangepicker table.calendar-table td.off .available {
+	background: transparent !important;
+	box-shadow: none !important;
+	border-radius: 0 !important;
+	color: #5a6668 !important;
+	opacity: 0.6 !important;
+}
+
+/* Ensure regular available days still show their selection highlighting when in-range/active */
+.daterangepicker .drp-calendar .calendar-table td.in-range, 
+.daterangepicker .drp-calendar .calendar-table td.active, 
+.daterangepicker .drp-calendar .calendar-table td:hover {
+    background: rgb(5 176 239 / 65%) !important;
+    color: #ffffff !important;
+	box-shadow: none !important;
+	border-radius: 6px !important;
+}
+
+/* More specific: available cells that are NOT .off should keep normal color */
+.daterangepicker table.calendar-table td.available:not(.off) {
+	color: #cfeff0 !important;
+}
+
+.daterangepicker .drp-calendar .calendar-table td.available:hover {
+	background: rgba(0,191,255,0.16) !important;
+}
+
+/* Ensure popover overlays correctly above other UI */
+.daterangepicker {
+	z-index: 99999 !important;
+}
+
+.daterangepicker .calendar-table th {
+	color: #9feaf0 !important;
+	font-weight: 600;
+}
+
+.daterangepicker table.calendar-table td.available {
+	color: #cdeff0 !important;
+}
+
+.daterangepicker table.calendar-table td.available:hover,
+.daterangepicker table.calendar-table td.in-range,
+.daterangepicker table.calendar-table td.active {
+	background: rgba(0,191,255,0.12) !important;
+	color: #ffffff !important;
+	border-radius: 6px !important;
+}
+
+.daterangepicker .ranges {
+	background: transparent !important;
+	border-left: 1px solid rgba(255,255,255,0.03) !important;
+}
+
+.daterangepicker .ranges li {
+	color: #cfeff0 !important;
+}
+
+.daterangepicker .drp-buttons {
+	background: transparent !important;
+	border-top: 1px solid rgba(255,255,255,0.03) !important;
+	padding: 8px 10px !important;
+}
+
+/* Action buttons and inputs keep plugin defaults or are themed elsewhere; time UI removed (we use whole days).
+   Removed the explicit styling for .drp-inputs, .applyBtn, .cancelBtn and .calendar-time selects because
+   the app uses day-only ranges and the time UI is disabled. */
+
+/* Ensure small elements have sufficient contrast */
+.daterangepicker .drp-selected { color: #001 !important; }
+
+/* Strong overrides to counter daterangepicker.css defaults loaded later.
+   These selectors use high specificity and !important to ensure out-of-month
+   days are grayed and their white pills removed. */
+body .daterangepicker .calendar-table,
+body .daterangepicker table.calendar-table {
+	background: transparent !important;
+	border-color: transparent !important;
+}
+
+body .daterangepicker table.calendar-table td,
+body .daterangepicker table.calendar-table th {
+	background: transparent !important;
+	box-shadow: none !important;
+	border-radius: 0 !important;
+	border: 0 !important;
+	color: #cfeff0 !important;
+}
+
+/* Out-of-month cells */
+body .daterangepicker table.calendar-table td.off,
+body .daterangepicker td.off,
+body .daterangepicker td.off a,
+body .daterangepicker td.off span {
+	background: transparent !important;
+	box-shadow: none !important;
+	border-radius: 0 !important;
+	border: 0 !important;
+	color: #546162 !important; /* grisé */
+	opacity: 0.65 !important;
+}
+
+/* Ensure in-range / active cells keep highlighted style but without white pills */
+body .daterangepicker td.in-range,
+body .daterangepicker td.active,
+body .daterangepicker td.start-date,
+body .daterangepicker td.end-date {
+	background: linear-gradient(180deg, rgba(0,191,255,0.14), rgba(0,191,255,0.08)) !important;
+	color: #fff !important;
+	box-shadow: none !important;
+	border-radius: 6px !important;
+}
+
+/* Remove default white background applied specifically to .off variants in plugin */
+body .daterangepicker td.off.in-range,
+body .daterangepicker td.off.start-date,
+body .daterangepicker td.off.end-date {
+	background: transparent !important;
+	color: #546162 !important;
+}
+
+/* Time select overrides for dark */
+/* Removed time select overrides: time UI disabled in picker configuration. */
+
+/* Dark styling for month/year dropdowns displayed by the picker */
+.daterangepicker select.monthselect,
+.daterangepicker select.yearselect {
+	background: #081011 !important;
+	color: #dffeff !important;
+	border: 1px solid #222 !important;
+	padding: 2px 4px !important;
+	outline: none !important;
+	-webkit-appearance: none !important;
+	-moz-appearance: none !important;
+	appearance: none !important;
+}
+
+.daterangepicker .calendar-time { display: none !important; }
+
+/* Improve select appearance and touch target on mobile (iOS / Android) */
+.daterangepicker select {
+	-webkit-appearance: none !important; /* removes native iOS arrow */
+	-moz-appearance: none !important;
+	appearance: none !important;
+	background-color: transparent !important;
+	color: #dffeff !important;
+	border: 1px solid #222 !important;
+	padding: 6px 28px 6px 8px !important; /* room for custom arrow */
+	border-radius: 6px !important;
+	font-size: 13px !important;
+	line-height: 1 !important;
+	background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='10' viewBox='0 0 14 10'><polyline points='1 1 7 7 13 1' stroke='%23cfeff0' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>") !important;
+	background-repeat: no-repeat !important;
+	background-position: right 8px center !important;
+	background-size: 14px 10px !important;
+}
+
+/* Hide native expand icon in IE */
+.daterangepicker select::-ms-expand { display: none !important; }
+
+/* Make selects larger on touch devices for easier interaction */
+@media (max-width: 600px), (pointer: coarse) {
+	.daterangepicker select {
+		padding: 10px 36px 10px 10px !important;
+	}
+}
+
 
 
 
@@ -402,6 +674,16 @@
 		    font-size: 13px;
 		    padding: 4px 15px;
 		    border-radius: 4px;
+			/* Hide axis titles and tick labels per-graph when attributes are set by JS */
+			[data-axis-y-hidden="true"] .dygraph-label.dygraph-ylabel,
+			[data-axis-y-hidden="true"] .dygraph-axis-label-y {
+				display: none !important;
+			}
+
+			[data-axis-y2-hidden="true"] .dygraph-label.dygraph-y2label,
+			[data-axis-y2-hidden="true"] .dygraph-axis-label-y2 {
+				display: none !important;
+			}
 		    border: 1px solid #555; /* Bordure claire pour le relief */
 		    box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 4px rgba(0,0,0,0.5);
 		    text-shadow: 0 -1px 0 rgba(0,0,0,0.8);
@@ -409,6 +691,47 @@
 		    text-align: center;
 		    display: inline-block;
 		}
+
+		/* Progress bar container and styles for graph loading */
+		#graphProgressContainer {
+			position: fixed;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			background: linear-gradient(145deg, #0a0a0a, #1a1a1a);
+			padding: 24px;
+			border-radius: 10px;
+			box-shadow: 0 10px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05), inset 0 1px 0 rgba(255,255,255,0.1);
+			border: 2px solid #1045a9;
+			min-width: 340px;
+			max-width: 90%;
+			z-index: 9999;
+		}
+		#graphProgressMessage { margin-bottom: 14px; font-weight: bold; text-align: center; color:#fff; font-size:15px; }
+		#graphProgressDetail { margin-top:12px; font-size:13px; color:#bbbbbb; text-align:center; }
+		#graphProgressContainer > div.progress-track { background:#1a1a1a; border-radius:6px; overflow:hidden; height:30px; border:1px solid #333; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5); }
+		#graphProgressBar {
+			background: linear-gradient(90deg, #1045a9, #2060d0, #1045a9);
+			background-size: 200% 100%;
+			animation: shimmer 2s infinite linear;
+			height: 100%;
+			display:flex;
+			align-items:center;
+			justify-content:center;
+			color:#fff;
+			font-weight:bold;
+			font-size:14px;
+			box-shadow: 0 0 10px rgba(16,69,169,0.4), inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.3);
+			text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+			transform-origin: left;
+			will-change: transform;
+		}
+
+		@keyframes shimmer {
+			0% { background-position: 200% 0; }
+			100% { background-position: -200% 0; }
+		}
+
 
 		/* Petite flèche vers le bas pour indiquer le menu */
 		.graph-title-button::after {

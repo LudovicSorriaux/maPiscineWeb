@@ -80,6 +80,7 @@
 	<script src="./moment.min.js"></script>
 	<script src="./daterangepicker.js"></script>
 	<script src="./dataGenerator.js"></script> 
+	<script src="./piscineGraphs.js"></script>
 	<script src="./piscineScripts.js"></script>
   <!-- endbuild -->
 
@@ -128,12 +129,18 @@
                         <option value="last30d">30 jours précédents</option>
                         <option value="lastMonth">Mois précédent</option>
                         <option value="thisMonth">Ce mois</option>
+						<option value="custom">Personnalisé…</option>
                     </select>
-                </div>
 
-                <div class="display-side">
-                    <div id="dateDisplayRange" class="inset-textbox">
-                        </div>
+                </div>
+				<!-- Hidden input for daterangepicker (used when selecting custom ranges) -->
+				<div class="rangePicker-side">
+					<input id="_rangePickerInput" type="text" aria-hidden="true" />
+				</div>
+				<div class="display-side">
+					<div id="dateDisplayRange" class="inset-textbox" title="Cliquer pour choisir une plage — Les heures sont normalisées (jours entiers ; fin aujourd'hui = heure actuelle - 1)">
+						<span id="dateRangeText">&nbsp;—&nbsp;</span>
+					</div>
                 </div>
             </div>
         

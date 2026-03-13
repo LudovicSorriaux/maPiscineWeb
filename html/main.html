@@ -59,9 +59,10 @@
 <!-- PapaParse for CSV parsing -->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <!-- dygraph -->
-	<script src="https://unpkg.com/dygraphs@2.2.0/dist/dygraph.min.js"></script>
-	<script src="https://unpkg.com/dygraphs@2.2.0/src/extras/synchronizer.js"></script>
-	<link rel="stylesheet" href="https://unpkg.com/dygraphs@2.2.0/dist/dygraph.min.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.2.1/dygraph.min.css" />
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.2.1/dygraph.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.2.1/extras/synchronizer.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <!-- debuger -->
 	<script src="https://cdn.jsdelivr.net/gh/arschmitz/jquery-mobile-event-debugger@v0.0.4/jquery.mobile.event.debugger.js"></script>
 
@@ -76,6 +77,7 @@
 	<link rel="stylesheet" href="/css/gauge.css" />	
 	<link rel="stylesheet" href="/css/404.css" />	
 	<link rel="stylesheet" href="/css/daterangepicker.css" />
+	<link rel="stylesheet" href="/css/piscineGraphs.css" />
 	<link rel="stylesheet" href="css/localAuth.css">
 
 <!-- endbuild -->
@@ -89,6 +91,12 @@
 	<script src="/js/switch.js"></script>
 	<script src="/js/moment.min.js"></script>
 	<script src="/js/daterangepicker.js"></script>
+	<script src="/js/piscineUsers.js"></script>
+	<script src="/js/piscinePrincipale.js"></script>
+	<script src="/js/piscineParametres.js"></script>
+	<script src="/js/piscineDebug.js"></script>
+	<script src="/js/piscineMaintenance.js"></script>
+	<script src="/js/piscineGraphs.js"></script>
 	<script src="/js/piscineScripts.js"></script>
   <!-- endbuild -->
 
@@ -1330,72 +1338,149 @@
 			</ul>
 		</div> <!-- Menu panel -->
 
-		<div data-role="header" data-position="fixed" data-theme="b">
+		<div data-role="header" id="graphHeader" data-position="fixed" data-theme="b">
 			<a href="#leftpanel" data-icon="bars" class="ui-btn-left">Pages</a>
 			<h1 class="myh1">Piscine Manager</h1>
 			<a href="#optionsPiscineManager" data-icon="gear" class="ui-btn-right">Options</a>
 		</div>
 		
-		<div role="main" id="graphMainPage" class="ui-content" data-inset="false" style="font-size:14px">
+		<div role="main" id="graphContent" class="ui-content" data-inset="false" style="font-size:14px">
 			<!-- Sélecteur de période (commun à tous modes) -->
-			<div class="ui-field-contain">
-				<label for="daterange" class="select smallLabel">Periode:</label> 
-				<input type="text" name="daterange" id="daterange" value="01/01/2018 - 01/15/2018" class="single">
-			</div>
+            <div id="periodControlBox" class="graph-selector-box">
+                <div class="selector-side">
+                    <select name="periodSelector1" id="periodSelector1" data-mini="true" data-theme="b" data-inline="false">
+                        <option value="today">Aujourd'hui</option>
+                        <option value="yesterday">Hier</option>
+                        <option value="last3d">3 jours précédents</option>
+                        <option value="last7d">7 jours précédents</option>
+                        <option value="lastWeek">Semaine précédente</option>
+                        <option value="thisWeek">Cette semaine</option>
+                        <option value="last30d">30 jours précédents</option>
+                        <option value="lastMonth">Mois précédent</option>
+                        <option value="thisMonth">Ce mois</option>
+						<option value="custom">Personnalisé…</option>
+                    </select>
+
+                </div>
+				<!-- Hidden input for daterangepicker (used when selecting custom ranges) -->
+				<div class="rangePicker-side">
+					<input id="_rangePickerInput" type="text" aria-hidden="true" />
+				</div>
+				<div class="display-side">
+					<div id="dateDisplayRange" class="inset-textbox" title="Cliquer pour choisir une plage — Les heures sont normalisées (jours entiers ; fin aujourd'hui = heure actuelle - 1)">
+						<span id="dateRangeText">&nbsp;—&nbsp;</span>
+					</div>
+                </div>
+            </div>
+        
+            <div class="dashboard-card">
+	            <div class="charts-wrapper" id="dataChartsArea">
+			        <div id="graph-zone-1" class="graph-zone">
+						<div class="graph-header-mini">
+							<div class="header-top-row">
+							    <div class="title-container">
+							        <select id="graphSelector1" class="zone-graph-selector" data-zone="1" data-native-menu="false" data-theme="b" data-mini="true" data-icon="arrow-d" data-iconpos="right" >
+										<option value="Chimie" selected>Chimie</option>
+						                <option value="Températures">Températures</option>
+						                <option value="Équipements">Équipements</option>
+							        </select>
+							    </div>
+								<div class="axes-container">
+									<select id="axesSelector1" class="axes-multi-selector" data-zone="1" multiple="multiple" data-native-menu="false" data-theme="b" data-icon="gear" data-iconpos="left">
+										<option data-placeholder="true">Courbes...</option> 
+										<option value="PH">PH</option>
+										<option value="CL">Chlore</option>
+										<option value="Redox">Redox</option>
+										<option value="TempAir">Temp Air</option>
+										<option value="TempEau">Temp Eau</option>
+										<option value="PP">Pression</option>
+									</select>
+								</div>
+								<div class="export-container">
+								    <select id="exportAction1" data-zone="1" class="export-selector" data-native-menu="false" data-mini="true" data-icon="camera" data-iconpos="notext">
+								        <option value="" data-placeholder="true">Type d'Export...</option>
+								        <option value="png">Image PNG</option>
+								        <option value="csv">Données CSV</option>
+								    </select>
+							    </div>
+							</div>							
+						    <div id="status-val-1" class="local-status-val"></div>
+						</div>
+			            <div class="graph-content"><div id="graph-canvas-1" class="graph-canvas"></div></div>
+					</div>
+					
+			        <div id="graph-zone-2" class="graph-zone">
+			            <div class="graph-header-mini">
+							<div class="header-top-row">
+							    <div class="title-container">
+					                <select id="graphSelector2" class="zone-graph-selector" data-zone="2" data-native-menu="false" data-theme="b" data-mini="true" data-icon="arrow-d" data-iconpos="right">
+					                    <option value="Chimie">Chimie</option>
+					                    <option value="Températures" selected>Températures</option>
+					                    <option value="Équipements">Équipements</option>
+					                </select>
+								</div>
+								<div class="axes-container">
+									<select id="axesSelector2" class="axes-multi-selector" data-zone="2" multiple="multiple" data-native-menu="false" data-theme="b" data-icon="gear" data-iconpos="left">
+											<option data-placeholder="true">Courbes...</option> 
+											<option value="PH">PH</option>
+											<option value="CL">Chlore</option>
+											<option value="Redox">Redox</option>
+											<option value="TempAir">Temp Air</option>
+											<option value="TempEau">Temp Eau</option>
+											<option value="PP">Pression</option>
+									</select>
+								</div>
+								<div class="export-container">
+								    <select id="exportAction2" data-zone="2" class="export-selector" data-native-menu="false" data-mini="true" data-icon="camera" data-iconpos="notext">
+								        <option value="" data-placeholder="true">Type d'Export...</option>
+								        <option value="png">Image PNG</option>
+								        <option value="csv">Données CSV</option>
+								    </select>
+							    </div>
+							</div>
+							<div id="status-val-2" class="local-status-val"></div>
+			            </div>
+			            <div class="graph-content"><div id="graph-canvas-2" class="graph-canvas"></div></div>
+			        </div>
 			
-			<!-- Container responsive pour zones graphiques -->
-			<div id="graph-container">
-				<!-- Zone fixe 1 (toujours visible) -->
-				<div class="graph-zone" id="graph-zone-1" data-graph-type="chemistry">
-					<!-- Titre cliquable -->
-					<h3 class="graph-zone-title">Chimie de l'eau</h3>
-					<!-- Sélecteur de graphe (affiché au clic sur titre mobile/tablette) -->
-					<div class="graph-selector" style="display:none;">
-						<div class="ui-field-contain">
-							<label for="graphSelector1" class="select smallLabel">Changer graphique:</label>
-							<select name="graphSelector1" class="zone-graph-selector" data-zone="1" data-mini="true">
-								<option value="chemistry" selected>Chimie</option>
-								<option value="temperature">Températures</option>
-								<option value="equipment">Équipements</option>
-							</select>
-						</div>
-					</div>
-					<!-- Contenu graphique (populé dynamiquement par JS) -->
-					<div class="graph-content"></div>
-				</div>
-				
-				<!-- Zone fixe 2 (tablette/desktop) -->
-				<div class="graph-zone" id="graph-zone-2" data-graph-type="temperature">
-					<h3 class="graph-zone-title">Températures</h3>
-					<div class="graph-selector" style="display:none;">
-						<div class="ui-field-contain">
-							<label for="graphSelector2" class="select smallLabel">Changer graphique:</label>
-							<select name="graphSelector2" class="zone-graph-selector" data-zone="2" data-mini="true">
-								<option value="chemistry">Chimie</option>
-								<option value="temperature" selected>Températures</option>
-								<option value="equipment">Équipements</option>
-							</select>
-						</div>
-					</div>
-					<div class="graph-content"></div>
-				</div>
-				
-				<!-- Zone fixe 3 (desktop uniquement) -->
-				<div class="graph-zone" id="graph-zone-3" data-graph-type="equipment">
-					<h3 class="graph-zone-title">Équipements</h3>
-					<div class="graph-selector" style="display:none;">
-						<div class="ui-field-contain">
-							<label for="graphSelector3" class="select smallLabel">Changer graphique:</label>
-							<select name="graphSelector3" class="zone-graph-selector" data-zone="3" data-mini="true">
-								<option value="chemistry">Chimie</option>
-								<option value="temperature">Températures</option>
-								<option value="equipment" selected>Équipements</option>
-							</select>
-						</div>
-					</div>
-					<div class="graph-content"></div>
-				</div>
-			</div>
+			        <div id="graph-zone-3" class="graph-zone">
+			            <div class="graph-header-mini">
+							<div class="header-top-row">
+							    <div class="title-container">
+									<select id="graphSelector3" class="zone-graph-selector" data-zone="3" data-native-menu="false" data-theme="b" data-mini="true" data-icon="arrow-d" data-iconpos="right">
+					                    <option value="Chimie">Chimie</option>
+					                    <option value="Températures">Températures</option>
+					                    <option value="Équipements" selected>Équipements</option>
+					                </select>
+								</div>
+								<div class="axes-container">
+									<select id="axesSelector3" class="axes-multi-selector" data-zone="3" multiple="multiple" data-native-menu="false" data-theme="b" data-icon="gear" data-iconpos="left">
+											<option data-placeholder="true">Courbes...</option> 
+											<option value="PH">PH</option>
+											<option value="CL">Chlore</option>
+											<option value="Redox">Redox</option>
+											<option value="TempAir">Temp Air</option>
+											<option value="TempEau">Temp Eau</option>
+											<option value="PP">Pression</option>
+									</select>
+								</div>
+								<div class="export-container">
+								    <select id="exportAction3" data-zone="3" class="export-selector" data-native-menu="false" data-mini="true" data-icon="camera" data-iconpos="notext">
+								        <option value="" data-placeholder="true">Type d'Export...</option>
+								        <option value="png">Image PNG</option>
+								        <option value="csv">Données CSV</option>
+								    </select>
+							    </div>
+							</div>
+							<div id="status-val-3" class="local-status-val"></div>
+			            </div>
+			            <div class="graph-content"><div id="graph-canvas-3" class="graph-canvas"></div></div>
+			        </div>
+				</div>	
+	            <div class="nav-wrapper" id="navZone">
+	                <div id="graph-canvas-nav" style="width:100%; height:100%;"></div>
+	            </div>
+	        </div>
 		</div>
 	</div>	<!-- page -->
 
