@@ -1,3 +1,270 @@
+    /* === TABLETTE PAYSAGE === */
+    @media (min-width: 701px) and (max-width: 1100px) and (orientation: landscape) and (min-height: 600px) {
+      /* Agrandir le bandeau principal pour toutes les pages*/
+      .myh1 {
+        font-size: 2.5em !important;
+      }
+      /* Ajuster les boutons du header pour toutes les pages*/
+      [data-role="header"] .ui-btn-left,
+      [data-role="header"] .ui-btn-right {
+        font-size: 1.5em !important;
+      }
+      /* Ajuster les icônes du header */
+      [data-role="header"] .ui-icon {
+        font-size: 1.5em !important;
+      }
+      /* Leftpanel titres et lignes */
+      #leftpanel h3.myh3 {
+        font-size: 1.8em !important;
+      }
+      #leftpanel [data-role="listview"] li a.ui-btn,
+      #leftpanel [data-role="listview"] li a {
+        font-size: 1.6em !important;
+      }
+    /* === ajustements spécifiques page principale === */
+      /* Agrandir les gauges */
+      #pagePiscinePrincipale .gauge-container {
+        transform: scale(1.7) !important;
+        margin-top: 2.2em !important;
+        margin-bottom: 2.2em !important;
+      }
+      /* Ajouter espace avant les gauges */
+      #pagePiscinePrincipale .ui-grid-a {
+        margin-top: 5em !important;
+      }
+      /* Ajouter espace avant les switchs */
+      #pagePiscinePrincipale fieldset.container_12 {
+        margin-top: 3em !important;
+      }
+      /* Agrandir la zone écran (screen LCD) */
+      #pagePiscinePrincipale .screenFrame {
+        min-height: 400px !important;
+        height: 400px !important;
+        padding-top: 0.5em;
+        padding-bottom: 0.5em;
+      }
+      #pagePiscinePrincipale .screenPiece {
+        min-height: 380px !important;
+        height: 380px !important;
+        font-size: 1.2em;
+      }
+      /* Augmenter l'espace entre gauges et températures */
+      #pagePiscinePrincipale fieldset.ui-grid-c {
+        margin-top: 3em !important;
+      }
+    }
+    /* === TABLETTE PORTRAIT === */
+    @media (min-width: 701px) and (max-width: 1100px) and (orientation: portrait) and (min-height: 600px) {
+      /* Agrandir le bandeau principal */
+      .myh1 {
+        font-size: 2em !important;
+      }
+      /* Ajuster les boutons du header */
+      [data-role="header"] .ui-btn-left,
+      [data-role="header"] .ui-btn-right {
+        font-size: 1.3em !important;
+      }      /* Ajuster les icônes du header */
+      [data-role="header"] .ui-icon {
+        font-size: 1.2em !important;
+      }
+      /* Leftpanel titres et lignes */
+      #leftpanel h3.myh3 {
+        font-size: 1.9em !important;
+      }
+      #leftpanel [data-role="listview"] li a.ui-btn,
+      #leftpanel [data-role="listview"] li a {
+        font-size: 1.4em !important;
+      }
+      /* === ajustements spécifiques page principale === */
+      /* Agrandir les gauges */
+      #pagePiscinePrincipale .gauge-container {
+        transform: scale(1.7) !important;
+        margin-top: 2.2em !important;
+        margin-bottom: 2.2em !important;
+      }
+      /* Ajouter espace avant les gauges */
+      #pagePiscinePrincipale .ui-grid-a {
+        margin-top: 3em !important;
+      }
+      /* Ajouter espace avant les switchs */
+      #pagePiscinePrincipale fieldset.container_12 {
+        margin-top: 3em !important;
+      }
+      /* Agrandir la zone écran (screen LCD) */
+      #pagePiscinePrincipale .screenFrame {
+        min-height: 200px !important;
+        height: 200px !important;
+        padding-top: 0.5em;
+        padding-bottom: 0.5em;
+      }
+      #pagePiscinePrincipale .screenPiece {
+        min-height: 180px !important;
+        height: 180px !important;
+        font-size: 1.2em;
+      }
+      /* Augmenter l'espace entre gauges et températures */
+      #pagePiscinePrincipale fieldset.ui-grid-c {
+        margin-top: 3em !important;
+      }
+    }
+    /* === DESKTOP PAYSAGE === */
+    @media (min-width: 1101px) and (orientation: landscape) {
+      /* Agrandir le bandeau principal */
+      .myh1 {
+        font-size: 3.5em !important;
+      }
+      /* Ajuster les boutons du header pour toutes les pages */
+      [data-role="header"] .ui-btn-left,
+      [data-role="header"] .ui-btn-right {
+        font-size: 2.0em !important;
+      }
+      /* Ajuster les icônes du header */
+      [data-role="header"] .ui-icon {
+        font-size: 1.8em !important;
+      }
+      /* Leftpanel titres et lignes */
+      #leftpanel h3.myh3 {
+        font-size: 2.2em !important;
+      }
+      #leftpanel [data-role="listview"] li a.ui-btn,
+      #leftpanel [data-role="listview"] li a {
+        font-size: 1.9em !important;
+      }
+
+    /* === ajustements spécifiques page principale === */
+      /* Agrandir les gauges */
+      #pagePiscinePrincipale .gauge-container {
+        transform: scale(1.7) !important;
+        margin-top: 2.2em !important;
+        margin-bottom: 2.2em !important;
+      }
+      /* Ajouter espace avant les gauges */
+      #pagePiscinePrincipale .ui-grid-a {
+        margin-top: 5em !important;
+      }
+      /* Ajouter espace avant les switchs */
+      #pagePiscinePrincipale fieldset.container_12 {
+        margin-top: 3em !important;
+      }
+      /* Agrandir la zone écran (screen LCD) */
+      #pagePiscinePrincipale .screenFrame {
+        min-height: 400px !important;
+        height: 400px !important;
+        padding-top: 0.5em;
+        padding-bottom: 0.5em;
+      }
+      #pagePiscinePrincipale .screenPiece {
+        min-height: 380px !important;
+        height: 380px !important;
+        font-size: 1.2em;
+      }
+      /* Augmenter l'espace entre gauges et températures */
+      #pagePiscinePrincipale fieldset.ui-grid-c {
+        margin-top: 3em !important;
+      }
+    }
+    /* === DESKTOP PORTRAIT === */
+    @media (orientation: portrait) and (min-height: 1100px) {
+      
+      /* Agrandir le bandeau principal */
+      .myh1 {
+        font-size: 1.9em !important;
+      }
+      /* Ajuster les boutons du header pour toutes les pages */
+      [data-role="header"] .ui-btn-left,
+      [data-role="header"] .ui-btn-right {
+        font-size: 1.5em !important;
+      }
+      /* Ajuster les icônes du header */
+      [data-role="header"] .ui-icon {
+        font-size: 1.8em !important;
+      }
+      /* Leftpanel titres et lignes */
+      #leftpanel h3.myh3 {
+        font-size: 2.2em !important;
+      }
+      #leftpanel .ui-listview li a.ui-btn,
+      #leftpanel .ui-listview li a {
+        font-size: 1.9em !important;
+      }
+    /* === ajustements spécifiques page principale === */
+      /* Agrandir les gauges */
+      #pagePiscinePrincipale .gauge-container {
+        transform: scale(1.7) !important;
+        margin-top: 2.2em !important;
+        margin-bottom: 2.2em !important;
+      }
+      /* Ajouter espace avant les gauges */
+      #pagePiscinePrincipale .ui-grid-a {
+        margin-top: 3em !important;
+      }
+      /* Ajouter espace avant les switchs */
+      #pagePiscinePrincipale fieldset.container_12 {
+        margin-top: 3em !important;
+      }
+      /* Agrandir la zone écran (screen LCD) */
+      #pagePiscinePrincipale .screenFrame {
+        min-height: 200px !important;
+        height: 200px !important;
+        padding-top: 0.5em;
+        padding-bottom: 0.5em;
+      }
+      #pagePiscinePrincipale .screenPiece {
+        min-height: 180px !important;
+        height: 180px !important;
+        font-size: 1.2em;
+      }
+      /* Augmenter l'espace entre gauges et températures */
+      #pagePiscinePrincipale fieldset.ui-grid-c {
+        margin-top: 3em !important;
+      }
+    }
+    /* Centrage et espacement régulier des switchs sur la page principale en mode paysage */
+    @media (orientation: landscape), (min-width: 701px), (min-height: 600px) {
+      #pagePiscinePrincipale fieldset.container_12 {
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: center !important;
+        align-items: flex-start !important;
+/*        gap: 3em !important; */
+        width: 100% !important;
+      }
+      #pagePiscinePrincipale fieldset.container_12 .grid_4 {
+        flex: 0 1 auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        min-width: 120px;
+        max-width: 180px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+    }
+    /* Empilement vertical et centrage strict en mode paysage sur la page principale */
+    @media (orientation: landscape), (min-width: 701px), (min-height: 600px) {
+      #pagePiscinePrincipale .ui-field-contain {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 0 !important;
+      }
+      #pagePiscinePrincipale .ui-field-contain .smallLabel {
+        display: block !important;
+        width: 100% !important;
+        text-align: center !important;
+        margin-bottom: 0.5em !important;
+        margin-top: 0.2em !important;
+        font-weight: 500;
+      }
+      #pagePiscinePrincipale .ui-field-contain input,
+      #pagePiscinePrincipale .ui-field-contain .switch,
+      #pagePiscinePrincipale .ui-field-contain .led {
+        display: block !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+      }
+    }
     /* BASE & THEME DARK */
 html, body { height: 100%; margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
 .ui-page { background: #000; }
@@ -248,6 +515,55 @@ background-color: #333;
 }
 
 /* === MEDIA QUERIES ADAPTATIVES (iPhone 12, iPad, Desktop) === */
+
+/*
+ * CORRECTION :
+ * Sur la page principale (#pagePiscinePrincipale),
+ * forcer les labels (.smallLabel) à être toujours au-dessus et centrés
+ * des LEDs, températures et switchs, dans tous les modes sauf mobile/portrait.
+ * (On ne touche pas à piscineGraphs !)
+ */
+
+/* Par défaut (tous modes), sur la page principale, les labels sont block et centrés */
+/* Correction renforcée : labels toujours au-dessus et centrés sur la page principale */
+#pagePiscinePrincipale .ui-field-contain .smallLabel {
+  display: block !important;
+  width: 100% !important;
+  text-align: center !important;
+  margin-bottom: 0.5em !important;
+  margin-top: 0.2em !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  position: relative !important;
+  z-index: 2;
+  font-weight: 500;
+}
+
+/* Correction spécifique pour les labels de température sur la page principale */
+#pagePiscinePrincipale .ui-field-contain input.smallTextInput {
+  display: block;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* En mobile/portrait, on laisse le style existant (référence) */
+@media (max-width: 700px) and (orientation: portrait) {
+  #pagePiscinePrincipale .ui-field-contain .smallLabel {
+    /* On ne surcharge rien, on garde le style mobile/portrait */
+  }
+}
+
+/* En paysage, tablette, desktop, on force le label au-dessus et centré */
+@media (orientation: landscape), (min-width: 701px) {
+  #pagePiscinePrincipale .ui-field-contain .smallLabel {
+    display: block !important;
+    text-align: center !important;
+    margin-bottom: 0.2em !important;
+    margin-top: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+}
 		/*
        Mobile portrait : 414x896
 		   Mobile paysage : 896x414
@@ -460,4 +776,34 @@ background-color: #333;
 }  
 	/* === DESKTOP PORTRAIT / GRAND ÉCRAN PORTRAIT (2260 x 1440 et plus, iPad paysage exclu) === */
 @media (min-height: 1101px) and (orientation: portrait) {
-}	
+}
+
+/* =====================================================================
+   LAYOUT 2 COLONNES — PAYSAGE
+   Portrait  : colonnes empilées (flex-direction: column)
+   Paysage   : 2 colonnes côte à côte (flex-direction: row)
+   ===================================================================== */
+.lscape-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+.lscape-col {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+@media (orientation: landscape) {
+    .lscape-layout {
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .lscape-col {
+        flex: 1;
+        min-width: 0;
+        width: auto;
+    }
+}

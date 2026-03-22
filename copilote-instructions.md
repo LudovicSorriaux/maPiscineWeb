@@ -58,6 +58,117 @@ But : fournir aux développeurs et à l'assistant IA un aide-mémoire pratique p
 
 ## Architecture du Projet
 
+### Frontend Web (HTML/CSS/JS) — v4.5 (mars 2026)
+
+#### Structure SPA et navigation
+- Application Single Page Application (SPA) basée sur jQuery Mobile : chaque page (login, register, principale, paramètres, maintenance, alertes, debug, graphs) est un `<div data-role="page">` ou `<div data-role="dialog">` dans `html/main.html`.
+- Navigation entre pages via ancre `#pageId` et panels latéraux (`leftpanel`, `optionsPiscineManager`).
+- Panels latéraux adaptatifs (overlay ou reveal selon layout, voir JS responsive).
+
+#### Responsive design avancé
+- Détection dynamique du layout (mobile-portrait, mobile-landscape, tablet, desktop) via JS (`detectLayout`, `adaptJQueryMobileGrids`, `adaptPanels` dans `piscineScripts.js`).
+- Grilles et formulaires adaptatifs : passage automatique de 1 à 2 colonnes sur tablette/desktop, labels à gauche, inputs à droite.
+- Media queries CSS détaillées pour chaque breakpoint (mobile, tablette, desktop), adaptation des tailles, marges, panels, etc. (voir `mystyles.css`).
+- Attribut `data-layout` sur `<body>` pour stylage conditionnel.
+
+#### Composants UI custom
+- Switchs custom CSS pour tous les contrôles booléens (remplacent les flip switch JQM).
+- LEDs d’état (8 couleurs) pour équipements, jauges circulaires (gauge.js), écran LCD simulé, panels collapsibles pour les paramètres.
+- Dialogs enrichis pour login, erreurs, session expirée, about, logoff, etc.
+
+#### Authentification & session
+- Gestion avancée de la session utilisateur : stockage dans localStorage (`maPiscine.Session` singleton), cookie `maPiscine`, TTL, auto-login local (endpoint `/checkLocalAuth`), warning toast 5 min avant expiration, dialog auto-redirect 10s.
+- Possibilité d’auto-login local (mode kiosque) : détection au démarrage, fallback sur login classique si désactivé côté serveur.
+
+#### Pages et fonctionnalités principales
+- Login, inscription, changement de mot de passe admin, gestion des utilisateurs (ajout, suppression, profil), toutes en dialogs ou pages dédiées.
+- Dashboard principal : LEDs, jauges, températures, switchs, écran LCD.
+- Pages Paramètres/Maintenance : panels collapsibles, sliders, switchs, clockpicker, gestion des pompes, alertes, références PH/Redox, etc.
+- Page Graphs : 1 à 3 graphes synchronisés (Dygraph), sélecteurs d’axes multi-select, export PNG/CSV, sélecteur de période, rangePicker custom.
+- Page Debug : textarea logs, switch feed logs, bouton clear.
+
+#### JS principal (`piscineScripts.js`)
+- Initialisation responsive, gestion navigation, auto-login, session, toast notifications, gestion d’erreur centralisée, adaptation dynamique des panels et grilles.
+- Détection du layout à chaque resize/orientationchange, adaptation des panels (overlay/reveal), resize dynamique des graphes.
+- Vérification périodique de la session (setInterval), gestion fine des transitions de pages (pagecontainerbeforechange/beforeshow).
+
+#### CSS (`mystyles.css`)
+- Thème sombre, styles custom pour tous les composants, adaptation fine par breakpoint.
+- Grilles fluides, panels reveal/overlay, formulaires 2 colonnes, centrage dialogs, adaptation des jauges/LEDs, etc.
+- Classes couleur (vert, cyan, rose, violet, blanc, rouge, orange, jaune, bleu).
+- Layout 2 colonnes en paysage (flex), empilé en portrait.
+- Conventions de maintenance CSS :
+  - Toujours structurer les media queries par mode / orientation / taille, p.ex. `@media (min-width: 701px) and (max-width: 1100px) and (orientation: landscape) and (min-height: 600px)`.
+  - D’abord styles globaux à toutes les pages (header, boutons, icônes), puis styles spécifiques à une page (`#pagePiscinePrincipale .gauge-container`, etc.).
+  - Exemple à conserver pour `pagePiscinePrincipale` :
+    ```css
+    /* Centrage et espacement régulier des switchs sur la page principale en mode paysage */
+    @media (orientation: landscape), (min-width: 701px), (min-height: 600px) {
+      #pagePiscinePrincipale fieldset.container_12 {
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: center !important;
+        align-items: flex-start !important;
+        /* gap: 3em !important; */
+        width: 100% !important;
+      }
+      #pagePiscinePrincipale fieldset.container_12 .grid_4 {
+        flex: 0 1 auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        min-width: 120px;
+        max-width: 180px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+    }
+    /* Empilement vertical et centrage strict en mode paysage sur la page principale */
+    @media (orientation: landscape), (min-width: 701px), (min-height: 600px) {
+      #pagePiscinePrincipale .ui-field-contain {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 0 !important;
+      }
+      #pagePiscinePrincipale .ui-field-contain .smallLabel {
+        display: block !important;
+        width: 100% !important;
+        text-align: center !important;
+        margin-bottom: 0.5em !important;
+        margin-top: 0.2em !important;
+        font-weight: 500;
+      }
+      #pagePiscinePrincipale .ui-field-contain input,
+      #pagePiscinePrincipale .ui-field-contain .switch,
+      #pagePiscinePrincipale .ui-field-contain .led {
+        display: block !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+      }
+    }
+    ```
+
+#### Dépendances externes
+- jQuery Mobile, jQuery Validate, dayjs (+plugins), PapaParse, Dygraph (+synchronizer), html2canvas, FontAwesome 5, Material Design Iconic Font.
+- JS custom : piscineScripts.js, piscinePrincipale.js, piscineParametres.js, piscineMaintenance.js, piscineGraphs.js, piscineDebug.js, piscineUsers.js, swipPage.js, switch.js, wow.js, gauge.js, daterangepicker.js, etc.
+
+#### Exemple de flux utilisateur
+1. L’utilisateur arrive sur la page login (auto-login local si activé)
+2. Après login, redirection vers le dashboard principal (LEDs, jauges, switchs)
+3. Navigation via le menu latéral vers Paramètres, Maintenance, Graphs, Debug…
+4. Les panels/options s’adaptent automatiquement au device (mobile/tablette/desktop)
+5. Les changements de page, panels, dialogs sont gérés dynamiquement sans rechargement
+
+#### À retenir pour le développement frontend
+- Toujours builder le frontend avec `npx gulp` après modification HTML/CSS/JS
+- Les fichiers générés `.lgz` sont à uploader via `platformio run -t uploadfs`
+- Tester le responsive sur mobile/tablette/desktop (layout, panels, formulaires)
+- Centraliser la gestion de la session et des erreurs dans `piscineScripts.js`
+- Respecter les conventions CSS (thème sombre, classes couleur, layout flex)
+
+
 ### Flux de Données Principal
 ```
 Client Web (Browser) → HTTP Request → AsyncWebServer (port 80)
@@ -135,6 +246,18 @@ loop() → server.handleClient() → timer.run() → checkWiFi() → syncTime()
 # Moniteur série
 ~/.platformio/penv/bin/platformio device monitor -b 115200
 ```
+
+### Mockup Server Python pour Tests Frontend
+- **But** : Tester l'interface web sans déployer sur ESP8266, gagner du temps en développement.
+- **Fonctionnement** : Serveur Python simulant les endpoints API du vrai serveur (status, logs, config, etc.), servant les fichiers HTML/CSS/JS depuis `html/`.
+- **Commande** : 
+  ```bash
+  cd /Users/ludovic1/Documents/PlatformIO/Projects/maPiscinev4.5Web-d1_mini
+  python mock_server.py  # ou python3 mock_server.py
+  ```
+- **Accès** : Ouvrir `http://localhost:8000` dans le navigateur pour tester l'interface.
+- **Données mockées** : Réponses JSON simulées pour les jauges, LEDs, températures, etc.
+- **Avantages** : Développement rapide, test responsive sans upload, débogage JS/CSS facile.
 
 ---
 
