@@ -741,6 +741,14 @@ background-color: #333;
     margin-bottom: 15px !important;
   }
   
+  /* Panel sondes centré en mode paysage */
+  #pagePiscineMaintenance .sondes-center-panel {
+    width: 100% !important;
+    max-width: 600px !important;
+    margin: 0 auto !important;
+    text-align: center !important;
+  }
+  
   /* Boutons radio pour étalons PH/Redox */
   #pagePiscineMaintenance .ui-radio {
     margin: 5px !important;
@@ -888,6 +896,14 @@ background-color: #333;
   
   #pagePiscineMaintenance .lscape-col {
     padding: 10px !important;
+  }
+  
+  /* Panel sondes centré en mode paysage */
+  #pagePiscineMaintenance .sondes-center-panel {
+    width: 100% !important;
+    max-width: 800px !important;
+    margin: 20px auto 0 !important;
+    text-align: center !important;
   }
   
   /* Page Paramètres : formulaires 2 colonnes */
@@ -1063,6 +1079,12 @@ background-color: #333;
   #pagePiscineMaintenance a[data-mini="true"] {
     font-size: 1.2em !important;
     padding: 10px 14px !important;
+  }
+  
+  /* Panel sondes - en mode portrait reste dans le flux normal */
+  #pagePiscineMaintenance .sondes-center-panel {
+    width: 100% !important;
+    margin: 15px 0 !important;
   }
 }
 
