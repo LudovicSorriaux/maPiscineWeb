@@ -1,405 +1,163 @@
-    /* === TABLETTE PAYSAGE === */
-    @media (min-width: 701px) and (max-width: 1100px) and (orientation: landscape) and (min-height: 600px) {
-      /* Agrandir le bandeau principal pour toutes les pages*/
-      .myh1 {
-        font-size: 2.5em !important;
-      }
-      /* Ajuster les boutons du header pour toutes les pages*/
-      [data-role="header"] .ui-btn-left,
-      [data-role="header"] .ui-btn-right {
-        font-size: 1.5em !important;
-      }
-      /* Ajuster les icônes du header */
-      [data-role="header"] .ui-icon {
-        font-size: 1.5em !important;
-      }
-      /* Leftpanel titres et lignes */
-      #leftpanel h3.myh3 {
-        font-size: 1.8em !important;
-      }
-      #leftpanel [data-role="listview"] li a.ui-btn,
-      #leftpanel [data-role="listview"] li a {
-        font-size: 1.6em !important;
-      }
-    /* === ajustements spécifiques page principale === */
-      /* Agrandir les gauges */
-      #pagePiscinePrincipale .gauge-container {
-        transform: scale(1.7) !important;
-        margin-top: 2.2em !important;
-        margin-bottom: 2.2em !important;
-      }
-      /* Ajouter espace avant les gauges */
-      #pagePiscinePrincipale .ui-grid-a {
-        margin-top: 5em !important;
-      }
-      /* Ajouter espace avant les switchs */
-      #pagePiscinePrincipale fieldset.container_12 {
-        margin-top: 3em !important;
-      }
-      /* Agrandir la zone écran (screen LCD) */
-      #pagePiscinePrincipale .screenFrame {
-        min-height: 400px !important;
-        height: 400px !important;
-        padding-top: 0.5em;
-        padding-bottom: 0.5em;
-      }
-      #pagePiscinePrincipale .screenPiece {
-        min-height: 380px !important;
-        height: 380px !important;
-        font-size: 1.2em;
-      }
-      /* Augmenter l'espace entre gauges et températures */
-      #pagePiscinePrincipale fieldset.ui-grid-c {
-        margin-top: 3em !important;
-      }
-    /* === ajustements spécifiques page paramètres === */
-      #pagePiscineParametres .ui-collapsible .ui-btn {
-        font-size: 1.15em !important;
-        padding: 1em 1.6em !important;
-      }
-      #pagePiscineParametres .ui-collapsible .ui-collapsible-content {
-        padding: 1rem !important;
-      }
-    }
-    /* === TABLETTE PORTRAIT === */
-    @media (min-width: 701px) and (max-width: 1100px) and (orientation: portrait) and (min-height: 600px) {
-      /* Agrandir le bandeau principal */
-      .myh1 {
-        font-size: 2em !important;
-      }
-      /* Ajuster les boutons du header */
-      [data-role="header"] .ui-btn-left,
-      [data-role="header"] .ui-btn-right {
-        font-size: 1.3em !important;
-      }      /* Ajuster les icônes du header */
-      [data-role="header"] .ui-icon {
-        font-size: 1.2em !important;
-      }
-      /* Leftpanel titres et lignes */
-      #leftpanel h3.myh3 {
-        font-size: 1.9em !important;
-      }
-      #leftpanel [data-role="listview"] li a.ui-btn,
-      #leftpanel [data-role="listview"] li a {
-        font-size: 1.4em !important;
-      }
-      /* === ajustements spécifiques page principale === */
-      /* Agrandir les gauges */
-      #pagePiscinePrincipale .gauge-container {
-        transform: scale(1.7) !important;
-        margin-top: 2.2em !important;
-        margin-bottom: 2.2em !important;
-      }
-      /* Ajouter espace avant les gauges */
-      #pagePiscinePrincipale .ui-grid-a {
-        margin-top: 3em !important;
-      }
-      /* Ajouter espace avant les switchs */
-      #pagePiscinePrincipale fieldset.container_12 {
-        margin-top: 3em !important;
-      }
-      /* Agrandir la zone écran (screen LCD) */
-      #pagePiscinePrincipale .screenFrame {
-        min-height: 200px !important;
-        height: 200px !important;
-        padding-top: 0.5em;
-        padding-bottom: 0.5em;
-      }
-      #pagePiscinePrincipale .screenPiece {
-        min-height: 180px !important;
-        height: 180px !important;
-        font-size: 1.2em;
-      }
-      /* Augmenter l'espace entre gauges et températures */
-      #pagePiscinePrincipale fieldset.ui-grid-c {
-        margin-top: 3em !important;
-      }
-      /* === ajustements spécifiques page paramètres === */
-      #pagePiscineParametres .ui-collapsible .ui-btn {
-        font-size: 1.15em !important;
-        padding: 1em 1.2em !important;
-      }
-      #pagePiscineParametres .ui-collapsible .ui-collapsible-content {
-        padding: 1rem !important;
-      }
-    }
-
-
-    /* === DESKTOP PAYSAGE === */
-    @media (min-width: 1101px) and (orientation: landscape) {
-      /* Agrandir le bandeau principal */
-      .myh1 {
-        font-size: 3.5em !important;
-      }
-      /* Ajuster les boutons du header pour toutes les pages */
-      [data-role="header"] .ui-btn-left,
-      [data-role="header"] .ui-btn-right {
-        font-size: 2.0em !important;
-      }
-      /* Ajuster les icônes du header */
-      [data-role="header"] .ui-icon {
-        font-size: 1.8em !important;
-      }
-      /* Leftpanel titres et lignes */
-      #leftpanel h3.myh3 {
-        font-size: 2.2em !important;
-      }
-      #leftpanel [data-role="listview"] li a.ui-btn,
-      #leftpanel [data-role="listview"] li a {
-        font-size: 1.9em !important;
-      }
-
-    /* === ajustements spécifiques page principale === */
-      /* Agrandir les gauges */
-      #pagePiscinePrincipale .gauge-container {
-        transform: scale(1.7) !important;
-        margin-top: 2.2em !important;
-        margin-bottom: 2.2em !important;
-      }
-      /* Ajouter espace avant les gauges */
-      #pagePiscinePrincipale .ui-grid-a {
-        margin-top: 5em !important;
-      }
-      /* Ajouter espace avant les switchs */
-      #pagePiscinePrincipale fieldset.container_12 {
-        margin-top: 3em !important;
-      }
-      /* Agrandir la zone écran (screen LCD) */
-      #pagePiscinePrincipale .screenFrame {
-        min-height: 400px !important;
-        height: 400px !important;
-        padding-top: 0.5em;
-        padding-bottom: 0.5em;
-      }
-      #pagePiscinePrincipale .screenPiece {
-        min-height: 380px !important;
-        height: 380px !important;
-        font-size: 1.2em;
-      }
-      /* Augmenter l'espace entre gauges et températures */
-      #pagePiscinePrincipale fieldset.ui-grid-c {
-        margin-top: 3em !important;
-      }
-    /* === ajustements spécifiques page paramètres === */
-      #pagePiscineParametres .ui-collapsible .ui-btn {
-        font-size: 1.3em !important;
-        padding: 0.6em 1.4em !important;
-      }
-      #pagePiscineParametres .ui-collapsible .ui-collapsible-content {
-        padding: 1.2rem !important;
-      }
-
-    }
-
-    /* === DESKTOP PORTRAIT === */
-    @media (orientation: portrait) and (min-height: 1100px) {
-      /* Agrandir le bandeau principal */
-      .myh1 {
-        font-size: 1.9em !important;
-      }
-      /* Ajuster les boutons du header pour toutes les pages */
-      [data-role="header"] .ui-btn-left,
-      [data-role="header"] .ui-btn-right {
-        font-size: 1.5em !important;
-      }
-      /* Ajuster les icônes du header */
-      [data-role="header"] .ui-icon {
-        font-size: 1.8em !important;
-      }
-      /* Leftpanel titres et lignes */
-      #leftpanel h3.myh3 {
-        font-size: 2.2em !important;
-      }
-      #leftpanel .ui-listview li a.ui-btn,
-      #leftpanel .ui-listview li a {
-        font-size: 1.9em !important;
-      }
-    /* === ajustements spécifiques page principale === */
-      /* Agrandir les gauges */
-      #pagePiscinePrincipale .gauge-container {
-        transform: scale(1.7) !important;
-        margin-top: 2.2em !important;
-        margin-bottom: 2.2em !important;
-      }
-      /* Ajouter espace avant les gauges */
-      #pagePiscinePrincipale .ui-grid-a {
-        margin-top: 3em !important;
-      }
-      /* Ajouter espace avant les switchs */
-      #pagePiscinePrincipale fieldset.container_12 {
-        margin-top: 3em !important;
-      }
-      /* Agrandir la zone écran (screen LCD) */
-      #pagePiscinePrincipale .screenFrame {
-        min-height: 200px !important;
-        height: 200px !important;
-        padding-top: 0.5em;
-        padding-bottom: 0.5em;
-      }
-      #pagePiscinePrincipale .screenPiece {
-        min-height: 180px !important;
-        height: 180px !important;
-        font-size: 1.2em;
-      }
-      /* Augmenter l'espace entre gauges et températures */
-      #pagePiscinePrincipale fieldset.ui-grid-c {
-        margin-top: 3em !important;
-      }
-    /* === ajustements spécifiques page paramètres === */
-      #pagePiscineParametres .ui-collapsible .ui-btn {
-        font-size: 1.3em !important;
-        padding: 1em 1.9em !important;
-      }
-      #pagePiscineParametres .ui-collapsible .ui-collapsible-content {
-        padding: 1.2rem !important;
-      }
-    }
-
-    /* Centrage et espacement régulier des switchs sur la page principale en mode paysage */
-    @media (orientation: landscape), (min-width: 701px), (min-height: 600px) {
-      #pagePiscinePrincipale fieldset.container_12 {
-        display: flex !important;
-        flex-direction: row !important;
-        justify-content: center !important;
-        align-items: flex-start !important;
-/*        gap: 3em !important; */
-        width: 100% !important;
-      }
-      #pagePiscinePrincipale fieldset.container_12 .grid_4 {
-        flex: 0 1 auto !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        min-width: 120px;
-        max-width: 180px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-      }
-    }
-    /* Empilement vertical et centrage strict en mode paysage sur la page principale */
-    @media (orientation: landscape), (min-width: 701px), (min-height: 600px) {
-      #pagePiscinePrincipale .ui-field-contain {
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: flex-start !important;
-        gap: 0 !important;
-      }
-      #pagePiscinePrincipale .ui-field-contain .smallLabel {
-        display: block !important;
-        width: 100% !important;
-        text-align: center !important;
-        margin-bottom: 0.5em !important;
-        margin-top: 0.2em !important;
-        font-weight: 500;
-      }
-      #pagePiscinePrincipale .ui-field-contain input,
-      #pagePiscinePrincipale .ui-field-contain .switch,
-      #pagePiscinePrincipale .ui-field-contain .led {
-        display: block !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
-      }
-    }
-    /* BASE & THEME DARK */
+/* =====================================================================
+   BASE & THÈME DARK
+   ===================================================================== */
 html, body { height: 100%; margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
 .ui-page { background: #000; }
 
-/* Style pour le spinner JQM pour qu'il soit bien visible sur fond noir */
 .ui-loader-verbose {
     background: rgba(0, 0, 0, 0.8) !important;
     border: 1px solid #00FBFF !important;
     color: #00FBFF !important;
 }
-/* L'image de fond */		
-/* .ui-mobile .ui-page{background-image:url(../images/texture1.png) !important;}
-*/
+
 form .error {
-	color: #f96868;
-	}
+    color: #f96868;
+}
 
-.myh1{
-	 font-family: 'Kaushan Script', cursive;
-	 font-size: 2.5em;
-	 color: #fff;
-	 margin: 0.4em 0 0.2em 0;
-	 }
-.myh2,.myh3{
-	 font-family: 'Kaushan Script', cursive;
-	 font-size: 1.5em;
-	 }
-.myh4,.myh5,.myh6{
-	 font-family: 'Kaushan Script';
-	 }
+/* =====================================================================
+   TYPOGRAPHIE
+   ===================================================================== */
+.myh1 {
+    font-family: 'Kaushan Script', cursive;
+    font-size: 2.5em;
+    color: #fff;
+    margin: 0.4em 0 0.2em 0;
+}
+.myh2, .myh3 {
+    font-family: 'Kaushan Script', cursive;
+    font-size: 1.5em;
+}
+.myh4, .myh5, .myh6 {
+    font-family: 'Kaushan Script';
+}
 
-.smallLabel{
-	font-size: 10px !important;
-	margin: 0 0 .1em !important;	
-	}
-.smallFillContent{
-	padding: 0 !important;
-	margin: 0.5em 0.4em 0.6em 0.4em !important;
-	}
-.smallTextInput{
+/* Fix h4 dans leftPanel (items de menu) — doit surcharger JQM CDN */
+#leftpanel .ui-listview li a.ui-btn h4.myh4,
+#leftpanel .ui-listview li .ui-btn h4.myh4,
+#leftpanel .ui-listview li h4.myh4,
+#leftpanel .ui-listview .myh4,
+#leftpanel h4.myh4 {
+    font-family: 'Kaushan Script', cursive !important;
+    font-size: 1em !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-weight: normal !important;
+}
+
+/* =====================================================================
+   CLASSES UTILITAIRES
+   ===================================================================== */
+.smallLabel {
+    font-size: 10px !important;
+    margin: 0 0 .1em !important;
+}
+.smallFillContent {
+    padding: 0 !important;
+    margin: 0.5em 0.4em 0.6em 0.4em !important;
+}
+.smallTextInput {
     padding: 0px 0px 0px 7px !important;
     background-color: #222 !important;
     margin: auto !important;
     box-shadow: inset -2px -2px 2px #353535, inset 3px 3px 3px #000000, -2px -2px 4px #353535, 2px 2px 2px #000;
-	font-size: 1.4em;
+    font-size: 1.4em;
 }
-
-.borderFeild{
+.borderFeild {
     background-color: #222 !important;
     box-shadow: inset -2px -2px 2px #353535, inset 3px 3px 3px #000000, -2px -2px 4px #353535, 2px 2px 2px #000;
 }
-
 .vertical-center {
-  -ms-transform: translateY(50%);
-  transform: translateY(50%);
+    -ms-transform: translateY(50%);
+    transform: translateY(50%);
 }
 .noclick {
-  pointer-events: none;
+    pointer-events: none;
+}
+.tx-fm-up {
+    text-transform: uppercase;
+}
+.tx-fm-low {
+    text-transform: lowercase;
+}
+.floatleft {
+    float: left;
+}
+.floatright {
+    float: right;
+}
+.forceinline {
+    display: inline !important;
 }
 
-.tx-fm-up{
-	 text-transform:uppercase;
-	 }
-	 
-.tx-fm-low{
-	 text-transform:lowercase;
-	 }
+.login-or {
+    position: relative;
+    color: #aaa;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+.span-or {
+    display: block;
+    position: absolute;
+    left: 50%;
+    top: 0px;
+    margin-left: -25px;
+    background-color: #fff;
+    width: 50px;
+    text-align: center;
+    text-shadow: 0 0 0 #111;
+    color: #424040;
+}
+.hr-or {
+    height: 0px;
+    margin-top: 0px !important;
+    margin-bottom: 0px !important;
+}
 
+.vert   { color: SpringGreen !important; }
+.cyan   { color: Cyan !important; }
+.rose   { color: Orchid !important; }
+.violet { color: #ddd3ff !important; }
+.blanc  { color: OldLace !important; }
+.rouge  { color: #ff4500 !important; }
+.orange { color: #ffa500 !important; }
+.jaune  { color: #ffff00 !important; }
+.bleu   { color: #009eff !important; }
+
+/* =====================================================================
+   COMPOSANTS
+   ===================================================================== */
 .mypanel {
-	background-color: #1F2736;
-	margin: 5px 0px;
-	position: relative;
-	border-radius: 1rem;
-	border: .2rem solid;
-	border-bottom-color: #121212;
-	border-left-color: #252525;
-	border-right-color: #080808;
-	border-top-color: #3a3939;
-	box-shadow: inset -2px -2px 2px #353535, inset 5px 5px 3px #000000;
-}	 
-
-.myform{
-	position: relative;
-	display: -ms-flexbox;
-	display: flex;
-	padding: 1rem;
-	-ms-flex-direction: column;
-	flex-direction: column;
-	pointer-events: auto;
-	background-color: #0e0e0e;
-	background-clip: padding-box;
-	border: 1px solid rgba(0,0,0,.2);
-	border-radius: 0.5em;
-	outline: 0;
-	max-width: 400px;
-	color: #777;
+    background-color: #1F2736;
+    margin: 5px 0px;
+    position: relative;
+    border-radius: 1rem;
+    border: .2rem solid;
+    border-bottom-color: #121212;
+    border-left-color: #252525;
+    border-right-color: #080808;
+    border-top-color: #3a3939;
+    box-shadow: inset -2px -2px 2px #353535, inset 5px 5px 3px #000000;
 }
-.myinput{
-background-color: #333;
+.myform {
+    position: relative;
+    display: -ms-flexbox;
+    display: flex;
+    padding: 1rem;
+    -ms-flex-direction: column;
+    flex-direction: column;
+    pointer-events: auto;
+    background-color: #0e0e0e;
+    background-clip: padding-box;
+    border: 1px solid rgba(0,0,0,.2);
+    border-radius: 0.5em;
+    outline: 0;
+    max-width: 400px;
+    color: #777;
+}
+.myinput {
+    background-color: #333;
     color: #777;
     border-color: #454545;
     border-width: 1px;
@@ -407,689 +165,69 @@ background-color: #333;
     padding: 3px;
     margin: 0 0 .4em .4em;
 }
-.mybtn{
-	border-radius:50px !important;
-	margin: 0.6em 0 !important;
-	box-shadow: -2px -2px 4px #353535, 2px 2px 2px #000 !important;
+.mybtn {
+    border-radius: 50px !important;
+    margin: 0.6em 0 !important;
+    box-shadow: -2px -2px 4px #353535, 2px 2px 2px #000 !important;
 }
-.myCancelBtn{
-	border-radius:50px !important;
-	margin: 0.6em 0 !important;
-	box-shadow: -2px -2px 4px #353535, 2px 2px 2px #000 !important;
+.myCancelBtn {
+    border-radius: 50px !important;
+    margin: 0.6em 0 !important;
+    box-shadow: -2px -2px 4px #353535, 2px 2px 2px #000 !important;
     font-weight: 400 !important;
     font-size: 14px !important;
 }
-.myLabelCheck{
+.myLabelCheck {
     font-weight: 400 !important;
     font-size: 12px !important;
 }
-.myControlGroup{
-	margin: 0.6em 0 !important;
+.myControlGroup {
+    margin: 0.6em 0 !important;
 }
-
-.myRoles{
-	font-weight: 400 !important;
+.myRoles {
+    font-weight: 400 !important;
     font-size: 12px !important;
 }
-
 .UsersListRoles .ui-checkbox.ui-state-disabled {
-	opacity: 1;
+    opacity: 1;
 }
-
 .passwdInput {
-	width: 100px !important;
+    width: 100px !important;
 }
-.nameInput{
-	width: 100px !important;
-}
-.floatleft {
-    float:left;
- }
-.floatright {
-    float:right;
- }
-.forceinline{  /* Prevent fieldcontain from doing a BLOCK thing */
-    display:inline !important;
+.nameInput {
+    width: 100px !important;
 }
 
-.login-or {
-	position: relative;
-	color: #aaa;
-	margin-top: 10px;
-	margin-bottom: 10px;
-	padding-top: 10px;
-	padding-bottom: 10px;
-	}
-.span-or {
-   display: block;
-   position: absolute;
-   left: 50%;
-   top: 0px;
-   margin-left: -25px;
-   background-color: #fff;
-   width: 50px;
-   text-align: center;
-   text-shadow: 0 0 0 #111;
-   color: #424040;
-	}
-.hr-or {
-	height: 0px;
-	margin-top: 0px !important;
-	margin-bottom: 0px !important;
-	}
+/* =====================================================================
+   FIXES JQM (jQuery Mobile overrides)
+   ===================================================================== */
 
-.vert {
-    color:SpringGreen !important;
-}
-.cyan {
-    color:Cyan !important;
-}
-.rose {
-    color:Orchid !important;
-}
-.violet {
-    color:#ddd3ff !important;
-}
-.blanc {
-    color:OldLace !important;
-}
-.rouge {
-    color:#ff4500 !important;
-  }
-.orange {
-    color:#ffa500 !important;
-  }
-.jaune {
-    color:#ffff00 !important;
-  }
-.bleu {
-    color:#009eff !important;
-}
-
-/* ========================================
-   FIX LEFTPANEL - FORCER KAUSHAN SCRIPT POUR H4 (items menu)
-   Les titres H3 restent en sans-serif car jQuery Mobile CDN les écrase
-   ======================================== */
-
-/* Fix h4 dans leftPanel (items de menu) - FONCTIONNE ✓ */
-#leftpanel .ui-listview li a.ui-btn h4.myh4,
-#leftpanel .ui-listview li .ui-btn h4.myh4,
-#leftpanel .ui-listview li h4.myh4,
-#leftpanel .ui-listview .myh4,
-#leftpanel h4.myh4 {
-  font-family: 'Kaushan Script', cursive !important;
-  font-size: 1em !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  font-weight: normal !important;
-}
-
-/* Cache physiquement les options désactivées dans les popups JQM */
+/* Cache les options désactivées dans les popups JQM */
 .ui-selectmenu-list li.ui-state-disabled {
     display: none !important;
 }
 
 /* Bouton validation jQuery Mobile multiple select */
 .ui-selectmenu .ui-header .ui-btn {
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: auto !important;
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: auto !important;
 }
-
 .ui-selectmenu .ui-header .ui-btn .ui-icon-delete:before {
-  content: "\2713" !important; /* Check Unicode */
-  font-size: 20px;
-  font-weight: bold;
+    content: "\2713" !important;
+    font-size: 20px;
+    font-weight: bold;
 }
-
 .ui-selectmenu .ui-header .ui-btn:after {
-  content: "Valider";
-  margin-left: 24px;
-  font-size: 14px;
-  color: #00FFFF;
-}
-
-/* === MEDIA QUERIES ADAPTATIVES (iPhone 12, iPad, Desktop) === */
-
-/*
- * CORRECTION :
- * Sur la page principale (#pagePiscinePrincipale),
- * forcer les labels (.smallLabel) à être toujours au-dessus et centrés
- * des LEDs, températures et switchs, dans tous les modes sauf mobile/portrait.
- * (On ne touche pas à piscineGraphs !)
- */
-
-/* Par défaut (tous modes), sur la page principale, les labels sont block et centrés */
-/* Correction renforcée : labels toujours au-dessus et centrés sur la page principale */
-#pagePiscinePrincipale .ui-field-contain .smallLabel,
-#pagePiscineParametres .ui-field-contain .smallLabel {
-  display: block !important;
-  width: 100% !important;
-  text-align: center !important;
-  margin-bottom: 0.5em !important;
-  margin-top: 0.2em !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  position: relative !important;
-  z-index: 2;
-  font-weight: 500;
-}
-
-/* Correction spécifique pour les labels de température sur la page principale */
-#pagePiscinePrincipale .ui-field-contain input.smallTextInput,
-#pagePiscineParametres .ui-field-contain input.smallTextInput {
-  display: block;
-  margin-left: auto !important;
-  margin-right: auto !important;
-}
-
-/* En mobile/portrait, on laisse le style existant (référence) */
-@media (max-width: 700px) and (orientation: portrait) {
-  #pagePiscinePrincipale .ui-field-contain .smallLabel,
-  #pagePiscineParametres .ui-field-contain .smallLabel {
-    /* On ne surcharge rien, on garde le style mobile/portrait */
-  }
-}
-
-/* En paysage, tablette, desktop, on force le label au-dessus et centré */
-@media (orientation: landscape), (min-width: 701px) {
-  #pagePiscinePrincipale .ui-field-contain .smallLabel,
-  #pagePiscineParametres .ui-field-contain .smallLabel {
-    display: block !important;
-    text-align: center !important;
-    margin-bottom: 0.2em !important;
-    margin-top: 0 !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-  }
-  #pagePiscinePrincipale .ui-field-contain,
-  #pagePiscineParametres .ui-field-contain {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-    gap: 0.3em !important;
-  }
-  #pagePiscinePrincipale .ui-field-contain input.smallTextInput,
-  #pagePiscineParametres .ui-field-contain input.smallTextInput {
-    display: block !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-    width: auto !important;
-  }
-  /* Supprimer padding-top sur main en mode paysage pour la page paramètres */
-  #pagePiscineParametres [role="main"] {
-    padding-top: 0px !important;
-  }
-}
-		/*
-       Mobile portrait : 414x896
-		   Mobile paysage : 896x414
-		   Tablette portrait : 810x1080
-		   Tablette paysage : 1080x810
-		   Desktop paysage: 1210x720
-        Desktop portrait: 720x1210 
-    */
-
-	/* === MOBILE PORTRAIT (iPhone 12 : 828 x 1792 (414x896) === */
-@media (max-width: 700px) and (orientation: portrait) {
-}
-	/* === MOBILE PAYSAGE === */
-@media (max-height: 700px) and (orientation: landscape) {
-}
-	/* === TABLETTE PORTRAIT (iPad : 1620 x 2160, paysage inclus jusqu'à 2260px) === */
-@media (min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (orientation: portrait) {
-  .ui-content { 
-    padding-left: 20px !important; 
-    padding-right: 20px !important; 
-  }
-  .gauge-container { 
-    transform: scale(1.1); 
-  }
-  .led { 
-    width: 22px !important; 
-    height: 22px !important; 
-  }
-  .smallLabel { 
-    font-size: 11px !important; 
-  }
-  .smallTextInput { 
-    font-size: 1.5em !important; 
-  }
-  .ui-footer { 
-    position: relative !important; 
-  }
-  .container_12 { 
-    padding-left: 10px !important; 
-    padding-right: 10px !important; 
-  }
-  
-  /* Dialogs centrés tablette */
-  .ui-dialog .ui-content {
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 30px;
-  }
-  
-  /* === FORMULAIRES 2 COLONNES (TABLETTE PORTRAIT) === */
-  /* Pages Paramètres, Maintenance, Alertes */
-  #pagePiscineParametres .ui-field-contain,
-  #pagePiscineMaintenance .ui-field-contain,
-  #pagePiscineAlertes .ui-field-contain {
-    display: grid !important;
-    grid-template-columns: 1fr 1.5fr !important;
-    align-items: center !important;
-    gap: 10px !important;
-  }
-  
-  #pagePiscineParametres .ui-field-contain .smallLabel,
-  #pagePiscineMaintenance .ui-field-contain .smallLabel,
-  #pagePiscineAlertes .ui-field-contain .smallLabel {
-    text-align: right !important;
-    padding-right: 10px !important;
-  }
-
-  /* Override LED labels pour rester centré comme sur page principale */
-  #pagePiscineParametres .ledpanel .ui-field-contain,
-  #pagePiscineParametres .ledpanel .ui-field-contain .smallLabel {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    text-align: center !important;
-    width: auto !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-  
-  #pagePiscineParametres .ui-field-contain .switch,
-  #pagePiscineParametres .ui-field-contain input,
-  #pagePiscineMaintenance .ui-field-contain input,
-  #pagePiscineAlertes .ui-field-contain input {
-    width: 100% !important;
-  }
-
-  /* Page Maintenance : adaptation des panels et inputs */
-  #pagePiscineMaintenance .mypanel {
-    margin-bottom: 15px !important;
-  }
-  
-  #pagePiscineMaintenance .smallLabel {
-    font-size: 1.1em !important;
-  }
-  
-  #pagePiscineMaintenance .smallTextInput {
-    font-size: 1.4em !important;
-    padding: 6px 8px !important;
-  }
-  
-  #pagePiscineMaintenance .ui-btn {
-    font-size: 1.1em !important;
-    padding: 8px 12px !important;
-  }
-  
-  #pagePiscineMaintenance .container_12 {
-    margin-top: 8px !important;
-    margin-bottom: 8px !important;
-  }
-  
-  /* Adaptation des colonnes en tablette paysage */
-  #pagePiscineMaintenance .lscape-col {
-    margin-bottom: 15px !important;
-  }
-  
-  /* Panel sondes centré en mode paysage */
-  #pagePiscineMaintenance .sondes-center-panel {
-    width: 100% !important;
-    max-width: 600px !important;
-    margin: 0 auto !important;
-    text-align: center !important;
-  }
-  
-  /* Boutons radio pour étalons PH/Redox */
-  #pagePiscineMaintenance .ui-radio {
-    margin: 5px !important;
-  }
-  
-  #pagePiscineMaintenance .ui-radio label {
-    font-size: 1.1em !important;
-  }
-  
-  /* Légends des groupes radio */
-  #pagePiscineMaintenance legend.smallLabel {
-    font-size: 1.2em !important;
-    font-weight: bold !important;
-  }
-  
-  /* Section sondes température */
-  #pagePiscineMaintenance .myh3 {
-    font-size: 1.3em !important;
-    margin-bottom: 10px !important;
-  }
-  
-  /* Inputs des sondes */
-  #pagePiscineMaintenance input[data-mini="true"] {
-    font-size: 1.2em !important;
-    padding: 6px 8px !important;
-  }
-  
-  /* Boutons des sondes */
-  #pagePiscineMaintenance a[data-mini="true"] {
-    font-size: 1.1em !important;
-    padding: 8px 10px !important;
-  }
-	/* === DESKTOP PAYSAGE / GRAND ÉCRAN PAYSAGE (2260 x 1440 et plus, iPad paysage exclu) === */
-@media (min-width: 1101px) and (orientation: landscape) {
-  /* Styles desktop existants */
-  .ui-page { 
-    max-width: 1400px !important; 
-    margin: 0 auto !important; 
-  }
-  .ui-content { 
-    padding-left: 40px !important; 
-    padding-right: 40px !important; 
-  }
-  .gauge-container { 
-    transform: scale(1.15); 
-  }
-  .led { 
-    width: 24px !important; 
-    height: 24px !important; 
-  }
-  .smallLabel { 
-    font-size: 12px !important; 
-  }
-  .smallTextInput { 
-    font-size: 1.6em !important; 
-    padding: 4px 0 4px 8px !important; 
-  }
-  .switch { 
-    margin: 0 10px !important; 
-  }
-  .ui-footer { 
-    position: relative !important; 
-  }
-  .container_12 { 
-    margin-top: 12px !important; 
-    margin-bottom: 12px !important; 
-  }
-  .container_12 .grid_3 { 
-    margin-left: 1% !important; 
-    margin-right: 1% !important; 
-  }
-  .container_12 .grid_4 { 
-    margin-left: 1.2% !important; 
-    margin-right: 1.2% !important; 
-  }
-  
-  /* Dialogs centrés desktop */
-  .ui-dialog .ui-content {
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 30px;
-  }
-  
-  /* === GRIDS FLUID 960 RESPONSIVE === */
-  /* Réorganisation colonnes pour pages autres que principale */
-  
-  /* Page Maintenance : 3 colonnes (PH Mesu, PH Ref, PH Calc) */
-  #pagePiscineMaintenance .container_12 .grid_4 {
-    width: 31.33% !important;
-    margin-left: 1% !important;
-    margin-right: 1% !important;
-  }
-  
-  /* Page Maintenance : agrandissement des éléments */
-  #pagePiscineMaintenance .mypanel {
-    padding: 20px !important;
-    margin-bottom: 20px !important;
-  }
-  
-  #pagePiscineMaintenance .smallLabel {
-    font-size: 14px !important;
-  }
-  
-  #pagePiscineMaintenance .smallTextInput {
-    font-size: 1.8em !important;
-    padding: 8px 12px !important;
-  }
-  
-  #pagePiscineMaintenance .ui-btn {
-    font-size: 1.2em !important;
-    padding: 10px 15px !important;
-  }
-  
-  #pagePiscineMaintenance .myh3 {
-    font-size: 1.5em !important;
-    margin-bottom: 15px !important;
-  }
-  
-  /* Boutons radio pour étalons PH/Redox */
-  #pagePiscineMaintenance .ui-radio label {
-    font-size: 1.3em !important;
-  }
-  
-  /* Légends des groupes radio */
-  #pagePiscineMaintenance legend.smallLabel {
-    font-size: 1.4em !important;
-  }
-  
-  /* Inputs des sondes */
-  #pagePiscineMaintenance input[data-mini="true"] {
-    font-size: 1.4em !important;
-    padding: 8px 12px !important;
-  }
-  
-  /* Boutons des sondes */
-  #pagePiscineMaintenance a[data-mini="true"] {
-    font-size: 1.2em !important;
-    padding: 10px 12px !important;
-  }
-  
-  /* Adaptation des colonnes en desktop paysage */
-  #pagePiscineMaintenance .lscape-layout {
-    gap: 20px !important;
-  }
-  
-  #pagePiscineMaintenance .lscape-col {
-    padding: 10px !important;
-  }
-  
-  /* Panel sondes centré en mode paysage */
-  #pagePiscineMaintenance .sondes-center-panel {
-    width: 100% !important;
-    max-width: 800px !important;
-    margin: 20px auto 0 !important;
-    text-align: center !important;
-  }
-  
-  /* Page Paramètres : formulaires 2 colonnes */
-  #pagePiscineParametres .container_12 .grid_2,
-  #pagePiscineParametres .container_12 .grid_4 {
-    width: 48% !important;
-    margin-left: 1% !important;
-    margin-right: 1% !important;
-  }
-  
-  #pagePiscineParametres .container_12 .grid_5 {
-    width: 48% !important;
-    margin-left: 1% !important;
-    margin-right: 1% !important;
-  }
-  
-  #pagePiscineParametres .container_12 .grid_3 {
-    width: 48% !important;
-    margin-left: 1% !important;
-    margin-right: 1% !important;
-  }
-  
-  #pagePiscineParametres .container_12 .grid_8 {
-    width: 98% !important;
-  }
-  
-  #pagePiscineParametres .container_12 .grid_10 {
-    width: 98% !important;
-  }
-  
-  /* Formulaires 2 colonnes : labels à gauche, inputs à droite */
-  #pagePiscineParametres .ui-field-contain {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-  }
-  
-  #pagePiscineParametres .ui-field-contain .smallLabel {
-    flex: 0 0 40% !important;
-    text-align: right !important;
-    padding-right: 15px !important;
-  }
-  
-  #pagePiscineParametres .ui-field-contain .switch,
-  #pagePiscineParametres .ui-field-contain input[type="text"] {
-    flex: 1 1 55% !important;
-  }
-  
-  /* === PANELS OPTIMISÉS DESKTOP === */
-  /* Panel menu latéral (leftpanel) : mode reveal persistant */
-  #leftpanel.ui-panel {
-    width: 280px !important;
-    box-shadow: 2px 0 8px rgba(0,0,0,0.3) !important;
-  }
-  
-  /* Surcharger le .ui-btn ajouté automatiquement par jQuery Mobile */
-  #leftpanel .ui-listview li a,
-  #leftpanel .ui-listview li a.ui-btn,
-  #leftpanel .ui-listview .ui-btn {
-    font-size: 0.95em !important;
-    text-align: left !important;
-  }
-  
-  /* Panel options (optionsPiscineManager) : laisser jQuery Mobile gérer l'animation */
-  #optionsPiscineManager.ui-panel {
-    max-width: 400px !important;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5) !important;
-  }
-  
-  /* Contenu des pages : marge si panel reveal ouvert */
-  body[data-layout="desktop"] .ui-page-active {
-    margin-left: 0 !important; /* Panel en overlay, pas de marge */
-  }
-}  
-	/* === DESKTOP PORTRAIT / GRAND ÉCRAN PORTRAIT (2260 x 1440 et plus, iPad paysage exclu) === */
-@media (min-height: 1101px) and (orientation: portrait) {
-  #pagePiscinePrincipale .ui-field-contain .smallLabel,
-  #pagePiscineParametres .ui-field-contain .smallLabel {
-    display: block !important;
-    text-align: center !important;
-    margin-bottom: 0.2em !important;
-    margin-top: 0 !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-  }
-  #pagePiscinePrincipale .ui-field-contain,
-  #pagePiscineParametres .ui-field-contain {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-    gap: 0.3em !important;
-  }
-  #pagePiscinePrincipale .ui-field-contain input.smallTextInput,
-  #pagePiscineParametres .ui-field-contain input.smallTextInput {
-    display: block !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-    width: auto !important;
-  }
-  
-  /* Page Maintenance : adaptation desktop portrait */
-  #pagePiscineMaintenance .ui-field-contain .smallLabel {
-    display: block !important;
-    text-align: center !important;
-    margin-bottom: 0.3em !important;
-    margin-top: 0 !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-  }
-  
-  #pagePiscineMaintenance .ui-field-contain {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-    gap: 0.4em !important;
-  }
-  
-  #pagePiscineMaintenance .ui-field-contain input.smallTextInput {
-    display: block !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-    width: auto !important;
-  }
-  
-  /* Agrandissement des éléments en desktop portrait */
-  #pagePiscineMaintenance .mypanel {
-    padding: 25px !important;
-    margin-bottom: 25px !important;
-  }
-  
-  #pagePiscineMaintenance .smallLabel {
-    font-size: 1.2em !important;
-  }
-  
-  #pagePiscineMaintenance .smallTextInput {
-    font-size: 1.6em !important;
-    padding: 8px 12px !important;
-  }
-  
-  #pagePiscineMaintenance .ui-btn {
-    font-size: 1.3em !important;
-    padding: 12px 16px !important;
-  }
-  
-  #pagePiscineMaintenance .myh3 {
-    font-size: 1.4em !important;
-    margin-bottom: 15px !important;
-  }
-  
-  /* Boutons radio pour étalons PH/Redox */
-  #pagePiscineMaintenance .ui-radio label {
-    font-size: 1.2em !important;
-  }
-  
-  /* Légends des groupes radio */
-  #pagePiscineMaintenance legend.smallLabel {
-    font-size: 1.3em !important;
-  }
-  
-  /* Inputs des sondes */
-  #pagePiscineMaintenance input[data-mini="true"] {
-    font-size: 1.3em !important;
-    padding: 8px 12px !important;
-  }
-  
-  /* Boutons des sondes */
-  #pagePiscineMaintenance a[data-mini="true"] {
-    font-size: 1.2em !important;
-    padding: 10px 14px !important;
-  }
-  
-  /* Panel sondes - en mode portrait reste dans le flux normal */
-  #pagePiscineMaintenance .sondes-center-panel {
-    width: 100% !important;
-    margin: 15px 0 !important;
-  }
+    content: "Valider";
+    margin-left: 24px;
+    font-size: 14px;
+    color: #00FFFF;
 }
 
 /* =====================================================================
-   LAYOUT 2 COLONNES — PAYSAGE
+   LAYOUT 2 COLONNES
    Portrait  : colonnes empilées (flex-direction: column)
    Paysage   : 2 colonnes côte à côte (flex-direction: row)
    ===================================================================== */
@@ -1104,7 +242,6 @@ background-color: #333;
     width: 100%;
     box-sizing: border-box;
 }
-
 @media (orientation: landscape) {
     .lscape-layout {
         flex-direction: row;
@@ -1115,5 +252,659 @@ background-color: #333;
         flex: 1;
         min-width: 0;
         width: auto;
+    }
+}
+
+/* =====================================================================
+   CORRECTIONS GLOBALES — PAGE PRINCIPALE & PARAMÈTRES
+   Labels toujours centrés au-dessus des champs (tous modes)
+   ===================================================================== */
+#pagePiscinePrincipale .ui-field-contain .smallLabel,
+#pagePiscineParametres .ui-field-contain .smallLabel {
+    display: block !important;
+    width: 100% !important;
+    text-align: center !important;
+    margin-bottom: 0.5em !important;
+    margin-top: 0.2em !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    position: relative !important;
+    z-index: 2;
+    font-weight: 500;
+}
+#pagePiscinePrincipale .ui-field-contain input.smallTextInput,
+#pagePiscineParametres .ui-field-contain input.smallTextInput {
+    display: block;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+/* =====================================================================
+   RÈGLES TRANSVERSALES — HORS MOBILE PORTRAIT
+   S'appliquent en paysage, tablette et desktop
+
+   Note : ces règles utilisent des conditions OR (`,`) pour cibler
+   tous les contextes hors mobile portrait sans dupliquer les règles
+   dans chaque breakpoint.
+   ===================================================================== */
+
+/* Switchs + ui-field-contain page principale
+   (orientation: landscape) OU (width ≥ 701) OU (height ≥ 600) */
+@media (orientation: landscape), (min-width: 701px), (min-height: 600px) {
+    /* Centrage et espacement régulier des switchs */
+    #pagePiscinePrincipale fieldset.container_12 {
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: center !important;
+        align-items: flex-start !important;
+        /*        gap: 3em !important; */
+        width: 100% !important;
+    }
+    #pagePiscinePrincipale fieldset.container_12 .grid_4 {
+        flex: 0 1 auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        min-width: 120px;
+        max-width: 180px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    /* Empilement vertical et centrage strict de ui-field-contain */
+    #pagePiscinePrincipale .ui-field-contain {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 0 !important;
+    }
+    #pagePiscinePrincipale .ui-field-contain .smallLabel {
+        display: block !important;
+        width: 100% !important;
+        text-align: center !important;
+        margin-bottom: 0.5em !important;
+        margin-top: 0.2em !important;
+        font-weight: 500;
+    }
+    #pagePiscinePrincipale .ui-field-contain input,
+    #pagePiscinePrincipale .ui-field-contain .switch,
+    #pagePiscinePrincipale .ui-field-contain .led {
+        display: block !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+}
+
+/* Labels page principale + paramètres, sondes maintenance
+   Uniquement en mode paysage (toutes tailles) */
+@media (orientation: landscape) {
+    /* Labels au-dessus et centrés */
+    #pagePiscinePrincipale .ui-field-contain .smallLabel,
+    #pagePiscineParametres .ui-field-contain .smallLabel {
+        display: block !important;
+        text-align: center !important;
+        margin-bottom: 0.2em !important;
+        margin-top: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+    #pagePiscinePrincipale .ui-field-contain,
+    #pagePiscineParametres .ui-field-contain {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 0.3em !important;
+    }
+    #pagePiscinePrincipale .ui-field-contain input.smallTextInput,
+    #pagePiscineParametres .ui-field-contain input.smallTextInput {
+        display: block !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        width: auto !important;
+    }
+    /* Supprimer padding-top sur main — page paramètres */
+    #pagePiscineParametres [role="main"] {
+        padding-top: 0px !important;
+    }
+    /* Sondes température centrées — page maintenance */
+    #pagePiscineMaintenance .sondes-center-panel {
+        display: block !important;
+        width: 100% !important;
+        max-width: 600px !important;
+        margin: 10px auto 0 !important;
+        text-align: center !important;
+    }
+}
+
+/* =====================================================================
+   BREAKPOINTS RESPONSIFS
+
+   Référence écrans :
+     Mobile portrait  : 414 × 896
+     Mobile paysage   : 896 × 414
+     Tablette portrait: 810 × 1080
+     Tablette paysage : 1080 × 810
+     Desktop paysage  : 1210 × 720
+     Desktop portrait : 720 × 1210
+   ===================================================================== */
+
+/* === MOBILE PORTRAIT === */
+@media (max-width: 700px) and (orientation: portrait) {
+}
+
+/* === MOBILE PAYSAGE === */
+@media (max-height: 700px) and (orientation: landscape) {
+
+    /* --- Page Maintenance --- */
+    #pagePiscineMaintenance [role="main"].ui-content {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+    #pagePiscineMaintenance .mypanel {
+        margin: 0 !important;
+        padding: 5px !important;
+    }
+    #pagePiscineMaintenance fieldset {
+        margin: 0 !important;
+        padding: 2px !important;
+    }
+    #pagePiscineMaintenance .myh3 {
+        font-size: 1.1em !important;
+        margin: 2px 0 !important;
+    }
+    #pagePiscineMaintenance .smallLabel {
+        font-size: 10px !important;
+        margin: 1px 0 !important;
+    }
+    #pagePiscineMaintenance .smallFillContent {
+        padding: 0 !important;
+        margin: 0em 0.4em 0em 0.4em !important;
+    }
+    #pagePiscineMaintenance .smallTextInput {
+        font-size: 0.9em !important;
+        padding: 2px !important;
+    }
+    #pagePiscineMaintenance .ui-field-contain {
+        margin: 0 !important;
+    }
+    #pagePiscineMaintenance .sondes-center-panel .ui-mini {
+        margin: 0.05em !important;
+    }
+    #pagePiscineMaintenance .ui-btn {
+        font-size: 11px !important;
+        padding: 4px 8px !important;
+        margin: 1px !important;
+    }
+    #pagePiscineMaintenance .lscape-layout {
+        gap: 5px !important;
+    }
+    #pagePiscineMaintenance .sondes-center-panel {
+        margin: 10px auto !important;
+    }
+}
+
+/* === TABLETTE PORTRAIT === */
+@media (min-width: 701px) and (max-width: 1100px) and (min-height: 600px) and (max-height: 1100px) and (orientation: portrait) {
+
+    /* --- Général --- */
+    .myh1 {
+        font-size: 2em !important;
+    }
+    [data-role="header"] .ui-btn-left,
+    [data-role="header"] .ui-btn-right {
+        font-size: 1.3em !important;
+    }
+    [data-role="header"] .ui-icon {
+        font-size: 1.2em !important;
+    }
+    #leftpanel h3.myh3 {
+        font-size: 1.9em !important;
+    }
+    #leftpanel [data-role="listview"] li a.ui-btn,
+    #leftpanel [data-role="listview"] li a {
+        font-size: 1.4em !important;
+    }
+    .ui-content {
+        padding-left: 20px !important;
+        padding-right: 20px !important;
+    }
+    .gauge-container {
+        transform: scale(1.1);
+    }
+    .led {
+        width: 22px !important;
+        height: 22px !important;
+    }
+    .smallLabel {
+        font-size: 11px !important;
+    }
+    .smallTextInput {
+        font-size: 1.5em !important;
+    }
+    .ui-footer {
+        position: relative !important;
+    }
+    .container_12 {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+    .ui-dialog .ui-content {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 30px;
+    }
+
+    /* --- Page Principale --- */
+    #pagePiscinePrincipale .gauge-container {
+        transform: scale(1.7) !important;
+        margin-top: 2.2em !important;
+        margin-bottom: 2.2em !important;
+    }
+    #pagePiscinePrincipale .ui-grid-a {
+        margin-top: 3em !important;
+    }
+    #pagePiscinePrincipale fieldset.container_12 {
+        margin-top: 3em !important;
+    }
+    #pagePiscinePrincipale .screenFrame {
+        min-height: 200px !important;
+        height: 200px !important;
+        padding-top: 0.5em;
+        padding-bottom: 0.5em;
+    }
+    #pagePiscinePrincipale .screenPiece {
+        min-height: 180px !important;
+        height: 180px !important;
+        font-size: 1.2em;
+    }
+    #pagePiscinePrincipale fieldset.ui-grid-c {
+        margin-top: 3em !important;
+    }
+
+    /* --- Paramètres / Maintenance / Alertes : formulaires 2 colonnes --- */
+    #pagePiscineParametres .ui-field-contain,
+    #pagePiscineMaintenance .ui-field-contain,
+    #pagePiscineAlertes .ui-field-contain {
+        display: grid !important;
+        grid-template-columns: 1fr 1.5fr !important;
+        align-items: center !important;
+        gap: 10px !important;
+    }
+    #pagePiscineParametres .ui-field-contain .smallLabel,
+    #pagePiscineMaintenance .ui-field-contain .smallLabel,
+    #pagePiscineAlertes .ui-field-contain .smallLabel {
+        text-align: right !important;
+        padding-right: 10px !important;
+    }
+    #pagePiscineParametres .ui-field-contain .switch,
+    #pagePiscineParametres .ui-field-contain input,
+    #pagePiscineMaintenance .ui-field-contain input,
+    #pagePiscineAlertes .ui-field-contain input {
+        width: 100% !important;
+    }
+
+    /* --- Page Paramètres --- */
+    #pagePiscineParametres .ui-collapsible .ui-btn {
+        font-size: 1.15em !important;
+        padding: 1em 1.2em !important;
+    }
+    #pagePiscineParametres .ui-collapsible .ui-collapsible-content {
+        padding: 1rem !important;
+    }
+    #pagePiscineParametres .ledpanel .ui-field-contain,
+    #pagePiscineParametres .ledpanel .ui-field-contain .smallLabel {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        width: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    #pagePiscineParametres [role="main"] .ui-content {
+        padding: 0 !important;
+    }
+}
+
+/* === TABLETTE PAYSAGE === */
+@media (min-width: 701px) and (max-width: 1100px) and (orientation: landscape) and (min-height: 600px) {
+
+    /* --- Général --- */
+    .myh1 {
+        font-size: 2.5em !important;
+    }
+    [data-role="header"] .ui-btn-left,
+    [data-role="header"] .ui-btn-right {
+        font-size: 1.5em !important;
+    }
+    [data-role="header"] .ui-icon {
+        font-size: 1.5em !important;
+    }
+    #leftpanel h3.myh3 {
+        font-size: 1.8em !important;
+    }
+    #leftpanel [data-role="listview"] li a.ui-btn,
+    #leftpanel [data-role="listview"] li a {
+        font-size: 1.6em !important;
+    }
+
+    /* --- Page Principale --- */
+    #pagePiscinePrincipale .gauge-container {
+        transform: scale(1.7) !important;
+        margin-top: 2.2em !important;
+        margin-bottom: 2.2em !important;
+    }
+    #pagePiscinePrincipale .ui-grid-a {
+        margin-top: 5em !important;
+    }
+    #pagePiscinePrincipale fieldset.container_12 {
+        margin-top: 3em !important;
+    }
+    #pagePiscinePrincipale .screenFrame {
+        min-height: 400px !important;
+        height: 400px !important;
+        padding-top: 0.5em;
+        padding-bottom: 0.5em;
+    }
+    #pagePiscinePrincipale .screenPiece {
+        min-height: 380px !important;
+        height: 380px !important;
+        font-size: 1.2em;
+    }
+    #pagePiscinePrincipale fieldset.ui-grid-c {
+        margin-top: 3em !important;
+    }
+
+    /* --- Page Paramètres --- */
+    #pagePiscineParametres .ui-collapsible .ui-btn {
+        font-size: 1.15em !important;
+        padding: 1em 1.6em !important;
+    }
+    #pagePiscineParametres .ui-collapsible .ui-collapsible-content {
+        padding: 1rem !important;
+    }
+
+    /* --- Page Maintenance --- */
+    #pagePiscineMaintenance .mypanel {
+        padding: 12px 10px !important;
+        margin-bottom: 8px !important;
+    }
+    #pagePiscineMaintenance fieldset.container_12 {
+        margin-bottom: 10px !important;
+        padding: 4px 0 !important;
+    }
+    #pagePiscineMaintenance .myh3 {
+        font-size: 1.3em !important;
+        margin-bottom: 8px !important;
+    }
+    #pagePiscineMaintenance .smallLabel {
+        font-size: 13px !important;
+    }
+    #pagePiscineMaintenance .smallTextInput {
+        font-size: 1.2em !important;
+        padding: 4px !important;
+    }
+    #pagePiscineMaintenance .sondes-center-panel {
+        margin-top: 14px !important;
+        max-width: 680px !important;
+    }
+    #pagePiscineMaintenance .lscape-layout {
+        gap: 16px !important;
+    }
+}
+
+/* === DESKTOP PAYSAGE === */
+@media (min-width: 1101px) and (orientation: landscape) {
+
+    /* --- Général --- */
+    .myh1 {
+        font-size: 3em !important;
+    }
+    [data-role="header"] .ui-btn-left,
+    [data-role="header"] .ui-btn-right {
+        font-size: 1.6em !important;
+    }
+    [data-role="header"] .ui-icon {
+        font-size: 1.8em !important;
+    }
+    #leftpanel h3.myh3 {
+        font-size: 2.2em !important;
+    }
+    #leftpanel [data-role="listview"] li a.ui-btn,
+    #leftpanel [data-role="listview"] li a {
+        font-size: 1.9em !important;
+    }
+    .ui-page {
+        max-width: 1400px !important;
+        margin: 0 auto !important;
+    }
+    .ui-content {
+        padding-left: 40px !important;
+        padding-right: 40px !important;
+    }
+    .gauge-container {
+        transform: scale(1.15);
+    }
+    .led {
+        width: 24px !important;
+        height: 24px !important;
+    }
+    .smallLabel {
+        font-size: 12px !important;
+    }
+    .smallTextInput {
+        font-size: 1.6em !important;
+        padding: 4px 0 4px 8px !important;
+    }
+    .switch {
+        margin: 0 10px !important;
+    }
+    .ui-footer {
+        position: relative !important;
+    }
+    .container_12 {
+        margin-top: 12px !important;
+        margin-bottom: 12px !important;
+    }
+    .container_12 .grid_3 {
+        margin-left: 1% !important;
+        margin-right: 1% !important;
+    }
+    .container_12 .grid_4 {
+        margin-left: 1.2% !important;
+        margin-right: 1.2% !important;
+    }
+    .ui-dialog .ui-content {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 30px;
+    }
+    #leftpanel.ui-panel {
+        width: 280px !important;
+        box-shadow: 2px 0 8px rgba(0,0,0,0.3) !important;
+    }
+    #leftpanel .ui-listview li a,
+    #leftpanel .ui-listview li a.ui-btn,
+    #leftpanel .ui-listview .ui-btn {
+        font-size: 0.95em !important;
+        text-align: left !important;
+    }
+    #optionsPiscineManager.ui-panel {
+        max-width: 400px !important;
+        box-shadow: 0 0 20px rgba(0,0,0,0.5) !important;
+    }
+    body[data-layout="desktop"] .ui-page-active {
+        margin-left: 0 !important;
+    }
+
+    /* --- Page Principale --- */
+    #pagePiscinePrincipale .gauge-container {
+        transform: scale(1.7) !important;
+        margin-top: 2.2em !important;
+        margin-bottom: 2.2em !important;
+    }
+    #pagePiscinePrincipale .ui-grid-a {
+        margin-top: 5em !important;
+    }
+    #pagePiscinePrincipale fieldset.container_12 {
+        margin-top: 3em !important;
+    }
+    #pagePiscinePrincipale .screenFrame {
+        min-height: 400px !important;
+        height: 400px !important;
+        padding-top: 0.5em;
+        padding-bottom: 0.5em;
+    }
+    #pagePiscinePrincipale .screenPiece {
+        min-height: 380px !important;
+        height: 380px !important;
+        font-size: 1.2em;
+    }
+    #pagePiscinePrincipale fieldset.ui-grid-c {
+        margin-top: 3em !important;
+    }
+
+    /* --- Page Paramètres --- */
+    #pagePiscineParametres .ui-collapsible .ui-btn {
+        font-size: 1.3em !important;
+        padding: 0.6em 1.4em !important;
+    }
+    #pagePiscineParametres .ui-collapsible .ui-collapsible-content {
+        padding: 1.2rem !important;
+    }
+    #pagePiscineParametres .container_12 .grid_2,
+    #pagePiscineParametres .container_12 .grid_4 {
+        width: 48% !important;
+        margin-left: 1% !important;
+        margin-right: 1% !important;
+    }
+    #pagePiscineParametres .container_12 .grid_5 {
+        width: 48% !important;
+        margin-left: 1% !important;
+        margin-right: 1% !important;
+    }
+    #pagePiscineParametres .container_12 .grid_3 {
+        width: 48% !important;
+        margin-left: 1% !important;
+        margin-right: 1% !important;
+    }
+    #pagePiscineParametres .container_12 .grid_8 {
+        width: 98% !important;
+    }
+    #pagePiscineParametres .container_12 .grid_10 {
+        width: 98% !important;
+    }
+    #pagePiscineParametres .ui-field-contain {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+    }
+    #pagePiscineParametres .ui-field-contain .smallLabel {
+        flex: 0 0 40% !important;
+        text-align: right !important;
+        padding-right: 15px !important;
+    }
+    #pagePiscineParametres .ui-field-contain .switch,
+    #pagePiscineParametres .ui-field-contain input[type="text"] {
+        flex: 1 1 55% !important;
+    }
+
+    /* --- Page Maintenance --- */
+    #pagePiscineMaintenance [role="main"].ui-content {
+        padding-top: 0 !important;
+    }
+    #pagePiscineMaintenance .container_12 .grid_4 {
+        width: 31.33% !important;
+        margin-left: 1% !important;
+        margin-right: 1% !important;
+    }
+}
+
+/* === DESKTOP PORTRAIT === */
+@media (orientation: portrait) and (min-height: 1100px) {
+
+    /* --- Général --- */
+    .myh1 {
+        font-size: 1.9em !important;
+    }
+    [data-role="header"] .ui-btn-left,
+    [data-role="header"] .ui-btn-right {
+        font-size: 1.5em !important;
+    }
+    [data-role="header"] .ui-icon {
+        font-size: 1.8em !important;
+    }
+    #leftpanel h3.myh3 {
+        font-size: 2.2em !important;
+    }
+    #leftpanel .ui-listview li a.ui-btn,
+    #leftpanel .ui-listview li a {
+        font-size: 1.9em !important;
+    }
+
+    /* --- Page Principale --- */
+    #pagePiscinePrincipale .gauge-container {
+        transform: scale(1.7) !important;
+        margin-top: 2.2em !important;
+        margin-bottom: 2.2em !important;
+    }
+    #pagePiscinePrincipale .ui-grid-a {
+        margin-top: 3em !important;
+    }
+    #pagePiscinePrincipale fieldset.container_12 {
+        margin-top: 3em !important;
+    }
+    #pagePiscinePrincipale .screenFrame {
+        min-height: 200px !important;
+        height: 200px !important;
+        padding-top: 0.5em;
+        padding-bottom: 0.5em;
+    }
+    #pagePiscinePrincipale .screenPiece {
+        min-height: 180px !important;
+        height: 180px !important;
+        font-size: 1.2em;
+    }
+    #pagePiscinePrincipale fieldset.ui-grid-c {
+        margin-top: 3em !important;
+    }
+    #pagePiscinePrincipale .ui-field-contain .smallLabel,
+    #pagePiscineParametres .ui-field-contain .smallLabel {
+        display: block !important;
+        text-align: center !important;
+        margin-bottom: 0.2em !important;
+        margin-top: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+    #pagePiscinePrincipale .ui-field-contain,
+    #pagePiscineParametres .ui-field-contain {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 0.3em !important;
+    }
+    #pagePiscinePrincipale .ui-field-contain input.smallTextInput,
+    #pagePiscineParametres .ui-field-contain input.smallTextInput {
+        display: block !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        width: auto !important;
+    }
+
+    /* --- Page Paramètres --- */
+    #pagePiscineParametres .ui-collapsible .ui-btn {
+        font-size: 1.3em !important;
+        padding: 1em 1.9em !important;
+    }
+    #pagePiscineParametres .ui-collapsible .ui-collapsible-content {
+        padding: 1.2rem !important;
     }
 }
