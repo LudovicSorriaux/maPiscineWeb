@@ -712,12 +712,67 @@ background-color: #333;
     width: 100% !important;
   }
 
-  /* reduction du pading pour la page parametres*/
-  #pagePiscineParametres [role="main"] .ui-content {
-    padding: 0 !important;
+  /* Page Maintenance : adaptation des panels et inputs */
+  #pagePiscineMaintenance .mypanel {
+    margin-bottom: 15px !important;
   }
-
-}
+  
+  #pagePiscineMaintenance .smallLabel {
+    font-size: 1.1em !important;
+  }
+  
+  #pagePiscineMaintenance .smallTextInput {
+    font-size: 1.4em !important;
+    padding: 6px 8px !important;
+  }
+  
+  #pagePiscineMaintenance .ui-btn {
+    font-size: 1.1em !important;
+    padding: 8px 12px !important;
+  }
+  
+  #pagePiscineMaintenance .container_12 {
+    margin-top: 8px !important;
+    margin-bottom: 8px !important;
+  }
+  
+  /* Adaptation des colonnes en tablette paysage */
+  #pagePiscineMaintenance .lscape-col {
+    margin-bottom: 15px !important;
+  }
+  
+  /* Boutons radio pour étalons PH/Redox */
+  #pagePiscineMaintenance .ui-radio {
+    margin: 5px !important;
+  }
+  
+  #pagePiscineMaintenance .ui-radio label {
+    font-size: 1.1em !important;
+  }
+  
+  /* Légends des groupes radio */
+  #pagePiscineMaintenance legend.smallLabel {
+    font-size: 1.2em !important;
+    font-weight: bold !important;
+  }
+  
+  /* Section sondes température */
+  #pagePiscineMaintenance .myh3 {
+    font-size: 1.3em !important;
+    margin-bottom: 10px !important;
+  }
+  
+  /* Inputs des sondes */
+  #pagePiscineMaintenance input[data-mini="true"] {
+    font-size: 1.2em !important;
+    padding: 6px 8px !important;
+  }
+  
+  /* Boutons des sondes */
+  #pagePiscineMaintenance a[data-mini="true"] {
+    font-size: 1.1em !important;
+    padding: 8px 10px !important;
+  }
 	/* === DESKTOP PAYSAGE / GRAND ÉCRAN PAYSAGE (2260 x 1440 et plus, iPad paysage exclu) === */
 @media (min-width: 1101px) and (orientation: landscape) {
   /* Styles desktop existants */
@@ -777,6 +832,62 @@ background-color: #333;
     width: 31.33% !important;
     margin-left: 1% !important;
     margin-right: 1% !important;
+  }
+  
+  /* Page Maintenance : agrandissement des éléments */
+  #pagePiscineMaintenance .mypanel {
+    padding: 20px !important;
+    margin-bottom: 20px !important;
+  }
+  
+  #pagePiscineMaintenance .smallLabel {
+    font-size: 14px !important;
+  }
+  
+  #pagePiscineMaintenance .smallTextInput {
+    font-size: 1.8em !important;
+    padding: 8px 12px !important;
+  }
+  
+  #pagePiscineMaintenance .ui-btn {
+    font-size: 1.2em !important;
+    padding: 10px 15px !important;
+  }
+  
+  #pagePiscineMaintenance .myh3 {
+    font-size: 1.5em !important;
+    margin-bottom: 15px !important;
+  }
+  
+  /* Boutons radio pour étalons PH/Redox */
+  #pagePiscineMaintenance .ui-radio label {
+    font-size: 1.3em !important;
+  }
+  
+  /* Légends des groupes radio */
+  #pagePiscineMaintenance legend.smallLabel {
+    font-size: 1.4em !important;
+  }
+  
+  /* Inputs des sondes */
+  #pagePiscineMaintenance input[data-mini="true"] {
+    font-size: 1.4em !important;
+    padding: 8px 12px !important;
+  }
+  
+  /* Boutons des sondes */
+  #pagePiscineMaintenance a[data-mini="true"] {
+    font-size: 1.2em !important;
+    padding: 10px 12px !important;
+  }
+  
+  /* Adaptation des colonnes en desktop paysage */
+  #pagePiscineMaintenance .lscape-layout {
+    gap: 20px !important;
+  }
+  
+  #pagePiscineMaintenance .lscape-col {
+    padding: 10px !important;
   }
   
   /* Page Paramètres : formulaires 2 colonnes */
@@ -878,6 +989,80 @@ background-color: #333;
     margin-left: auto !important;
     margin-right: auto !important;
     width: auto !important;
+  }
+  
+  /* Page Maintenance : adaptation desktop portrait */
+  #pagePiscineMaintenance .ui-field-contain .smallLabel {
+    display: block !important;
+    text-align: center !important;
+    margin-bottom: 0.3em !important;
+    margin-top: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+  
+  #pagePiscineMaintenance .ui-field-contain {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 0.4em !important;
+  }
+  
+  #pagePiscineMaintenance .ui-field-contain input.smallTextInput {
+    display: block !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    width: auto !important;
+  }
+  
+  /* Agrandissement des éléments en desktop portrait */
+  #pagePiscineMaintenance .mypanel {
+    padding: 25px !important;
+    margin-bottom: 25px !important;
+  }
+  
+  #pagePiscineMaintenance .smallLabel {
+    font-size: 1.2em !important;
+  }
+  
+  #pagePiscineMaintenance .smallTextInput {
+    font-size: 1.6em !important;
+    padding: 8px 12px !important;
+  }
+  
+  #pagePiscineMaintenance .ui-btn {
+    font-size: 1.3em !important;
+    padding: 12px 16px !important;
+  }
+  
+  #pagePiscineMaintenance .myh3 {
+    font-size: 1.4em !important;
+    margin-bottom: 15px !important;
+  }
+  
+  /* Boutons radio pour étalons PH/Redox */
+  #pagePiscineMaintenance .ui-radio label {
+    font-size: 1.2em !important;
+  }
+  
+  /* Légends des groupes radio */
+  #pagePiscineMaintenance legend.smallLabel {
+    font-size: 1.3em !important;
+  }
+  
+  /* Inputs des sondes */
+  #pagePiscineMaintenance input[data-mini="true"] {
+    font-size: 1.3em !important;
+    padding: 8px 12px !important;
+  }
+  
+  /* Boutons des sondes */
+  #pagePiscineMaintenance a[data-mini="true"] {
+    font-size: 1.2em !important;
+    padding: 10px 14px !important;
   }
 }
 
