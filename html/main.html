@@ -594,17 +594,16 @@
 			</div>
 			</div>
 
-			<!-- switchs lampe & volet -->
+			<!-- switchs lampe & volet --
 			<fieldset class="container_12 mypanel"> 
-				<div class="grid_2">						<!-- 12/6 = 1/2:pour deux switchs -->
+				<div class="grid_2">						
 					<div class="ui-field-contain smallFillContent">
 						<label for="lampeSWParam" class="smallLabel" style="padding: 0 0 0 1.5em">Lampe</label>
 					</div>
 				</div>
-				<div class="grid_4">						<!-- 12/6 = 1/2:pour deux switchs -->
+				<div class="grid_4">						
 					<div class="ui-field-contain smallFillContent">
-	<!--				<label for="lampeSWParam" class="smallLabel" style="padding: 0 0 0 1.5em">Lampe</label>
-	-->					<div class="switch" id="lampeSWParam">
+						<div class="switch" id="lampeSWParam">
 							<input type="checkbox" name="LampeParam" id="lampeSwitchParam" checked="true">
 							<label for="LampeParam" class="switchLabel switchChecked">
 								<i class="switchChecked"></i>
@@ -613,15 +612,14 @@
 						</div>				
 					</div>
 				</div>
-				<div class="grid_2">						<!-- 12/6 = 1/2:pour deux switchs -->
+				<div class="grid_2">						
 					<div class="ui-field-contain smallFillContent">
 						<label for="voletSWParam" class="smallLabel" style="padding: 0 0 0 1.5em">Volet</label>
 					</div>
 				</div>
 				<div class="grid_4">
 					<div class="ui-field-contain smallFillContent">
-	<!--					<label for="voletSWParam" class="smallLabel" style="padding: 0 0 0 1.5em">Volet</label>
-	-->					<div class="switch" id="voletSWParam">
+						<div class="switch" id="voletSWParam">
 							<input type="checkbox" name="VoletParam" id="voletSwitchParam" checked="false">
 							<label for="VoletParam" class="switchLabel switchUnchecked">
 								<i class="switchUnchecked"></i>
@@ -631,10 +629,144 @@
 					</div>
 				</div>
 			</fieldset> 
-
+-->
+			<div data-role="collapsibleset" >
+				<!-- Lampe Auto -->
+				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
+					<h4>Lampe Automatique</h4>
+					<fieldset class="container_12 mypanel"> 
+						<div class="grid_4 suffix_2">
+							<div class="ui-field-contain smallFillContent">
+								<label for="lampeAutoSW" class="smallLabel" style="padding: 0 0 0 0.4em">Off<span STYLE="padding:0 0 0 1.8em;"></span>Auto</label>
+								<div class="switch" id="lampeAutoSW">
+									<input type="checkbox" name="lampeAuto" id="lampeAutoSWitch" checked="false">
+									<label for="lampeAuto" class="switchLabel switchUnchecked">
+										<i class="switchUnchecked"></i>
+									</label>
+									<span class="switchUnchecked"></span>
+								</div>				
+							</div>
+						</div>
+						<div class="grid_3">
+							<label for="lampeStart" class="smallLabel" style="padding: 1em 0 0 0.8em">StartTime</label>
+							<div class="startClockpicker" data-placement="top" data-align="right" data-autoclose="true" style="width: 3.7em;">
+								<input type="text" class="form-control" id="lampeStart" value="20:30">
+							</div>
+						</div>	
+						<div class="grid_3">
+							<label for="lampeStop" class="smallLabel" style="padding: 1em 0 0 0.8em">EndTime</label>
+							<div class="stopClockpicker" data-placement="left" data-align="bottom" data-autoclose="true" style="width: 3.7em;">
+								<input type="text" class="form-control" id="lampeStop" value="23:00">
+							</div>
+						</div>	
+					</fieldset> 
+				</div>
+					<!-- Volet Auto -->
+				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
+					<h4>Volet Automatique</h4>
+					<fieldset class="container_12 mypanel"> 
+						<div class="grid_4 suffix_2">
+							<div class="ui-field-contain smallFillContent">
+								<label for="voletAutoSW" class="smallLabel" style="padding: 0 0 0 0.4em">Off<span STYLE="padding:0 0 0 1.8em;"></span>Auto</label>
+								<div class="switch" id="voletAutoSW">
+									<input type="checkbox" name="voletAuto" id="voletAutoSWitch" checked="false">
+									<label for="voletAuto" class="switchLabel switchUnchecked">
+										<i class="switchUnchecked"></i>
+									</label>
+									<span class="switchUnchecked"></span>
+								</div>				
+							</div>
+						</div>
+						<div class="grid_3">
+							<label for="voletOuv" class="smallLabel" style="padding: 1em 0 0 0.8em">Ouverture</label>
+							<div class="startClockpicker" data-placement="top" data-align="right" data-autoclose="true" style="width: 3.7em;">
+								<input type="text" class="form-control" id="voletOuv" value="09:30">
+							</div>
+						</div>	
+						<div class="grid_3">
+							<label for="voletFerm" class="smallLabel" style="padding: 1em 0 0 0.8em">Fermeture</label>
+							<div class="stopClockpicker" data-placement="left" data-align="bottom" data-autoclose="true" style="width: 3.7em;">
+								<input type="text" class="form-control" id="voletFerm" value="23:00">
+							</div>
+						</div>	
+					</fieldset> 
+				</div>
+					<!-- Pompes -->
+				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
+					<h4>Pompes</h4>
+					<fieldset class="container_12 mypanel"> 
+						<div class="grid_4">						<!-- 12/4 = 1/3:pour trois blocks -->
+							<div class="ui-field-contain smallFillContent">
+								<label for="invPmpPHSW" class="smallLabel" style="padding: 0 0 0 0.7em">Pompe PH</label>
+								<div class="switch" id="invPmpPHSW">
+									<input type="checkbox" name="PmpPH" id="invPmpPHSWitch" checked="false">
+									<label for="PmpPH" class="switchLabel switchChecked">
+										<i class="switchChecked"></i>
+									</label>
+									<span class="switchChecked"></span>
+								</div>				
+							</div>
+						</div>
+						<div class="grid_4">
+							<div class="ui-field-contain smallFillContent">
+								<label for="invPmpCLSW" class="smallLabel" style="padding: 0 0 0 1.5em">Pompe CL</label>
+								<div class="switch" id="invPmpCLSW">
+									<input type="checkbox" name="PmpCL" id="invPmpCLSWitch" checked="true">
+									<label for="PmpCL" class="switchLabel switchChecked">
+										<i class="switchChecked"></i>
+									</label>
+									<span class="switchChecked"></span>
+								</div>				
+							</div>
+						</div>
+						<div class="grid_4">
+							<div class="ui-field-contain smallFillContent">
+								<label for="invPmp3SW" class="smallLabel" style="padding: 0 0 0 1.5em">Pompe 3</label>
+								<div class="switch" id="invPmp3SW">
+									<input type="checkbox" name="Pmp3" id="invPmp3SWitch" checked="true">
+									<label for="Pmp3" class="switchLabel switchChecked">
+										<i class="switchChecked"></i>
+									</label>
+									<span class="switchChecked"></span>
+								</div>				
+							</div>
+						</div>
+					</fieldset> 
+				</div>
+				<!-- Parametes Divers -->
+				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
+					<h4>Parametres divers</h4>
+					<fieldset class="container_12 mypanel"> 
+						<div class="grid_5 suffix_2">
+							<div class="ui-field-contain smallFillContent">
+								<label for="pacViaRouterSW" class="smallLabel" style="padding: 0 0 0 0.7em">PAC via Router</label>
+								<div class="switch" id="pacViaRouterSW">
+									<input type="checkbox" name="pacViaRouter" id="pacViaRouterSWitch" checked="false">
+									<label for="pacViaRouter" class="switchLabel switchUnchecked">
+										<i class="switchUnchecked"></i>
+									</label>
+									<span class="switchUnchecked"></span>
+								</div>				
+							</div>
+						</div>
+						<div class="grid_5">
+							<div class="ui-field-contain smallFillContent">
+								<label for="localAutoLoginSW" class="smallLabel" style="padding: 0 0 0 0.7em">Local Auto Login</label>
+								<div class="switch" id="localAutoLoginSW">
+									<input type="checkbox" name="localAutoLogin" id="localAutoLoginSWitch" checked="false">
+									<label for="localAutoLogin" class="switchLabel switchUnchecked">
+										<i class="switchUnchecked"></i>
+									</label>
+									<span class="switchUnchecked"></span>
+								</div>				
+							</div>
+						</div>
+ 					</fieldset>
+				</div>
+			</div>
 		</div><!-- /lscape-col gauche -->
 		<div class="lscape-col"><!-- col droite : paramètres collapsibles -->
-			<div data-role="collapsibleset" id="parametres-gauche">
+			<div data-role="collapsibleset" >
 				<!-- Mode manu -->
 				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
 					<h4>Mode Manuel</h4>
@@ -709,212 +841,6 @@
 									</label>
 									<span class="switchChecked"></span>
 								</div>				
-							</div>
-						</div>
-					</fieldset> 
-				</div>
-			
-				<!-- Pompe Principale -->
-				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
-					<h4>Pompe Principale</h4>
-					<fieldset class="container_12 mypanel"> 
-						<div class="grid_4 suffix_2">
-							<br>
-<!--
-							<div class="ui-field-contain smallFillContent">
-								<label for="PPSW2" class="smallLabel" style="padding: 0 0 0 0.4em">Manuel<span STYLE="padding:0 0 0 1.8em;"></span>Auto</label>
-								<div class="switch" id="PPSW2">
-									<input type="checkbox" name="PompeP2" id="PPSWitch2" checked="true">
-									<label for="PompeP2" class="switchLabel switchChecked">
-										<i class="switchChecked"></i>
-									</label>
-									<span class="switchChecked"></span>
-								</div>				
-							</div>
--->	
-						</div>
-						<div class="grid_3">
-							<label for="PPstart" class="smallLabel" style="padding: 1em 0 0 0.8em">StartTime</label>
-							<div class="startClockpicker" data-placement="top" data-align="right" data-autoclose="true" style="width: 3.7em;">
-								<input type="text" class="form-control" id="PPstart" value="09:30">
-							</div>
-						</div>	
-						<div class="grid_3">
-							<label for="PPstop" class="smallLabel" style="padding: 1em 0 0 0.8em">EndTime</label>
-							<div class="stopClockpicker" data-placement="left" data-align="bottom" data-autoclose="true" style="width: 3.7em;">
-								<input type="text" class="form-control" id="PPstop" value="19:00">
-							</div>
-						</div>	
-					</fieldset> 
-				</div>
-
-				<!--  PAC -->
-				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
-					<h4>Horaire PAC</h4>
-					<fieldset class="container_12 mypanel"> 
-						<div class="prefix_2 grid_4">
-							<label for="PACstart" class="smallLabel" style="padding: 1em 0 0 0.8em">StartTime</label>
-							<div class="startPACClockpicker" data-placement="top" data-align="right" data-autoclose="true" style="width: 3.7em;">
-								<input type="text" class="form-control" id="PACstart" value="12:00">
-							</div>
-						</div>	
-						<div class="grid_4 suffix_2">
-							<label for="PACstop" class="smallLabel" style="padding: 1em 0 0 0.8em">EndTime</label>
-							<div class="stopPACClockpicker" data-placement="left" data-align="bottom" data-autoclose="true" style="width: 3.7em;">
-								<input type="text" class="form-control" id="PACstop" value="20:00">
-							</div>
-						</div>	
-					</fieldset>
-				</div>
-				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel"> 
-					<h4>Temperature PAC</h4>
-					<fieldset class="container_12 mypanel"> 
-						<div class="grid_3 suffix_1">
-							<div class="ui-field-contain smallFillContent">
-								<label for="TypeTempSW" class="smallLabel" style="padding: 0 0 0 0.4em">Fixe<span STYLE="padding:0 0 0 1.8em;"></span>Relatif</label>
-								<div class="switch" id="TypeTempSW">
-									<input type="checkbox" name="TypeTemp" id="TypeTempSWitch" checked="true">
-									<label for="TypeTemp" class="switchLabel switchChecked">
-										<i class="switchChecked"></i>
-									</label>
-	<!--									<span class="switchChecked"></span>
-	-->								</div>				
-							</div>
-						</div>
-						<div class="grid_8">
-							<div id="TempFixRelSlider">
-								<label for="TempFixRel" class="smallLabel" id="TempFixRelLabel" style="padding: 1em 0 0 8.5em">Temperature Relative</label>
-								<input type="range" name="TempFixRel" id="TempFixRel" value="0" min="-20" max="+20" step="1" data-mini="false" data-popup-enabled="true">
-							</div>
-						</div>	
-					</fieldset>
-				</div>
-			</div>
-			
-			<div data-role="collapsibleset" id="parametres-droite">
-				<!-- Lampe Auto -->
-				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
-					<h4>Lampe Automatique</h4>
-					<fieldset class="container_12 mypanel"> 
-						<div class="grid_4 suffix_2">
-							<div class="ui-field-contain smallFillContent">
-								<label for="lampeAutoSW" class="smallLabel" style="padding: 0 0 0 0.4em">Off<span STYLE="padding:0 0 0 1.8em;"></span>Auto</label>
-								<div class="switch" id="lampeAutoSW">
-									<input type="checkbox" name="lampeAuto" id="lampeAutoSWitch" checked="false">
-									<label for="lampeAuto" class="switchLabel switchUnchecked">
-										<i class="switchUnchecked"></i>
-									</label>
-									<span class="switchUnchecked"></span>
-								</div>				
-							</div>
-						</div>
-						<div class="grid_3">
-							<label for="lampeStart" class="smallLabel" style="padding: 1em 0 0 0.8em">StartTime</label>
-							<div class="startClockpicker" data-placement="top" data-align="right" data-autoclose="true" style="width: 3.7em;">
-								<input type="text" class="form-control" id="lampeStart" value="20:30">
-							</div>
-						</div>	
-						<div class="grid_3">
-							<label for="lampeStop" class="smallLabel" style="padding: 1em 0 0 0.8em">EndTime</label>
-							<div class="stopClockpicker" data-placement="left" data-align="bottom" data-autoclose="true" style="width: 3.7em;">
-								<input type="text" class="form-control" id="lampeStop" value="23:00">
-							</div>
-						</div>	
-					</fieldset> 
-				</div>
-					<!-- Volet Auto -->
-				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
-					<h4>Volet Automatique</h4>
-					<fieldset class="container_12 mypanel"> 
-						<div class="grid_4 suffix_2">
-							<div class="ui-field-contain smallFillContent">
-								<label for="voletAutoSW" class="smallLabel" style="padding: 0 0 0 0.4em">Off<span STYLE="padding:0 0 0 1.8em;"></span>Auto</label>
-								<div class="switch" id="voletAutoSW">
-									<input type="checkbox" name="voletAuto" id="voletAutoSWitch" checked="false">
-									<label for="voletAuto" class="switchLabel switchUnchecked">
-										<i class="switchUnchecked"></i>
-									</label>
-									<span class="switchUnchecked"></span>
-								</div>				
-							</div>
-						</div>
-						<div class="grid_3">
-							<label for="voletOuv" class="smallLabel" style="padding: 1em 0 0 0.8em">Ouverture</label>
-							<div class="startClockpicker" data-placement="top" data-align="right" data-autoclose="true" style="width: 3.7em;">
-								<input type="text" class="form-control" id="voletOuv" value="09:30">
-							</div>
-						</div>	
-						<div class="grid_3">
-							<label for="voletFerm" class="smallLabel" style="padding: 1em 0 0 0.8em">Fermeture</label>
-							<div class="stopClockpicker" data-placement="left" data-align="bottom" data-autoclose="true" style="width: 3.7em;">
-								<input type="text" class="form-control" id="voletFerm" value="23:00">
-							</div>
-						</div>	
-					</fieldset> 
-				</div>
-					<!-- PH et CL Reference -->
-				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
-				<h4>PH ref & CL ref</h4>
-					<fieldset class="container_12 mypanel"> 
-						<div class="prefix_1 grid_10 suffix_1">
-							<div id="PHRefSlider">
-								<label for="PHRef" class="smallLabel" style="padding: 1em 0 0 0.5em">Reference PH</label>
-								<input type="range" name="PHRef" id="PHRef" value="7.2" min="6" max="8" step="0.1" data-mini="false" data-popup-enabled="true">
-							</div>
-						</div>
-						<div class="prefix_1 grid_10 suffix_1">
-							<div id="redoxRefSlider">
-								<label for="redoxRef" class="smallLabel" id="TempFixRelLabel" style="padding: 1em 0 0 0.5em">Reference Redox</label>
-								<input type="range" name="redoxRef" id="redoxRef" value="700" min="550" max="850" step="10" data-mini="false" data-popup-enabled="true">
-							</div>
-						</div>	
-					</fieldset> 
-				</div>
-					<!-- Pompe 3 -->
-				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
-					<h4>Pompe 3</h4>
-					<fieldset class="container_12 mypanel"> 
-						<div class="grid_4 suffix_1">
-							<div class="ui-field-contain smallFillContent">
-								<label for="P3ONOFFSW" class="smallLabel" style="padding: 0 0 0 0.4em">Pompe 3</label>
-								<div class="switch" id="P3ONOFFSW">
-									<input type="checkbox" name="TypeP3ONOFF" id="P3ONOFFSWitch" checked="true">
-									<label for="P3ONOFF" class="switchLabel switchChecked">
-										<i class="switchChecked"></i>
-									</label>
-										<span class="switchChecked"></span>
-									</div>				
-							</div>
-							<div class="ui-field-contain smallFillContent">
-								<div id="TypeP3Div">
-									<label for="TypeP3SW" class="smallLabel" style="padding: 0 0 0 2.5em">PH+<span STYLE="padding:0 0 0 1.8em;"></span>Other</label>
-									<div class="switch" id="TypeP3SW"  style="padding: 0 0 0 1em">
-										<input type="checkbox" name="TypeP3" id="TypeP3SWitch" checked="true">
-										<label for="TypeP3" class="switchLabel switchChecked">
-											<i class="switchChecked"></i>
-										</label>
-									</div>				
-								</div>
-							</div>
-						</div>
-						<div class="grid_7">
-							<div id="P3QtyDiv">
-								<div id="P3QtySlider">
-									<label for="P3Qty" class="smallLabel" id="P3QtyLabel" style="padding: 1em 0 0 8.5em">Quantite(cl)</label>
-									<input type="range" name="P3Qty" id="P3Qty" value="0" min="0" max="200" step="1" data-mini="false" data-popup-enabled="true">
-								</div>
-							</div>
-							<div id="P3FrqDiv">
-								<div id="P3FrqSlider">
-									<label for="P3Frq" class="smallLabel" id="P3FrqLabel" style="padding: 1em 0 0 8.5em">Frequence (heures)</label>
-									<input type="range" name="P3Frq" id="P3Frq" value="0" min="0" max="31" step="1" data-mini="false" data-popup-enabled="true">
-								</div>	
-								<fieldset data-role="controlgroup" data-type="horizontal">
-									<input type="checkbox" name="P3FrqHebdo" id="P3FrqHebdo" value="off">
-									<label for="P3FrqHebdo">Hebdo</label>
-									<input type="checkbox" name="P3FrqMensuel" id="P3FrqMensuel" value="off">
-									<label for="P3FrqMensuel">Mensuel</label>
-								</fieldset>
 							</div>
 						</div>
 					</fieldset> 
@@ -1001,77 +927,147 @@
 						</div>
 					</fieldset> 
 				</div>
-					<!-- Pompes -->
+					<!-- Pompe 3 -->
 				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
-					<h4>Pompes</h4>
+					<h4>Pompe 3</h4>
 					<fieldset class="container_12 mypanel"> 
-						<div class="grid_4">						<!-- 12/4 = 1/3:pour trois blocks -->
+						<div class="grid_4 suffix_1">
 							<div class="ui-field-contain smallFillContent">
-								<label for="invPmpPHSW" class="smallLabel" style="padding: 0 0 0 0.7em">Pompe PH</label>
-								<div class="switch" id="invPmpPHSW">
-									<input type="checkbox" name="PmpPH" id="invPmpPHSWitch" checked="false">
-									<label for="PmpPH" class="switchLabel switchChecked">
+								<label for="P3ONOFFSW" class="smallLabel" style="padding: 0 0 0 0.4em">Pompe 3</label>
+								<div class="switch" id="P3ONOFFSW">
+									<input type="checkbox" name="TypeP3ONOFF" id="P3ONOFFSWitch" checked="true">
+									<label for="P3ONOFF" class="switchLabel switchChecked">
 										<i class="switchChecked"></i>
 									</label>
-									<span class="switchChecked"></span>
-								</div>				
+										<span class="switchChecked"></span>
+									</div>				
+							</div>
+							<div class="ui-field-contain smallFillContent">
+								<div id="TypeP3Div">
+									<label for="TypeP3SW" class="smallLabel" style="padding: 0 0 0 2.5em">PH+<span STYLE="padding:0 0 0 1.8em;"></span>Other</label>
+									<div class="switch" id="TypeP3SW"  style="padding: 0 0 0 1em">
+										<input type="checkbox" name="TypeP3" id="TypeP3SWitch" checked="true">
+										<label for="TypeP3" class="switchLabel switchChecked">
+											<i class="switchChecked"></i>
+										</label>
+									</div>				
+								</div>
 							</div>
 						</div>
-						<div class="grid_4">
-							<div class="ui-field-contain smallFillContent">
-								<label for="invPmpCLSW" class="smallLabel" style="padding: 0 0 0 1.5em">Pompe CL</label>
-								<div class="switch" id="invPmpCLSW">
-									<input type="checkbox" name="PmpCL" id="invPmpCLSWitch" checked="true">
-									<label for="PmpCL" class="switchLabel switchChecked">
-										<i class="switchChecked"></i>
-									</label>
-									<span class="switchChecked"></span>
-								</div>				
+						<div class="grid_7">
+							<div id="P3QtyDiv">
+								<div id="P3QtySlider">
+									<label for="P3Qty" class="smallLabel" id="P3QtyLabel" style="padding: 1em 0 0 8.5em">Quantite(cl)</label>
+									<input type="range" name="P3Qty" id="P3Qty" value="0" min="0" max="200" step="1" data-mini="false" data-popup-enabled="true">
+								</div>
 							</div>
-						</div>
-						<div class="grid_4">
-							<div class="ui-field-contain smallFillContent">
-								<label for="invPmp3SW" class="smallLabel" style="padding: 0 0 0 1.5em">Pompe 3</label>
-								<div class="switch" id="invPmp3SW">
-									<input type="checkbox" name="Pmp3" id="invPmp3SWitch" checked="true">
-									<label for="Pmp3" class="switchLabel switchChecked">
-										<i class="switchChecked"></i>
-									</label>
-									<span class="switchChecked"></span>
-								</div>				
+							<div id="P3FrqDiv">
+								<div id="P3FrqSlider">
+									<label for="P3Frq" class="smallLabel" id="P3FrqLabel" style="padding: 1em 0 0 8.5em">Frequence (heures)</label>
+									<input type="range" name="P3Frq" id="P3Frq" value="0" min="0" max="31" step="1" data-mini="false" data-popup-enabled="true">
+								</div>	
+								<fieldset data-role="controlgroup" data-type="horizontal">
+									<input type="checkbox" name="P3FrqHebdo" id="P3FrqHebdo" value="off">
+									<label for="P3FrqHebdo">Hebdo</label>
+									<input type="checkbox" name="P3FrqMensuel" id="P3FrqMensuel" value="off">
+									<label for="P3FrqMensuel">Mensuel</label>
+								</fieldset>
 							</div>
 						</div>
 					</fieldset> 
 				</div>
-				<!-- Parametes Divers -->
+					<!-- PH et CL Reference -->
 				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
-					<h4>Parametres divers</h4>
+				<h4>PH ref & CL ref</h4>
 					<fieldset class="container_12 mypanel"> 
-						<div class="grid_5 suffix_2">
-							<div class="ui-field-contain smallFillContent">
-								<label for="pacViaRouterSW" class="smallLabel" style="padding: 0 0 0 0.7em">PAC via Router</label>
-								<div class="switch" id="pacViaRouterSW">
-									<input type="checkbox" name="pacViaRouter" id="pacViaRouterSWitch" checked="false">
-									<label for="pacViaRouter" class="switchLabel switchUnchecked">
-										<i class="switchUnchecked"></i>
-									</label>
-									<span class="switchUnchecked"></span>
-								</div>				
+						<div class="prefix_1 grid_10 suffix_1">
+							<div id="PHRefSlider">
+								<label for="PHRef" class="smallLabel" style="padding: 1em 0 0 0.5em">Reference PH</label>
+								<input type="range" name="PHRef" id="PHRef" value="7.2" min="6" max="8" step="0.1" data-mini="false" data-popup-enabled="true">
 							</div>
 						</div>
-						<div class="grid_5">
+						<div class="prefix_1 grid_10 suffix_1">
+							<div id="redoxRefSlider">
+								<label for="redoxRef" class="smallLabel" id="TempFixRelLabel" style="padding: 1em 0 0 0.5em">Reference Redox</label>
+								<input type="range" name="redoxRef" id="redoxRef" value="700" min="550" max="850" step="10" data-mini="false" data-popup-enabled="true">
+							</div>
+						</div>	
+					</fieldset> 
+				</div>
+					<!-- Pompe Principale -->
+				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
+					<h4>Pompe Principale</h4>
+					<fieldset class="container_12 mypanel"> 
+						<div class="grid_4 suffix_2">
+							<br>
+<!--
 							<div class="ui-field-contain smallFillContent">
-								<label for="localAutoLoginSW" class="smallLabel" style="padding: 0 0 0 0.7em">Local Auto Login</label>
-								<div class="switch" id="localAutoLoginSW">
-									<input type="checkbox" name="localAutoLogin" id="localAutoLoginSWitch" checked="false">
-									<label for="localAutoLogin" class="switchLabel switchUnchecked">
-										<i class="switchUnchecked"></i>
+								<label for="PPSW2" class="smallLabel" style="padding: 0 0 0 0.4em">Manuel<span STYLE="padding:0 0 0 1.8em;"></span>Auto</label>
+								<div class="switch" id="PPSW2">
+									<input type="checkbox" name="PompeP2" id="PPSWitch2" checked="true">
+									<label for="PompeP2" class="switchLabel switchChecked">
+										<i class="switchChecked"></i>
 									</label>
-									<span class="switchUnchecked"></span>
+									<span class="switchChecked"></span>
 								</div>				
 							</div>
+-->	
 						</div>
- 					</fieldset>
+						<div class="grid_3">
+							<label for="PPstart" class="smallLabel" style="padding: 1em 0 0 0.8em">StartTime</label>
+							<div class="startClockpicker" data-placement="top" data-align="right" data-autoclose="true" style="width: 3.7em;">
+								<input type="text" class="form-control" id="PPstart" value="09:30">
+							</div>
+						</div>	
+						<div class="grid_3">
+							<label for="PPstop" class="smallLabel" style="padding: 1em 0 0 0.8em">EndTime</label>
+							<div class="stopClockpicker" data-placement="left" data-align="bottom" data-autoclose="true" style="width: 3.7em;">
+								<input type="text" class="form-control" id="PPstop" value="19:00">
+							</div>
+						</div>	
+					</fieldset> 
+				</div>
+
+				<!--  PAC -->
+				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel"> 
+					<h4>Temperature PAC</h4>
+					<fieldset class="container_12 mypanel"> 
+						<div class="grid_3 suffix_1">
+							<div class="ui-field-contain smallFillContent">
+								<label for="TypeTempSW" class="smallLabel" style="padding: 0 0 0 0.4em">Fixe<span STYLE="padding:0 0 0 1.8em;"></span>Relatif</label>
+								<div class="switch" id="TypeTempSW">
+									<input type="checkbox" name="TypeTemp" id="TypeTempSWitch" checked="true">
+									<label for="TypeTemp" class="switchLabel switchChecked">
+										<i class="switchChecked"></i>
+									</label>
+	<!--									<span class="switchChecked"></span>
+	-->								</div>				
+							</div>
+						</div>
+						<div class="grid_8">
+							<div id="TempFixRelSlider">
+								<label for="TempFixRel" class="smallLabel" id="TempFixRelLabel" style="padding: 1em 0 0 8.5em">Temperature Relative</label>
+								<input type="range" name="TempFixRel" id="TempFixRel" value="0" min="-20" max="+20" step="1" data-mini="false" data-popup-enabled="true">
+							</div>
+						</div>	
+					</fieldset>
+				</div>
+				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
+					<h4>Horaire PAC</h4>
+					<fieldset class="container_12 mypanel"> 
+						<div class="prefix_2 grid_4">
+							<label for="PACstart" class="smallLabel" style="padding: 1em 0 0 0.8em">StartTime</label>
+							<div class="startPACClockpicker" data-placement="top" data-align="right" data-autoclose="true" style="width: 3.7em;">
+								<input type="text" class="form-control" id="PACstart" value="12:00">
+							</div>
+						</div>	
+						<div class="grid_4 suffix_2">
+							<label for="PACstop" class="smallLabel" style="padding: 1em 0 0 0.8em">EndTime</label>
+							<div class="stopPACClockpicker" data-placement="left" data-align="bottom" data-autoclose="true" style="width: 3.7em;">
+								<input type="text" class="form-control" id="PACstop" value="20:00">
+							</div>
+						</div>	
+					</fieldset>
 				</div>
 
 

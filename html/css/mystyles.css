@@ -52,6 +52,14 @@
       #pagePiscinePrincipale fieldset.ui-grid-c {
         margin-top: 3em !important;
       }
+    /* === ajustements spécifiques page paramètres === */
+      #pagePiscineParametres .ui-collapsible .ui-btn {
+        font-size: 1.15em !important;
+        padding: 1em 1.6em !important;
+      }
+      #pagePiscineParametres .ui-collapsible .ui-collapsible-content {
+        padding: 1rem !important;
+      }
     }
     /* === TABLETTE PORTRAIT === */
     @media (min-width: 701px) and (max-width: 1100px) and (orientation: portrait) and (min-height: 600px) {
@@ -106,7 +114,17 @@
       #pagePiscinePrincipale fieldset.ui-grid-c {
         margin-top: 3em !important;
       }
+      /* === ajustements spécifiques page paramètres === */
+      #pagePiscineParametres .ui-collapsible .ui-btn {
+        font-size: 1.15em !important;
+        padding: 1em 1.2em !important;
+      }
+      #pagePiscineParametres .ui-collapsible .ui-collapsible-content {
+        padding: 1rem !important;
+      }
     }
+
+
     /* === DESKTOP PAYSAGE === */
     @media (min-width: 1101px) and (orientation: landscape) {
       /* Agrandir le bandeau principal */
@@ -162,10 +180,19 @@
       #pagePiscinePrincipale fieldset.ui-grid-c {
         margin-top: 3em !important;
       }
+    /* === ajustements spécifiques page paramètres === */
+      #pagePiscineParametres .ui-collapsible .ui-btn {
+        font-size: 1.3em !important;
+        padding: 0.6em 1.4em !important;
+      }
+      #pagePiscineParametres .ui-collapsible .ui-collapsible-content {
+        padding: 1.2rem !important;
+      }
+
     }
+
     /* === DESKTOP PORTRAIT === */
     @media (orientation: portrait) and (min-height: 1100px) {
-      
       /* Agrandir le bandeau principal */
       .myh1 {
         font-size: 1.9em !important;
@@ -218,7 +245,16 @@
       #pagePiscinePrincipale fieldset.ui-grid-c {
         margin-top: 3em !important;
       }
+    /* === ajustements spécifiques page paramètres === */
+      #pagePiscineParametres .ui-collapsible .ui-btn {
+        font-size: 1.3em !important;
+        padding: 1em 1.9em !important;
+      }
+      #pagePiscineParametres .ui-collapsible .ui-collapsible-content {
+        padding: 1.2rem !important;
+      }
     }
+
     /* Centrage et espacement régulier des switchs sur la page principale en mode paysage */
     @media (orientation: landscape), (min-width: 701px), (min-height: 600px) {
       #pagePiscinePrincipale fieldset.container_12 {
@@ -526,7 +562,8 @@ background-color: #333;
 
 /* Par défaut (tous modes), sur la page principale, les labels sont block et centrés */
 /* Correction renforcée : labels toujours au-dessus et centrés sur la page principale */
-#pagePiscinePrincipale .ui-field-contain .smallLabel {
+#pagePiscinePrincipale .ui-field-contain .smallLabel,
+#pagePiscineParametres .ui-field-contain .smallLabel {
   display: block !important;
   width: 100% !important;
   text-align: center !important;
@@ -540,7 +577,8 @@ background-color: #333;
 }
 
 /* Correction spécifique pour les labels de température sur la page principale */
-#pagePiscinePrincipale .ui-field-contain input.smallTextInput {
+#pagePiscinePrincipale .ui-field-contain input.smallTextInput,
+#pagePiscineParametres .ui-field-contain input.smallTextInput {
   display: block;
   margin-left: auto !important;
   margin-right: auto !important;
@@ -548,20 +586,43 @@ background-color: #333;
 
 /* En mobile/portrait, on laisse le style existant (référence) */
 @media (max-width: 700px) and (orientation: portrait) {
-  #pagePiscinePrincipale .ui-field-contain .smallLabel {
+  #pagePiscinePrincipale .ui-field-contain .smallLabel,
+  #pagePiscineParametres .ui-field-contain .smallLabel {
     /* On ne surcharge rien, on garde le style mobile/portrait */
   }
 }
 
 /* En paysage, tablette, desktop, on force le label au-dessus et centré */
 @media (orientation: landscape), (min-width: 701px) {
-  #pagePiscinePrincipale .ui-field-contain .smallLabel {
+  #pagePiscinePrincipale .ui-field-contain .smallLabel,
+  #pagePiscineParametres .ui-field-contain .smallLabel {
     display: block !important;
     text-align: center !important;
     margin-bottom: 0.2em !important;
     margin-top: 0 !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+  #pagePiscinePrincipale .ui-field-contain,
+  #pagePiscineParametres .ui-field-contain {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 0.3em !important;
+  }
+  #pagePiscinePrincipale .ui-field-contain input.smallTextInput,
+  #pagePiscineParametres .ui-field-contain input.smallTextInput {
+    display: block !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    width: auto !important;
+  }
+  /* Supprimer padding-top sur main en mode paysage pour la page paramètres */
+  #pagePiscineParametres [role="main"] {
+    padding-top: 0px !important;
   }
 }
 		/*
@@ -630,6 +691,19 @@ background-color: #333;
     text-align: right !important;
     padding-right: 10px !important;
   }
+
+  /* Override LED labels pour rester centré comme sur page principale */
+  #pagePiscineParametres .ledpanel .ui-field-contain,
+  #pagePiscineParametres .ledpanel .ui-field-contain .smallLabel {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
   
   #pagePiscineParametres .ui-field-contain .switch,
   #pagePiscineParametres .ui-field-contain input,
@@ -637,9 +711,12 @@ background-color: #333;
   #pagePiscineAlertes .ui-field-contain input {
     width: 100% !important;
   }
-}
-	/* === TABLETTE PAYSAGE === */
-@media (min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (orientation: landscape) {
+
+  /* reduction du pading pour la page parametres*/
+  #pagePiscineParametres [role="main"] .ui-content {
+    padding: 0 !important;
+  }
+
 }
 	/* === DESKTOP PAYSAGE / GRAND ÉCRAN PAYSAGE (2260 x 1440 et plus, iPad paysage exclu) === */
 @media (min-width: 1101px) and (orientation: landscape) {
@@ -776,6 +853,32 @@ background-color: #333;
 }  
 	/* === DESKTOP PORTRAIT / GRAND ÉCRAN PORTRAIT (2260 x 1440 et plus, iPad paysage exclu) === */
 @media (min-height: 1101px) and (orientation: portrait) {
+  #pagePiscinePrincipale .ui-field-contain .smallLabel,
+  #pagePiscineParametres .ui-field-contain .smallLabel {
+    display: block !important;
+    text-align: center !important;
+    margin-bottom: 0.2em !important;
+    margin-top: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+  #pagePiscinePrincipale .ui-field-contain,
+  #pagePiscineParametres .ui-field-contain {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 0.3em !important;
+  }
+  #pagePiscinePrincipale .ui-field-contain input.smallTextInput,
+  #pagePiscineParametres .ui-field-contain input.smallTextInput {
+    display: block !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    width: auto !important;
+  }
 }
 
 /* =====================================================================
@@ -802,36 +905,6 @@ background-color: #333;
         gap: 10px;
     }
     .lscape-col {
-        flex: 1;
-        min-width: 0;
-        width: auto;
-    }
-}
-
-/* =====================================================================
-   PAGE PARAMÈTRES - LAYOUT 2 COLONNES EN PORTRAIT
-   ===================================================================== */
-
-#pagePiscineParametres .lscape-layout {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-#pagePiscineParametres .lscape-col {
-    width: 100%;
-    box-sizing: border-box;
-}
-
-@media (orientation: portrait) {
-    #pagePiscineParametres .lscape-layout {
-        flex-direction: row;
-        align-items: flex-start;
-        gap: 10px;
-    }
-    #pagePiscineParametres .lscape-col {
         flex: 1;
         min-width: 0;
         width: auto;
