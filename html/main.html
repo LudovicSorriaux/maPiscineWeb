@@ -634,38 +634,7 @@
 
 		</div><!-- /lscape-col gauche -->
 		<div class="lscape-col"><!-- col droite : paramètres collapsibles -->
-			<div data-role="collapsibleset" >
-				<!-- Parametes Divers -->
-				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
-					<h4>Parametres divers</h4>
-					<fieldset class="container_12 mypanel"> 
-						<div class="grid_5 suffix_2">
-							<div class="ui-field-contain smallFillContent">
-								<label for="pacViaRouterSW" class="smallLabel" style="padding: 0 0 0 0.7em">PAC via Router</label>
-								<div class="switch" id="pacViaRouterSW">
-									<input type="checkbox" name="pacViaRouter" id="pacViaRouterSWitch" checked="false">
-									<label for="pacViaRouter" class="switchLabel switchUnchecked">
-										<i class="switchUnchecked"></i>
-									</label>
-									<span class="switchUnchecked"></span>
-								</div>				
-							</div>
-						</div>
-						<div class="grid_5">
-							<div class="ui-field-contain smallFillContent">
-								<label for="localAutoLoginSW" class="smallLabel" style="padding: 0 0 0 0.7em">Local Auto Login</label>
-								<div class="switch" id="localAutoLoginSW">
-									<input type="checkbox" name="localAutoLogin" id="localAutoLoginSWitch" checked="false">
-									<label for="localAutoLogin" class="switchLabel switchUnchecked">
-										<i class="switchUnchecked"></i>
-									</label>
-									<span class="switchUnchecked"></span>
-								</div>				
-							</div>
-						</div>
- 					</fieldset>
-				</div>
-
+			<div data-role="collapsibleset" id="parametres-gauche">
 				<!-- Mode manu -->
 				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
 					<h4>Mode Manuel</h4>
@@ -820,6 +789,9 @@
 						</div>	
 					</fieldset>
 				</div>
+			</div>
+			
+			<div data-role="collapsibleset" id="parametres-droite">
 				<!-- Lampe Auto -->
 				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
 					<h4>Lampe Automatique</h4>
@@ -1071,6 +1043,38 @@
 						</div>
 					</fieldset> 
 				</div>
+				<!-- Parametes Divers -->
+				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
+					<h4>Parametres divers</h4>
+					<fieldset class="container_12 mypanel"> 
+						<div class="grid_5 suffix_2">
+							<div class="ui-field-contain smallFillContent">
+								<label for="pacViaRouterSW" class="smallLabel" style="padding: 0 0 0 0.7em">PAC via Router</label>
+								<div class="switch" id="pacViaRouterSW">
+									<input type="checkbox" name="pacViaRouter" id="pacViaRouterSWitch" checked="false">
+									<label for="pacViaRouter" class="switchLabel switchUnchecked">
+										<i class="switchUnchecked"></i>
+									</label>
+									<span class="switchUnchecked"></span>
+								</div>				
+							</div>
+						</div>
+						<div class="grid_5">
+							<div class="ui-field-contain smallFillContent">
+								<label for="localAutoLoginSW" class="smallLabel" style="padding: 0 0 0 0.7em">Local Auto Login</label>
+								<div class="switch" id="localAutoLoginSW">
+									<input type="checkbox" name="localAutoLogin" id="localAutoLoginSWitch" checked="false">
+									<label for="localAutoLogin" class="switchLabel switchUnchecked">
+										<i class="switchUnchecked"></i>
+									</label>
+									<span class="switchUnchecked"></span>
+								</div>				
+							</div>
+						</div>
+ 					</fieldset>
+				</div>
+
+
 			</div>
 		
 		</div><!-- /lscape-col droite -->

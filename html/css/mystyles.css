@@ -807,3 +807,33 @@ background-color: #333;
         width: auto;
     }
 }
+
+/* =====================================================================
+   PAGE PARAMÈTRES - LAYOUT 2 COLONNES EN PORTRAIT
+   ===================================================================== */
+
+#pagePiscineParametres .lscape-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#pagePiscineParametres .lscape-col {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+@media (orientation: portrait) {
+    #pagePiscineParametres .lscape-layout {
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    #pagePiscineParametres .lscape-col {
+        flex: 1;
+        min-width: 0;
+        width: auto;
+    }
+}
