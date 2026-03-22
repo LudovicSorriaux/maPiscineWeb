@@ -79,11 +79,13 @@ class MockHandler(http.server.SimpleHTTPRequestHandler):
 
         if path == "/checkLocalAuth":
             self._handle_check_local_auth()
+        elif path == "/api/auth" and params.get("action", [""])[0] == "getUsers":
+            self._handle_get_users()
         elif path == "/api/graph/file-info":
             self._handle_file_info(params)
         elif path == "/api/graph/chunk":
             self._handle_chunk(params)
-        elif path == "/piscineEvents":
+        elif path.strip() == "/piscineEvents":
             self._handle_sse()
         else:
             # Réécriture des chemins pour servir html/ correctement
@@ -167,17 +169,84 @@ class MockHandler(http.server.SimpleHTTPRequestHandler):
         self._send_text(chunk)
 
     def _handle_sse(self):
-        """Répond à /piscineEvents avec un flux SSE minimal."""
+        """Répond à /piscineEvents avec un flux SSE contenant toutes les données mock."""
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream")
         self.send_header("Cache-Control", "no-cache")
         self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         try:
+            # hello! déclenche initPagePParams() dans piscinePrincipale.js
             self.wfile.write(b"data: hello!\n\n")
+
+            # piscineData — page Principale et Parametres (jauges + LEDs)
+            piscine_data = json.dumps({
+                "phVal":     720,       # pH 7.20
+                "redoxVal":  650,       # mV
+                "clVal":     110,       # Cl 1.10
+                "tempEau":   2650,      # 26.50 °C
+                "tempAir":   2230,      # 22.30 °C
+                "tempInt":   2410,      # 24.10 °C
+                "tempPAC":   2890,      # 28.90 °C
+                "lampe":     1,
+                "volet":     0,
+                "PP":        1,
+                "PAC":       1,
+                "PH":        0,
+                "CL":        0,
+                "P3":        0,
+                "autoMode":  1,
+                "ligne":     "Mock OK",
+                # Champs page Parametres
+                "strtTPP":   "08:00", "stopTPP":  "20:00",
+                "strtTPAC":  "10:00", "stopTPAC": "18:00",
+                "strtLampe": "20:00", "stopLampe":"23:00",
+                "tempFix":   270,      "tempRel":  10,
+                "typeTemp":  1,        "typeP":    1,
+                "phRef":     720,      "redoxRef": 650,
+                "nivPH":     50,       "nivCL":    50, "nivALG": 80,
+                "lampeAuto": 1,        "voletAuto": 0,
+                "ouvVolet":  "08:00",  "fermeVolet": "21:00",
+                "autoMode":  1,        "pacViaRouter": 0,
+                "flowAlert": 0,        "innondAlert": 0,
+                "pacAlert":  0,        "clearAlert": 0,
+                "localAutoLogin": 1,
+                "P":  0,  "p": 0
+            })
+            self.wfile.write(f"event: piscineData\ndata: {piscine_data}\n\n".encode())
+
+            # piscineLCDData — affichage LCD page Principale
+            lcd_data = json.dumps({"ligne": "[MOCK] pH:7.20  Cl:1.10  T:26.5°C"})
+            self.wfile.write(f"event: piscineLCDData\ndata: {lcd_data}\n\n".encode())
+
+            # piscineLCDDebug — page Debug (textarea)
+            debug_data = json.dumps({"lignes": "[MOCK] Debug stream OK\n[MOCK] ESP32 simulation active\n"})
+            self.wfile.write(f"event: piscineLCDDebug\ndata: {debug_data}\n\n".encode())
+
+            # piscineMaintenance — page Maintenance (sondes)
+            maint_data = json.dumps({"sondes": [
+                {"type": "pH",   "index": 0, "printable": "7.20"},
+                {"type": "Redox","index": 1, "printable": "650 mV"},
+                {"type": "Cl",   "index": 2, "printable": "1.10 mg/L"},
+            ]})
+            self.wfile.write(f"event: piscineMaintenance\ndata: {maint_data}\n\n".encode())
+
+            # piscineParamsData — page Parametres
+            self.wfile.write(f"event: piscineParamsData\ndata: {piscine_data}\n\n".encode())
+
             self.wfile.flush()
         except Exception:
             pass
+
+    def _handle_get_users(self):
+        """Liste mock des utilisateurs pour la page Users/Admin."""
+        self._send_json({
+            "status": "ok",
+            "users": [
+                {"username": "admin",  "roles": [1,1,1,1,1]},
+                {"username": "guest",  "roles": [1,0,0,0,0]},
+            ]
+        })
 
     # ── Utilitaires ───────────────────────────────────────────────────────────
 

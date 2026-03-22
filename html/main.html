@@ -342,132 +342,137 @@
 		</div>
 		
 		<div role="main" class="ui-content" data-inset="false">
-	
-		<!-- leds -->
-		    <div class="ui-grid-solo">
-		      	<div class="ui-block-a">
-					<div class="ui-grid-g ledpanel">
-					    <div class="ui-block-a">
-					        <div class="ui-field-contain smallFillContent">
-								<label for="lampeLed" class="smallLabel" style="text-align:center">Lampe</label>
-								<i class="led ledOrange ledOn" id="lampeLed"></i>
-							</div>
+			<div class="lscape-layout">
+				<div class="lscape-col"><!-- col gauche : LEDs + écran LCD -->
+				<!-- leds -->
+					<div class="ui-grid-solo">
+						<div class="ui-block-a">
+							<div class="ui-grid-g ledpanel">
+								<div class="ui-block-a">
+									<div class="ui-field-contain smallFillContent">
+										<label for="lampeLed" class="smallLabel" style="text-align:center">Lampe</label>
+										<i class="led ledOrange ledOn" id="lampeLed"></i>
+									</div>
+								</div>
+								<div class="ui-block-b">
+									<div class="ui-field-contain smallFillContent">
+										<label for="voletLed" class="smallLabel" style="text-align:center">Volet</label>
+										<i class="led ledRose ledOff" id="voletLed"></i>
+									</div>
+								</div>
+								<div class="ui-block-c">
+									<div class="ui-field-contain smallFillContent">
+										<label for="PPLed" class="smallLabel" style="text-align:center">P.P.</label>
+										<i class="led ledBleu ledOn" id="PPLed"></i>
+									</div>
+								</div>
+								<div class="ui-block-d">
+									<div class="ui-field-contain smallFillContent">
+										<label for="PACLed" class="smallLabel" style="text-align:center">PAC</label>
+										<i class="led ledJaune ledOff" id="PACLed"></i>
+									</div>
+								</div>
+								<div class="ui-block-e">
+									<div class="ui-field-contain smallFillContent">
+										<label for="PHLed" class="smallLabel" style="text-align:center">PH</label>
+										<i class="led ledVert ledOn" id="PHLed"></i>
+									</div>
+								</div>	
+								<div class="ui-block-f">
+									<div class="ui-field-contain smallFillContent">
+										<label for="CLLed" class="smallLabel" style="text-align:center">CL</label>
+										<i class="led ledCyan ledOff" id="CLLed"></i>
+									</div>
+								</div>
+								<div class="ui-block-g">
+									<div class="ui-field-contain smallFillContent">
+										<label for="P3Led" class="smallLabel" style="text-align:center">P3</label>
+										<i class="led ledViolet ledOn" id="P3Led"></i>
+									</div>
+								</div>
+								<div class="ui-block-h">
+									<div class="ui-field-contain smallFillContent">
+										<label for="autoLed" class="smallLabel" style="text-align:center">Auto</label>
+										<i class="led ledBlanc ledOn" id="autoLed"></i>
+									</div>
+								</div>
+							</div>			        
 						</div>
-					    <div class="ui-block-b">
-							<div class="ui-field-contain smallFillContent">
-								<label for="voletLed" class="smallLabel" style="text-align:center">Volet</label>
-								<i class="led ledRose ledOff" id="voletLed"></i>
-							</div>
-						</div>
-					    <div class="ui-block-c">
-							<div class="ui-field-contain smallFillContent">
-								<label for="PPLed" class="smallLabel" style="text-align:center">P.P.</label>
-								<i class="led ledBleu ledOn" id="PPLed"></i>
-							</div>
-						</div>
-					    <div class="ui-block-d">
-							<div class="ui-field-contain smallFillContent">
-								<label for="PACLed" class="smallLabel" style="text-align:center">PAC</label>
-								<i class="led ledJaune ledOff" id="PACLed"></i>
-							</div>
-						</div>
-						<div class="ui-block-e">
-							<div class="ui-field-contain smallFillContent">
-								<label for="PHLed" class="smallLabel" style="text-align:center">PH</label>
-								<i class="led ledVert ledOn" id="PHLed"></i>
-							</div>
-						</div>	
-						<div class="ui-block-f">
-							<div class="ui-field-contain smallFillContent">
-								<label for="CLLed" class="smallLabel" style="text-align:center">CL</label>
-								<i class="led ledCyan ledOff" id="CLLed"></i>
-							</div>
-						</div>
-						<div class="ui-block-g">
-							<div class="ui-field-contain smallFillContent">
-								<label for="P3Led" class="smallLabel" style="text-align:center">P3</label>
-								<i class="led ledViolet ledOn" id="P3Led"></i>
-							</div>
-						</div>
-						<div class="ui-block-h">
-							<div class="ui-field-contain smallFillContent">
-								<label for="autoLed" class="smallLabel" style="text-align:center">Auto</label>
-								<i class="led ledBlanc ledOn" id="autoLed"></i>
-							</div>
-						</div>
-					</div>			        
-	        	</div>
-		  	</div>
-			<br>
-		<!-- screen -->	
-		    <div is="grid" class="ui-grid-solo">
-		      <div class="ui-block-a">
-				<div class="screenFrame displayOn">
-				  <div class="screenPiece screenOutput screenOn"> 
-				    <h4 class="screenTextTitle">Ludovic's home</h4>
-					<P class="screenTextLine">
-						Piscine Web Manager
-						<BR>
-						version 1.0
-					</p>
-				  </div>
-				</div>
-			  </div>
-		    </div>
-			<br>
-		<!-- gauges -->
-		    <div class="ui-grid-a">
-		      <div class="ui-block-a">
-				<div id="PHGauge" class="gauge-container">
-					<span class="label">P.H.</span>
-				</div>
-			  </div>
-			  <div id="RedoxCLDiv" class="ui-block-b" style="height:100%">
-				<div id="CLGaugeDiv">
-					<div id="CLGauge" class="gauge-container">
-						<span class="label">Clhore</span>
 					</div>
-				</div>
-				<div id="RedoxGaugeDiv">
-					<div id="RedoxGauge" class="gauge-container">
-						<span class="label">Redox</span>
+					<br>
+				<!-- screen -->	
+					<div is="grid" class="ui-grid-solo">
+					<div class="ui-block-a">
+						<div class="screenFrame displayOn">
+						<div class="screenPiece screenOutput screenOn"> 
+							<h4 class="screenTextTitle">Ludovic's home</h4>
+							<P class="screenTextLine">
+								Piscine Web Manager
+								<BR>
+								version 1.0
+							</p>
+						</div>
+						</div>
 					</div>
-				</div>
-			  </div>
-			</div>
-	
-		<!-- indicateurs Temp -->
-		    <fieldset class="container_12"> <!-- first grid -->
-				<div class="grid_3">
-					<div class="ui-field-contain smallFillContent">
-		          		<label for="tempAir" class="smallLabel" style="text-align:center">Temp Air</label>
-		          		<input type="text" value="23.45" id="tempAir" class="smallTextInput rose" maxlength="5" readonly>
-	          		</div>
-				</div>
-				<div class="grid_3">
-					<div class="ui-field-contain smallFillContent">
-						<label for="tempEau" class="smallLabel" style="text-align:center">Temp Eau</label>
-			          	<input type="text" value="22.34" id="tempEau" class="smallTextInput cyan" readonly>
-	          		</div>
-		      	</div>
-				<div class="grid_3">
-		        	<div class="ui-field-contain smallFillContent">
-		          		<label for="tempInt" class="smallLabel" style="text-align:center">Temp Int</label>
-		          		<input type="text" value="32.45" id="tempInt" class="smallTextInput vert" readonly>
-		        	</div>
-	      		</div>
-	      		<div class="grid_3">
-		        	<div class="ui-field-contain smallFillContent">
-		          		<label for="tempPAC" class="smallLabel" style="text-align:center">Temp PAC</label>
-		          		<input type="text" value="31.24" id="tempPAC" class="smallTextInput orange" readonly>
-		        	</div>
-	      		</div>
-			</fieldset> 
-		<!-- switchs -->
+					</div>
+					<br>
+				</div><!-- /lscape-col gauche -->
+				<div class="lscape-col"><!-- col droite : jauges + températures + switchs -->
+				<!-- gauges -->
+					<div class="ui-grid-a">
+					<div class="ui-block-a">
+						<div id="PHGauge" class="gauge-container">
+							<span class="label">P.H.</span>
+						</div>
+					</div>
+					<div id="RedoxCLDiv" class="ui-block-b" style="height:100%">
+						<div id="CLGaugeDiv">
+							<div id="CLGauge" class="gauge-container">
+								<span class="label">Clhore</span>
+							</div>
+						</div>
+						<div id="RedoxGaugeDiv">
+							<div id="RedoxGauge" class="gauge-container">
+								<span class="label">Redox</span>
+							</div>
+						</div>
+					</div>
+					</div>
+			
+				<!-- indicateurs Temp -->
+					<fieldset class="ui-grid-c"> <!-- first grid -->
+						<div class="ui-block-a">
+							<div class="ui-field-contain smallFillContent">
+								<label for="tempAir" class="smallLabel" style="text-align:center">Temp Air</label>
+								<input type="text" value="23.45" id="tempAir" class="smallTextInput rose" maxlength="5" readonly>
+							</div>
+						</div>
+						<div class="ui-block-b">
+							<div class="ui-field-contain smallFillContent">
+								<label for="tempEau" class="smallLabel" style="text-align:center">Temp Eau</label>
+								<input type="text" value="22.34" id="tempEau" class="smallTextInput cyan" readonly>
+							</div>
+						</div>
+						<div class="ui-block-c">
+							<div class="ui-field-contain smallFillContent">
+								<label for="tempInt" class="smallLabel" style="text-align:center">Temp Int</label>
+								<input type="text" value="32.45" id="tempInt" class="smallTextInput vert" readonly>
+							</div>
+						</div>
+						<div class="ui-block-d">
+							<div class="ui-field-contain smallFillContent">
+								<label for="tempPAC" class="smallLabel" style="text-align:center">Temp PAC</label>
+								<input type="text" value="31.24" id="tempPAC" class="smallTextInput orange" readonly>
+							</div>
+						</div>
+					</fieldset> 
+				</div><!-- /lscape-col droite -->
+			</div><!-- /lscape-layout -->
+				<!-- switchs -->
 			<fieldset class="container_12"> <!-- second grid switchs-->
 				<div class="grid_4">
-		        	<div class="ui-field-contain smallFillContent">
-		          		<label for="lampeSW" class="smallLabel" style="padding: 0 0 0 1.5em">Lampe</label>
+					<div class="ui-field-contain smallFillContent">
+						<label for="lampeSW" class="smallLabel" style="padding: 0 0 0 1.5em">Lampe</label>
 						<div class="switch" id="lampeSW">
 							<input type="checkbox" name="Lampe" id="lampeSwitch" checked="true">
 							<label for="Lampe" class="switchLabel switchChecked">
@@ -475,7 +480,7 @@
 							</label>
 							<span class="switchChecked"></span>
 						</div>				
-		        	</div>
+					</div>
 				</div>
 				<div class="grid_4">
 					<div class="ui-field-contain smallFillContent">
@@ -491,7 +496,7 @@
 				</div>				
 				<div class="grid_4">
 					<div class="ui-field-contain smallFillContent">
-	  					<label for="voletSW" class="smallLabel" style="padding: 0 0 0 1.5em">Volet</label>
+						<label for="voletSW" class="smallLabel" style="padding: 0 0 0 1.5em">Volet</label>
 						<div class="switch" id="voletSW">
 							<input type="checkbox" name="Volet" id="voletSwitch" checked="false">
 							<label for="Volet" class="switchLabel switchUnchecked">
@@ -501,8 +506,8 @@
 						</div>				
 					</div>
 				</div>
-			</fieldset> 
-		</div>	
+			</fieldset>
+		</div>
 	</div> <!-- page -->
 
 <!-- Page Piscine Paramètres -->
@@ -531,6 +536,8 @@
 		</div>
 		
 		<div role="main" class="ui-content" data-inset="false">
+		<div class="lscape-layout">
+		<div class="lscape-col"><!-- col gauche : LEDs + switchs Lampe/Volet -->
 			<!-- leds -->
 			<div class="ui-grid-solo">
 				<div class="ui-block-a">
@@ -625,7 +632,9 @@
 				</div>
 			</fieldset> 
 
-			<div data-role="collapsibleset" >			
+		</div><!-- /lscape-col gauche -->
+		<div class="lscape-col"><!-- col droite : paramètres collapsibles -->
+			<div data-role="collapsibleset" >
 				<!-- Parametes Divers -->
 				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
 					<h4>Parametres divers</h4>
@@ -1064,9 +1073,11 @@
 				</div>
 			</div>
 		
+		</div><!-- /lscape-col droite -->
+		</div><!-- /lscape-layout -->
 		</div>
 	</div> <!-- page -->
-	
+
 <!-- Page Piscine Maintenance -->
 
 	<div data-role="page" id="pagePiscineMaintenance" data-theme="b" nextLeft="#pagePiscineAlertes" nextRight="#pagePiscineParametres">
@@ -1094,6 +1105,8 @@
 		</div>
 		
 		<div role="main" class="ui-content" data-inset="false" data-theme="b">
+		<div class="lscape-layout">
+		<div class="lscape-col"><!-- col gauche : calibration PH -->
 			<!-- PH panel -->
 			<div class="mypanel">
 				<fieldset class="container_12">
@@ -1147,6 +1160,8 @@
 					</div>
 				</fieldset>
 			</div>
+		</div><!-- /lscape-col gauche -->
+		<div class="lscape-col"><!-- col droite : Redox + Sondes -->
 			<!-- Redox panel -->
 			<div class="mypanel">
 				<fieldset class="container_12">
@@ -1230,8 +1245,10 @@
 					</div>
 				</fieldset>
 			</div>
+		</div><!-- /lscape-col droite -->
+		</div><!-- /lscape-layout -->
 		</div>
-	</div>	<!-- page -->	
+	</div>	<!-- page -->
 
 <!-- Page Piscine Alertes -->
 
