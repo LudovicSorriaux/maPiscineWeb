@@ -377,6 +377,18 @@ form .error {
         margin: 10px auto 0 !important;
         text-align: center !important;
     }
+    /* Label "Feed logs" aligné avec le switch — page debug */
+    #pagePiscineDebug .smallFillContent {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 0.6em !important;
+    }
+    #pagePiscineDebug .smallFillContent .smallLabel {
+        margin: 0 !important;
+        padding: 0 !important;
+        white-space: nowrap !important;
+    }
 }
 
 /* =====================================================================
@@ -393,6 +405,12 @@ form .error {
 
 /* === MOBILE PORTRAIT === */
 @media (max-width: 700px) and (orientation: portrait) {
+
+    /* --- Page Debug --- */
+    #pagePiscineDebug .screenFrameDebug {
+        height: 680px !important;
+    }
+
 }
 
 /* === MOBILE PAYSAGE === */
@@ -443,6 +461,11 @@ form .error {
     }
     #pagePiscineMaintenance .sondes-center-panel {
         margin: 10px auto !important;
+    }
+
+    /* --- Page Debug --- */
+    #pagePiscineDebug .screenFrameDebug {
+        height: 280px !important;
     }
 }
 
@@ -568,6 +591,11 @@ form .error {
     #pagePiscineParametres [role="main"] .ui-content {
         padding: 0 !important;
     }
+
+    /* --- Page Debug --- */
+    #pagePiscineDebug .screenFrameDebug {
+        height: 580px !important;
+    }
 }
 
 /* === TABLETTE PAYSAGE === */
@@ -654,6 +682,11 @@ form .error {
     }
     #pagePiscineMaintenance .lscape-layout {
         gap: 16px !important;
+    }
+
+    /* --- Page Debug --- */
+    #pagePiscineDebug .screenFrameDebug {
+        height: 580px !important;
     }
 }
 
@@ -822,6 +855,11 @@ form .error {
         margin-left: 1% !important;
         margin-right: 1% !important;
     }
+
+    /* --- Page Debug --- */
+    #pagePiscineDebug .screenFrameDebug {
+        height: 470px !important;
+    }
 }
 
 /* === DESKTOP PORTRAIT === */
@@ -907,4 +945,10 @@ form .error {
     #pagePiscineParametres .ui-collapsible .ui-collapsible-content {
         padding: 1.2rem !important;
     }
+
+    /* --- Page Debug --- */
+    #pagePiscineDebug .screenFrameDebug {
+        height: 980px !important;
+    }
+
 }
