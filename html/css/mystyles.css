@@ -242,7 +242,7 @@ form .error {
     width: 100%;
     box-sizing: border-box;
 }
-@media (orientation: landscape) {
+@media (min-aspect-ratio: 1/1) {
     .lscape-layout {
         flex-direction: row;
         align-items: flex-start;
@@ -253,6 +253,18 @@ form .error {
         min-width: 0;
         width: auto;
     }
+}
+
+/* Backup JS-driven — même effet que le media query ci-dessus */
+.lscape-layout.lscape-row {
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+}
+.lscape-layout.lscape-row .lscape-col {
+    flex: 1 !important;
+    min-width: 0 !important;
+    width: auto !important;
 }
 
 /* =====================================================================
@@ -290,7 +302,7 @@ form .error {
 
 /* Switchs + ui-field-contain page principale
    (orientation: landscape) OU (width ≥ 701) OU (height ≥ 600) */
-@media (orientation: landscape), (min-width: 701px), (min-height: 600px) {
+@media (min-aspect-ratio: 1/1), (min-width: 701px), (min-height: 600px) {
     /* Centrage et espacement régulier des switchs */
     #pagePiscinePrincipale fieldset.container_12 {
         display: flex !important;
@@ -337,7 +349,7 @@ form .error {
 
 /* Labels page principale + paramètres, sondes maintenance
    Uniquement en mode paysage (toutes tailles) */
-@media (orientation: landscape) {
+@media (min-aspect-ratio: 1/1) {
     /* Labels au-dessus et centrés */
     #pagePiscinePrincipale .ui-field-contain .smallLabel,
     #pagePiscineParametres .ui-field-contain .smallLabel {
@@ -404,7 +416,7 @@ form .error {
    ===================================================================== */
 
 /* === MOBILE PORTRAIT === */
-@media (max-width: 700px) and (orientation: portrait) {
+@media (max-width: 700px) and (max-aspect-ratio: 1/1) {
 
     /* --- Page Debug --- */
     #pagePiscineDebug .screenFrameDebug {
@@ -414,7 +426,7 @@ form .error {
 }
 
 /* === MOBILE PAYSAGE === */
-@media (max-height: 700px) and (orientation: landscape) {
+@media (max-height: 700px) and (min-aspect-ratio: 1/1) {
 
     /* --- Page Maintenance --- */
     #pagePiscineMaintenance [role="main"].ui-content {
@@ -463,6 +475,15 @@ form .error {
         margin: 10px auto !important;
     }
 
+    /* --- Page Principale --- */
+    #pagePiscinePrincipale .lscape-col br { display: none !important; }
+    #pagePiscinePrincipale .gauge-container { transform: scale(1.0) !important; margin-top: 0.2em !important; margin-bottom: 0.2em !important; }
+    #pagePiscinePrincipale .ui-grid-a { margin-top: 0 !important; }
+    #pagePiscinePrincipale fieldset.container_12 { margin-top: 0.3em !important; }
+    #pagePiscinePrincipale .screenFrame { min-height: 80px !important; height: 150px !important; }
+    #pagePiscinePrincipale .screenPiece { min-height: 65px !important; height: 130px !important; }
+    #pagePiscinePrincipale fieldset.ui-grid-c { margin-top: 0.3em !important; }
+
     /* --- Page Debug --- */
     #pagePiscineDebug .screenFrameDebug {
         height: 280px !important;
@@ -470,7 +491,7 @@ form .error {
 }
 
 /* === TABLETTE PORTRAIT === */
-@media (min-width: 701px) and (max-width: 1100px) and (min-height: 600px) and (max-height: 1100px) and (orientation: portrait) {
+@media (min-width: 701px) and (max-width: 1100px) and (min-height: 600px) and (max-height: 1100px) and (max-aspect-ratio: 1/1) {
 
     /* --- Général --- */
     .myh1 {
@@ -599,7 +620,7 @@ form .error {
 }
 
 /* === TABLETTE PAYSAGE === */
-@media (min-width: 701px) and (max-width: 1100px) and (orientation: landscape) and (min-height: 600px) {
+@media (min-width: 701px) and (max-width: 1100px) and (min-aspect-ratio: 1/1) and (min-height: 600px) {
 
     /* --- Général --- */
     .myh1 {
@@ -622,29 +643,29 @@ form .error {
 
     /* --- Page Principale --- */
     #pagePiscinePrincipale .gauge-container {
-        transform: scale(1.7) !important;
-        margin-top: 2.2em !important;
-        margin-bottom: 2.2em !important;
+        transform: scale(1.6) !important;
+        margin-top: 2em !important;
+        margin-bottom: 2em !important;
     }
     #pagePiscinePrincipale .ui-grid-a {
-        margin-top: 5em !important;
+        margin-top: 3.5em !important;
     }
     #pagePiscinePrincipale fieldset.container_12 {
-        margin-top: 3em !important;
+        margin-top: 2.5em !important;
     }
     #pagePiscinePrincipale .screenFrame {
-        min-height: 400px !important;
-        height: 400px !important;
+        min-height: 380px !important;
+        height: 380px !important;
         padding-top: 0.5em;
         padding-bottom: 0.5em;
     }
     #pagePiscinePrincipale .screenPiece {
-        min-height: 380px !important;
-        height: 380px !important;
+        min-height: 360px !important;
+        height: 360px !important;
         font-size: 1.2em;
     }
     #pagePiscinePrincipale fieldset.ui-grid-c {
-        margin-top: 3em !important;
+        margin-top: 2.5em !important;
     }
 
     /* --- Page Paramètres --- */
@@ -691,7 +712,7 @@ form .error {
 }
 
 /* === DESKTOP PAYSAGE === */
-@media (min-width: 1101px) and (orientation: landscape) {
+@media (min-width: 1101px) and (min-aspect-ratio: 1/1) {
 
     /* --- Général --- */
     .myh1 {
@@ -776,29 +797,29 @@ form .error {
 
     /* --- Page Principale --- */
     #pagePiscinePrincipale .gauge-container {
-        transform: scale(1.7) !important;
-        margin-top: 2.2em !important;
-        margin-bottom: 2.2em !important;
+        transform: scale(1.5) !important;
+        margin-top: 1.8em !important;
+        margin-bottom: 1.8em !important;
     }
     #pagePiscinePrincipale .ui-grid-a {
-        margin-top: 5em !important;
+        margin-top: 2.5em !important;
     }
     #pagePiscinePrincipale fieldset.container_12 {
-        margin-top: 3em !important;
+        margin-top: 2em !important;
     }
     #pagePiscinePrincipale .screenFrame {
-        min-height: 400px !important;
-        height: 400px !important;
+        min-height: 330px !important;
+        height: 330px !important;
         padding-top: 0.5em;
         padding-bottom: 0.5em;
     }
     #pagePiscinePrincipale .screenPiece {
-        min-height: 380px !important;
-        height: 380px !important;
+        min-height: 310px !important;
+        height: 310px !important;
         font-size: 1.2em;
     }
     #pagePiscinePrincipale fieldset.ui-grid-c {
-        margin-top: 3em !important;
+        margin-top: 2em !important;
     }
 
     /* --- Page Paramètres --- */
@@ -863,7 +884,7 @@ form .error {
 }
 
 /* === DESKTOP PORTRAIT === */
-@media (orientation: portrait) and (min-height: 1100px) {
+@media (max-aspect-ratio: 1/1) and (min-height: 1100px) {
 
     /* --- Général --- */
     .myh1 {

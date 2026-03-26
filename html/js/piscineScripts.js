@@ -1,6 +1,8 @@
 
 // Global functions and variables
 
+console.log('[VERSION] piscineScripts v4.3-responsive');
+
 var maPiscine = maPiscine || {};
 
 var sessID;
@@ -528,22 +530,31 @@ function detectLayout() {
   }
   
   $('body').attr('data-layout', currentLayout);
-  
-  if (debug) {
-    console.log('[RESPONSIVE] Layout détecté: ' + currentLayout + ' (' + width + 'x' + window.innerHeight + ')');
+
+  // Forcer flex-direction via style inline — bypass CSS/media queries (fix iOS)
+  if (isLandscape) {
+    $('.lscape-layout').css({'flex-direction': 'row', 'align-items': 'flex-start', 'gap': '10px'});
+    $('.lscape-col').css({'flex': '1', 'min-width': '0', 'width': 'auto'});
+  } else {
+    $('.lscape-layout').css({'flex-direction': 'column', 'align-items': '', 'gap': '0'});
+    $('.lscape-col').css({'flex': '', 'min-width': '', 'width': '100%'});
   }
-  
+
+  if (debug) {
+    console.log('[RESPONSIVE] Layout: ' + currentLayout + ' (' + width + 'x' + window.innerHeight + ') landscape=' + isLandscape);
+  }
+
   // Réorganiser grids jQuery Mobile selon le layout
   adaptJQueryMobileGrids();
 }
 
 function getGraphMode() {
-    var mqDesktopLandscape = window.matchMedia('(min-width: 1101px) and (orientation: landscape)');
-    var mqDesktopPortrait = window.matchMedia('(min-height: 1101px) and (orientation: portrait)');
-    var mqTabletPortrait = window.matchMedia('(min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (orientation: portrait)');
-    var mqTabletLandscape = window.matchMedia('(min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (orientation: landscape)');
-    var mqMobilePortrait = window.matchMedia('(max-width: 700px) and (orientation: portrait)');
-    var mqMobileLandscape = window.matchMedia('(max-height: 700px) and (orientation: landscape)');
+    var mqDesktopLandscape = window.matchMedia('(min-width: 1101px) and (min-aspect-ratio: 1/1)');
+    var mqDesktopPortrait = window.matchMedia('(min-height: 1101px) and (max-aspect-ratio: 1/1)');
+    var mqTabletPortrait = window.matchMedia('(min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (max-aspect-ratio: 1/1)');
+    var mqTabletLandscape = window.matchMedia('(min-width: 701px) and (max-width: 1100px) and (max-height: 1100px) and (min-aspect-ratio: 1/1)');
+    var mqMobilePortrait = window.matchMedia('(max-width: 700px) and (max-aspect-ratio: 1/1)');
+    var mqMobileLandscape = window.matchMedia('(max-height: 700px) and (min-aspect-ratio: 1/1)');
 
     if (mqDesktopLandscape.matches) return 'desktop-landscape';
     if (mqDesktopPortrait.matches)  return 'desktop-portrait';
@@ -626,7 +637,10 @@ function resizeDygraphIfNeeded() {
 }
 
 // Détecter le layout au chargement et lors des changements
-$(window).on('resize orientationchange', detectLayout);
+$(window).on('resize', detectLayout);
+$(window).on('orientationchange', function() {
+  setTimeout(detectLayout, 300);
+});
 $(document).on('pagecreate', detectLayout);
 
 // Détection initiale
