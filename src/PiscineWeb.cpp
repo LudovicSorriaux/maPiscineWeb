@@ -2042,36 +2042,17 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
    */
     bool PiscineWebClass::handleFileError(String path, AsyncWebServerRequest *request) {         // send file not found to the client
         String page404Path = "/404.html";
-    if (!handleFileRead(page404Path, request)){      // try sending 404.html file from SDFS before static one
-                                            // if not found then go for local one
-        const char html404[] = R"(<!DOCTYPE html>
-        <html>
-        <head>
-            <title>My mobile page!</title>
-            <meta charset="UTF-8">
-            <meta name="author" content="Ludovic Sorriaux">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-            <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet" id="bootstrap-css">
-            <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
-        </head>
-        <body>
-            <div class="container">
-            <div class="row">
-                <div class="span12">
-                <div class="hero-unit center">
-                    <h1>Page Not Found <small><font face="Tahoma" color="red">Error 404</font></small></h1>
-                    <br />
-                    <p>The page you requested could not be found, either contact your webmaster</p>
-                    <p>Or try again. Use your browsers <b>Back</b> button to navigate to the page you have prevously come from</p>
-                </div>
-                <br />
-                </div>
-            </div>
-            </div>
-        </body>
-        </html>
-        )";
-        request->send(404, "text/plain", html404);
+    if (!handleFileRead(page404Path, request)){      // try sending 404.html file from LittleFS before static one
+        static const char html404[] PROGMEM = R"(<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>404 - maPiscine</title>
+<style>body{margin:0;background:#1a1a2e;color:#e0e0e0;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center}
+h1{font-size:4em;color:#5AC8FA;margin:0}p{color:#aaa}a{color:#5AC8FA;text-decoration:none}</style>
+</head><body>
+<div><h1>404</h1><p>Page introuvable</p><a href="/">&#8592; Retour</a></div>
+</body></html>)";
+        request->send_P(404, "text/html", html404);
     } else {        // sent done by handleFileRead !!
     }
 
