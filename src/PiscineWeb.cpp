@@ -497,6 +497,7 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
    */
     void PiscineWebClass::startServer() { // Start a HTTP server with a file read handler and an upload handler
 
+        LittleFS.begin();  // idempotent : assure que LittleFS est monté avant de servir les fichiers
         logger.println("[WEB] Starting Piscine Web Server");
 //        server.reset();
 
@@ -2015,16 +2016,16 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
         }
         if (LittleFS.exists(path)) {
             file = LittleFS.open(path, "r");
-            if (file) logger.println("Okay file is open !! ");  
-            AsyncWebServerResponse *response = request->beginResponse(file, path,contentType);
+            if (file) logger.println("Okay file is open !! ");
+            // Pour Content-Disposition, on passe le nom sans .lgz
+            String displayPath = gzip ? path.substring(0, path.length() - 4) : path;
+            AsyncWebServerResponse *response = request->beginResponse(file, displayPath, contentType);
+            response->addHeader("Cache-Control", "max-age=86400, public");
             if(gzip){
                 response->addHeader("Content-Encoding", "gzip");
-//              response->addHeader("Access-Control-Allow-Origin","*");
                 response->setCode(200);
-                request->send(response);
-            } else {
-                request->send(file, path,contentType);
-            }   
+            }
+            request->send(response);
             logger.println(String("\tSent file to client: ") + path);   
             rtn = true;
         } else {

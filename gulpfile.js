@@ -85,7 +85,8 @@ gulp.task('inline', function() {
             minifyJS: true
         }))
         .pipe(gzip())
-        .pipe(gulp.dest('data'));
+        .pipe(rename(function (path) { path.extname = ".lgz"; }))
+        .pipe(gulp.dest('data/html'));
 })
 
 /* Process HTML, CSS, JS */
@@ -125,8 +126,8 @@ gulp.task('uglify-debug', function (cb) {
 });
 
 /* Build file system */
-gulp.task('buildfs', gulp.series('clean', 'files', 'html'));
-gulp.task('buildfs2', gulp.series('clean', 'files', 'inline'));
+gulp.task('buildfs', gulp.series('clean', 'files', 'inline'));
+gulp.task('buildfs-separate', gulp.series('clean', 'files', 'html'));
 gulp.task('default', gulp.series('buildfs'));
 
 // -----------------------------------------------------------------------------

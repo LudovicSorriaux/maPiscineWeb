@@ -379,9 +379,15 @@
       // initIndexNames();  // OBSOLETE : remplacé par IndexNames.h (PROGMEM, -1260 octets RAM)
       webTelecom.initTelecom();
       webAction.initializePiscineParams();
-  
+
+      // LittleFS.begin()+end() nécessaire AVANT SD.begin() (pattern empirique - sans ça SD échoue)
+      LittleFS.begin();
+      LittleFS.end();
+      startSD();               // SD.begin() après LittleFS init/deinit
+      if (!LittleFS.begin()) {
+        Serial1.println(F("[SYSTEM] ❌ ERREUR : Impossible de monter LittleFS!"));
+      }
       diagnosticSysteme();
-      startSD();               // Start the SD card and list all contents 
       loadConfiguration();
     
       timerWIFI_OK = timer.setInterval(60*60*1000L, doCheckWIFIConnection);   // check wifi toutes les heures
@@ -471,15 +477,13 @@
       Serial1.printf_P(PSTR("[SYSTEM] Flash Code (Sketch) : %u / %u octets utilisés (%.1f%%)\n"), 
                     sketchSize, totalSketchSpace, (sketchSize * 100.0 / totalSketchSpace));
 
-      // 3. LITTLEFS (Fichiers internes)
-      if (LittleFS.begin()) {
-        FSInfo fs_info;
-        LittleFS.info(fs_info);
+      // 3. LITTLEFS (Fichiers internes) - déjà monté dans setup() avant cet appel
+      FSInfo fs_info;
+      if (LittleFS.info(fs_info)) {
         Serial1.printf_P(PSTR("[SYSTEM] LittleFS Total : %u octets\n"), fs_info.totalBytes);
         Serial1.printf_P(PSTR("[SYSTEM] LittleFS Utilisé : %u octets\n"), fs_info.usedBytes);
-        LittleFS.end();
       } else {
-        Serial1.println(F("[SYSTEM] ❌ ERREUR : Impossible de monter LittleFS!"));
+        Serial1.println(F("[SYSTEM] ❌ ERREUR : LittleFS non monté!"));
       }
 
       Serial1.println(F("--------------------------\n"));
@@ -565,14 +569,19 @@
  * @brief Monte la carte SD (FAT, CS=D8), affiche le contenu racine et lève le flag cardPresent si succès. Retourne sans erreur si carte absente
  */
     void startSD() {            // Start the SD and list all contents
-        File root;
 
-      if(!SD.begin(SDchipSelect)){          // see if the card is present and can be initialized:
-        Serial1.println(F("SDCard Initialization Failed"));
-        cardPresent = false;
-        return;
+      for (uint8_t tries = 1; tries <= 3; tries++) {
+        Serial1.printf("[SD] begin() tentative %d/3...\n", tries);
+        if (SD.begin(SDchipSelect)) {
+          cardPresent = true;
+          Serial1.println(F("[SD] ✅ SD initialisée"));
+          return;
+        }
+        Serial1.println(F("[SD] ❌ Échec - retry..."));
+        delay(500);  // attendre avant retry (sans SD.end() qui déinit SPI)
       }
-      cardPresent = true;
+      Serial1.println(F("[SD] ❌ SDCard Initialization Failed"));
+      cardPresent = false;
 //      root = SD.open("/", FILE_READ);
 //      Serial1.println(F("SDCard Contents : "));
 //      printDirectory(root, 1);

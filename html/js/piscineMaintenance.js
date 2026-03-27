@@ -466,34 +466,34 @@
 							$("#validSondes").removeClass("ui-disabled")
 					}
 				} 
-				if(m.hasOwnProperty("phCalc")){
-					value=parseFloat(m.phCalc)
+				if(returnedData.hasOwnProperty("phCalc")){
+					value=parseFloat(returnedData.phCalc)
 					console.log("Got phClac and theVal is :"+value),
 					$("#PHCalc").val(value.toFixed(2).toString())
-					if("N/A"!==r){
-						if(m.hasOwnProperty("phMesu")){
-							value=parseFloat(m.phMesu),
+					if("N/A"!==returnedData.phMesu){
+						if(returnedData.hasOwnProperty("phMesu")){
+							value=parseFloat(returnedData.phMesu),
 							$("#PHMesu").val(value.toFixed(3).toString()),
 							$("#validPH").removeClass("ui-disabled")
 						}
-						if(m.hasOwnProperty("phAjust")){
-							value=parseFloat(m.phAjust),
+						if(returnedData.hasOwnProperty("phAjust")){
+							value=parseFloat(returnedData.phAjust),
 							$("#PHAjust").val(value.toFixed(3).toString())
 						}
 					}
 				}
-				if(m.hasOwnProperty("redoxCalc")){
-					value=parseFloat(m.redoxCalc),
+				if(returnedData.hasOwnProperty("redoxCalc")){
+					value=parseFloat(returnedData.redoxCalc),
 					console.log("Got redoxClac and theVal is :"+value),
 					$("#RedoxCalc").val(value.toFixed(1).toString())
-					if("N/A"!==l){
-						if(m.hasOwnProperty("redoxMesu")){
-							value=parseFloat(m.redoxMesu),
+					if("N/A"!==returnedData.redoxMesu){
+						if(returnedData.hasOwnProperty("redoxMesu")){
+							value=parseFloat(returnedData.redoxMesu),
 							$("#RedoxMesu").val(value.toFixed(1).toString()),
 							$("#validRedox").removeClass("ui-disabled")
 						}
-						if(m.hasOwnProperty("redoxAjust")){
-							value=parseFloat(m.redoxAjust),
+						if(returnedData.hasOwnProperty("redoxAjust")){
+							value=parseFloat(returnedData.redoxAjust),
 							$("#RedoxAjust").val(value.toFixed(1).toString())
 						}
 					}

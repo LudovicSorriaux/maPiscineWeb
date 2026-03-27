@@ -124,10 +124,6 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
           }
         }
 
-        if (LittleFS.exists("/cfg/piscine.cfg")) {
-          File configFile = LittleFS.open("/cfg/piscine.cfg", "r");
-        }
-
         if(month() != lastMonth){
           initDirs();                     // change year and month if needed
 
@@ -460,7 +456,7 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
    */
     void LoggerClass::logMessage(const char logmessage[]){
       char message[128];
-        if(!alertFile) { 
+        if(!alertFile && cardPresent && alertFileName.length() > 0) {
           alertFile = SD.open(alertFileName, FILE_WRITE);
         }
         if(alertFile){
