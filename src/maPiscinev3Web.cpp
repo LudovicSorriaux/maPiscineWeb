@@ -1103,8 +1103,8 @@
         int j = 0;
 
       // Open file for reading
-      if (SD.exists("/cfg/piscine.cfg")) {      
-        File configFile = SD.open("/cfg/piscine.cfg", FILE_READ);  
+      if (LittleFS.exists("/cfg/piscine.cfg")) {
+        File configFile = LittleFS.open("/cfg/piscine.cfg", "r");
         if (configFile) logger.println(F("Okay config file is open !! "));  
         else {
           Serial1.println(F("Cant to open config file"));
@@ -1190,8 +1190,8 @@
           int i;
 
       // Open file for writing
-        if (SD.exists("/cfg/piscine.cfg")) {      
-          File configFile = SD.open("/cfg/piscine.cfg", FILE_WRITE);  
+        if (LittleFS.exists("/cfg/piscine.cfg")) {
+          File configFile = LittleFS.open("/cfg/piscine.cfg", "w");
           if (configFile) logger.println(F("Okay file is open !! "));  
           else {
             Serial1.println(F("Failed to open config file for writing"));

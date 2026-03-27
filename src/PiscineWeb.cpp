@@ -14,6 +14,7 @@
 #include "PiscineWebTelecom.h"
 #include "PiscineWebStrings.h"
 #include "IndexNames.h"  // Optimisation RAM #6 : Noms des paramètres en PROGMEM
+#include <LittleFS.h>
 
 // Optimisation RAM #5 : Définition de piscineFolder en PROGMEM
 const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
@@ -614,12 +615,8 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
 */
 
     // --- 3. FICHIERS STATIQUES (L'ordre est important !) ---
-        char pathBuf[32];
-        strcpy_P(pathBuf, piscineFolder);
-        strcat(pathBuf, "/images/");
-        server.serveStatic("/images", SDFS, pathBuf);      // On sert les images en premier si elles sont dans un dossier spécifique
-        strcpy_P(pathBuf, piscineFolder);
-        server.serveStatic("/", SDFS, pathBuf);   // serve static files (js,css,html,etc..) from SD card piscine folder
+        server.serveStatic("/images", LittleFS, "/html/images/").setCacheControl("max-age=86400");
+        server.serveStatic("/", LittleFS, "/html").setCacheControl("max-age=86400");
 
     // --- 3B. UPLOAD DE FICHIERS ---
         // Page d'upload (accessible via /upload?adminPassword=xxx)
@@ -2011,13 +2008,13 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
         contentType = getContentType(path);              // Get the MIME type
         pathWithGz = path + ".lgz";
 
-        if (SD.exists(pathWithGz)){
+        if (LittleFS.exists(pathWithGz)){
             path += ".lgz";         // If there's a compressed version available use it
             gzip = true;
             logger.printf(" Found gziped file : %s\n", path.c_str());
-        } 
-        if (SD.exists(path)) {      
-            file = SD.open(path, FILE_READ);  
+        }
+        if (LittleFS.exists(path)) {
+            file = LittleFS.open(path, "r");
             if (file) logger.println("Okay file is open !! ");  
             AsyncWebServerResponse *response = request->beginResponse(file, path,contentType);
             if(gzip){

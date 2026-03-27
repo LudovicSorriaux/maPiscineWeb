@@ -13,6 +13,7 @@
 #include <Arduino.h> //needed for Serial.println
 #include <Print.h>
 #include "Logger.h"
+#include <LittleFS.h>
 
 /**
  * @brief Helper: Parse date DD-MM-YYYY vers time_t (calcul manuel, pas de NTP requis)
@@ -123,8 +124,8 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
           }
         }
 
-        if (SD.exists("/cfg/piscine.cfg")) {      
-          File configFile = SD.open("/cfg/piscine.cfg",FILE_READ);  
+        if (LittleFS.exists("/cfg/piscine.cfg")) {
+          File configFile = LittleFS.open("/cfg/piscine.cfg", "r");
         }
 
         if(month() != lastMonth){
