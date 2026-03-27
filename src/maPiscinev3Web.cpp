@@ -90,6 +90,7 @@
     int timerWebLCD;
     int timerLogger;
     
+    int timerFlush;
     int timerWIFI_NOK, timerWIFI_OK;
     int timerNTP_NOK, timerNTP_OK;
     bool NTPok = false;
@@ -197,6 +198,13 @@
  */
     void doLogger(){                // logger
         logger.OnUpdate();
+    }
+
+/**
+ * @brief Callback timer : Flush buffers LittleFS (alert + log) vers SD card (toutes les 15 min)
+ */
+    void doFlushLogs(){
+        logger.flushLogsToSD();
     }
         
 /**
@@ -441,6 +449,7 @@
       timerSendWebParams = timer.setInterval(500L,doSendWebParams);          // toutes les 1/2 sec
       timerWebLCD = timer.setInterval(10000L,doUpdatePiscineLCD);             // toutes les 10 sec
       timerLogger = timer.setInterval(60000L,doLogger);                       // toutes les mn
+      timerFlush  = timer.setInterval(15*60*1000L,doFlushLogs);               // flush LittleFS → SD toutes les 15 min
        
       // RAM monitoring : État initial après setup
       logger.printf("[RAM] Démarrage terminé - Free heap: %d bytes (%.1f%% libre)\n", 

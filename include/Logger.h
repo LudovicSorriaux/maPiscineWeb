@@ -49,6 +49,9 @@ class LoggerClass : public Print {
         FileInfo getFileInfo(const char* date, uint16_t chunkSize);
         size_t fetchChunk(const char* date, uint16_t chunkIndex, char* buffer, size_t chunkSize);
 
+        // Flush LittleFS buffer → SD (appelé toutes les 15 min + aux rollovers jour/mois)
+        void flushLogsToSD();
+
         // Méthode virtuelle obligatoire pour hériter de Print (support automatique de tous les types)
         virtual size_t write(uint8_t c);
 
@@ -101,9 +104,10 @@ class LoggerClass : public Print {
         uint8_t writeBufferPos = 0;
 
         void logMessage(const char logmessage[]);
-        void printDate(char *date,uint8_t length);       
+        void printDate(char *date,uint8_t length);
         int calculMoyenne(int16_t valeur);
-        void checkSD();                 // reopen SD if card is now present. 
+        void checkSD();                 // reopen SD if card is now present.
+        void flushBufToSD(const char* bufPath, const String& sdFileName);
         String getAlertFileName();
         String getLogFileName();
         String getLogFileByDate(time_t date);

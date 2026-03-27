@@ -76,6 +76,11 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
       char directory[50];
       bool rtn = false;
 
+        // Crée le répertoire buffer LittleFS (indépendant de SD)
+        if (!LittleFS.exists("/buf")) {
+          LittleFS.mkdir("/buf");
+        }
+
         if( cardPresent){
           if (!SD.exists("/log")) {
             SD.mkdir("/log");
@@ -125,13 +130,11 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
         }
 
         if(month() != lastMonth){
+          flushLogsToSD();                // vider buffer LittleFS vers SD avant changement de fichier
           initDirs();                     // change year and month if needed
 
-          alertFileName = String("/log/") + year() + "/alerts" + "/Alerts-" + monthStr(month()) + ".log";;
-          alertFile = SD.open(alertFileName.c_str(),FILE_WRITE);
-          if(alertFile){
-            alertFile.close();
-          }
+          alertFileName = String("/log/") + year() + "/alerts" + "/Alerts-" + monthStr(month()) + ".log";
+          // alertFile est fermé par flushLogsToSD() - sera rouvert sur prochain logMessage()
           lastMonth = month();
           printf("[LOGGER] New AlertFileName : %s\n",alertFileName.c_str());
         }
@@ -139,9 +142,11 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
         if(dayOfWeek(now()) != today){
           // RAM monitoring : Nouveau jour (création fichiers log - opération mémoire intensive)
           Serial1.printf("[RAM] Nouveau jour détecté - Free heap avant création logs: %d bytes\n", ESP.getFreeHeap());
-          logFileName = String("/log/") + year() + "/logs/" + monthStr(month()) + "/" + dayShortStr(dayOfWeek((now()))) + "-" + day() + ".log";;
+          flushLogsToSD();                // vider buffer LittleFS vers SD avant changement de fichier
+          logFileName = String("/log/") + year() + "/logs/" + monthStr(month()) + "/" + dayShortStr(dayOfWeek((now()))) + "-" + day() + ".log";
           printf("[LOGGER] New LogFileName : %s\n",logFileName.c_str());
-          logFile = SD.open(logFileName.c_str(),FILE_WRITE);
+          // Écrire l'entête dans le nouveau buffer LittleFS
+          logFile = LittleFS.open("/buf/log_buf.log", "a");
           if(logFile){
             logFile.println("date;TempEau;TempAir;TempPAC;TempInt;PHVal;RedoxVal;CLVal;PompePH;PompeCL;PompeALG;PP;PAC;Auto");
             logFile.flush();
@@ -149,11 +154,14 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
           }
           logMoyFileName = String("/log/") + year() + "/logs/" + monthStr(month()) + "/" + dayShortStr(dayOfWeek(now())) + "-" + day() + "-Moy.log";
           printf("[LOGGER] New logMoyFileName : %s\n",logMoyFileName.c_str());
-          logMoyFile = SD.open(logMoyFileName.c_str(), FILE_WRITE);
-          if(logMoyFile){
-            logMoyFile.println("date;TempEau;TempAir;TempPAC;TempInt;PHVal;RedoxVal;CLVal;PompePH;PompeCL;PompeALG;PP;PAC;Auto");
-            logMoyFile.flush();
-            logMoyFile.close();
+          // logMoyFile reste sur SD (écrit toutes les heures seulement)
+          if(cardPresent){
+            logMoyFile = SD.open(logMoyFileName.c_str(), FILE_WRITE);
+            if(logMoyFile){
+              logMoyFile.println("date;TempEau;TempAir;TempPAC;TempInt;PHVal;RedoxVal;CLVal;PompePH;PompeCL;PompeALG;PP;PAC;Auto");
+              logMoyFile.flush();
+              logMoyFile.close();
+            }
           }
           today = dayOfWeek(now());
         }
@@ -195,7 +203,7 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
         char message[256];  // Optimisation RAM #10 : String → char[]
         char theDate[20];
 
-      logFile = SD.open(logFileName.c_str(), FILE_WRITE);
+      logFile = LittleFS.open("/buf/log_buf.log", "a");
       if(logFile){
         printDate(theDate,sizeof(theDate));
         // Optimisation RAM #10 : Utilisation de snprintf au lieu de concaténations String
@@ -456,8 +464,13 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
    */
     void LoggerClass::logMessage(const char logmessage[]){
       char message[128];
-        if(!alertFile && cardPresent && alertFileName.length() > 0) {
-          alertFile = SD.open(alertFileName, FILE_WRITE);
+        if(!alertFile && alertFileName.length() > 0) {
+          // Écriture vers LittleFS buffer (pas besoin de SD)
+          alertFile = LittleFS.open("/buf/alert_buf.log", "a");
+          if(!alertFile) {
+            LittleFS.mkdir("/buf");
+            alertFile = LittleFS.open("/buf/alert_buf.log", "a");
+          }
         }
         if(alertFile){
             // Mon,2 10:51:46 mDNS responder started: http://mapiscine.local
@@ -478,7 +491,7 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
         } else {
           if(debug){
             if (nbAlertsFileOpenErrors++ >= 10) {
-              Serial1.printf_P(PSTR("[SD] ❌ ERREUR : Can't open alert file : %s\n"),alertFileName.c_str());
+              Serial1.printf_P(PSTR("[LOGGER] ❌ ERREUR : Can't open LittleFS /buf/alert_buf.log (alertFileName: %s)\n"),alertFileName.c_str());
               nbAlertsFileOpenErrors = 0;
             }
           }
@@ -672,6 +685,60 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
         
         return bytesRead;
     }
+
+/*
+ * void LoggerClass::flushBufToSD
+ * But : Copie un fichier buffer LittleFS vers SD (append), puis supprime le buffer LittleFS
+ * Entrées : bufPath - chemin LittleFS ("/buf/alert_buf.log"), sdFileName - chemin SD destination
+ * Sortie : aucune (les erreurs sont logguées sur Serial1)
+ */
+  void LoggerClass::flushBufToSD(const char* bufPath, const String& sdFileName) {
+    if (!cardPresent || sdFileName.length() == 0) return;
+
+    File bufFile = LittleFS.open(bufPath, "r");
+    if (!bufFile) return;
+    if (bufFile.size() == 0) { bufFile.close(); return; }
+
+    File sdFile = SD.open(sdFileName.c_str(), FILE_WRITE);   // FILE_WRITE = append sur ESP8266
+    if (!sdFile) {
+      bufFile.close();
+      Serial1.printf("[LOGGER] ❌ Flush: Can't open SD %s\n", sdFileName.c_str());
+      return;
+    }
+
+    uint8_t copyBuf[64];
+    size_t bytesRead;
+    size_t totalBytes = 0;
+    while ((bytesRead = bufFile.readBytes((char*)copyBuf, sizeof(copyBuf))) > 0) {
+      sdFile.write(copyBuf, bytesRead);
+      totalBytes += bytesRead;
+    }
+    sdFile.flush();
+    sdFile.close();
+    bufFile.close();
+
+    LittleFS.remove(bufPath);   // vider le buffer LittleFS
+    Serial1.printf("[LOGGER] ✅ Flush %d bytes %s → %s\n", totalBytes, bufPath, sdFileName.c_str());
+  }
+
+/*
+ * void LoggerClass::flushLogsToSD
+ * But : Ferme les fichiers buffer LittleFS ouverts, les flush vers SD, remet buffers à zéro
+ *       Appelé toutes les 15 min (timer) et aux rollovers jour/mois
+ * Sortie : aucune
+ */
+  void LoggerClass::flushLogsToSD() {
+    if (!cardPresent) {
+      Serial1.println(F("[LOGGER] Flush: SD absent, accumulation LittleFS continue"));
+      return;
+    }
+    // Fermer les handles ouverts pour s'assurer que les données sont sur flash
+    if (alertFile) { alertFile.close(); }
+    if (logFile)   { logFile.close(); }
+
+    flushBufToSD("/buf/alert_buf.log", alertFileName);
+    flushBufToSD("/buf/log_buf.log",   logFileName);
+  }
 
 //------------------------------------------------------------------------------
 
