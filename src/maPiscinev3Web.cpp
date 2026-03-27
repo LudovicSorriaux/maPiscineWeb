@@ -189,6 +189,7 @@
  */
     void doCheckMessages() {        // webTelecom
       webTelecom.OnUpdate();
+      maPiscineWeb.manageDebugLCD();
     }
     
 /**

@@ -522,28 +522,39 @@ function csvToArray(csvText) {
 	let skippedHeaders = 0;
 	let skippedInvalid = 0;
 	
+	const dateRegex = /^\d{1,2}-\d{1,2}-\d{4} \d{1,2}:\d{1,2}:\d{1,2}$/;
+
 	// FIX: Filtrer les lignes invalides (headers, mauvais format, nb colonnes incorrect)
 	const dataRows = result.data.filter(row => {
-		// Skip si première colonne est exactement "date" (header CSV)
+		// Rescue lignes "header collé + données" (27 cols, header sans newline)
+		// ex: ["date","TempEau",...,"Auto25-3-2026 1:0:0","","",..."0"]
+		if (row[0] === "date" && row.length === 27 && row[13] && row[13].startsWith("Auto")) {
+			const dateStr = row[13].substring(4);  // retire "Auto"
+			if (dateRegex.test(dateStr)) {
+				row.splice(0, 14, dateStr);  // remplace les 14 cols header par la date
+				validRows++;
+				return true;
+			}
+		}
+
+		// Skip header CSV pur ("date" + 13 labels)
 		if (row[0] === "date") {
 			skippedHeaders++;
 			return false;
 		}
-		
+
 		// Skip si ligne vide ou mauvais nombre de colonnes (doit être exactement 14)
 		if (!row[0] || row.length !== 14) {
 			skippedInvalid++;
 			return false;
 		}
-		
+
 		// Validation format date (doit correspondre à D-M-YYYY H:m:s)
-		// Format ESP8266 corrigé: "8-2-2026 20:15:30" (pas de zéros initiaux)
-		const dateRegex = /^\d{1,2}-\d{1,2}-\d{4} \d{1,2}:\d{1,2}:\d{1,2}$/;
 		if (!dateRegex.test(row[0])) {
 			skippedInvalid++;
 			return false;
 		}
-		
+
 		validRows++;
 		return true;
 	});

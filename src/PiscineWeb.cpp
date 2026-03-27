@@ -306,8 +306,8 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
    */
     void PiscineWebClass::manageDebugLCD(){
             char strTempo1[256];
-            char jsonBuff[512];  // Optimisation RAM : char[] au lieu de String
-            StaticJsonDocument<384> jsonRoot;  // Optimisation RAM
+            char jsonBuff[320];  // Optimisation RAM : 256 contenu + ~50 escape + 13 overhead
+            StaticJsonDocument<300> jsonRoot;  // Optimisation RAM : JSON_OBJECT_SIZE(1) + 256 = ~280
 
         if (currentPage == PAGE_DEBUG) {          // in page debug
             logger.getDebugMessage(strTempo1, sizeof(strTempo1));
@@ -1552,7 +1552,7 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
                 request->send(200, "text/plain","OK setPiscineParams done");
                 logger.printf("[WEB] OK setPiscineParams done, changed is:%s\n",(changed)?"true":"false");
             } else {                                                            // bad parameter
-                logger.println("Eror : Invalid Parameter");
+                logger.println("Error : Invalid Parameter");
                 request->send(400, "text/plain", "400: Invalid Parameter");        
             }
         }

@@ -1,13 +1,16 @@
 	// page PiscineDebug create inits
+	var debugTextAreaEl = null;  // référence closure vers la textarea
+
 	$(document).delegate("#pagePiscineDebug","pagebeforecreate",function(){
 		var e;
 		var showDebug = 1;
-		
-		$("#ClearText").click((function(){
-			$("#debugTextArea").val("")}
-		)),
+		var $page = $(this);
 
-		$("#FeedSW").click((function(){
+		$page.find("#ClearText").click((function(){
+			if(debugTextAreaEl) debugTextAreaEl.value = "";
+		})),
+
+		$page.find("#FeedSW").click((function(){
 			(showDebug == 0) ? showDebug=1 : showDebug=0;
 			$.ajax({
 				type: 'POST',
@@ -51,23 +54,18 @@
 				piscineLCDDebug:function(evt){
 					var timeLeft,
 					today=new Date;
-					console.log("PiscineLCDDebug");
-					console.log(evt);
+					console.log("piscineLCDDebug fired, ta="+debugTextAreaEl);
 					if(expirationDate<today.getTime()){
-						console.log("Session ttl expired: go to login diag");
-						console.log("expiration is "+expirationDate+" and now is "+today.getTime());
 						showSessionExpiredDialog("Invalid Session");
 					}else{
 						timeLeft=(expirationDate-today.getTime())/1e3;
-						console.log("Session is still valid, time left to run : "+timeLeft+" secs");
 						data=$.trim(evt.data);
 						var returnedData=JSON.parse(data);
-						console.log("serverEvent json is "+JSON.stringify(returnedData));
+						console.log("piscineLCDDebug data="+JSON.stringify(returnedData));
 						if(returnedData.hasOwnProperty("lignes")){
-							lignes=returnedData.lignes;
-							$("#debugTextArea").append(lignes);
-							$("#debugTextArea").scrollTop($("#debugTextArea")[0].scrollHeight);
-						}	
+							if(debugTextAreaEl){ debugTextAreaEl.value += returnedData.lignes; debugTextAreaEl.scrollTop = debugTextAreaEl.scrollHeight; }
+							else { console.log("WARNING: debugTextAreaEl is null, lignes="+returnedData.lignes); }
+						}
 					}
 				}
 			}
@@ -77,11 +75,16 @@
 		console.log("-- STARTING Piscine Debug Server Events --");
 		piscineDebugEvent.start();
 		fetch('/setPiscine?action=setActivePage&page=debug', {method: 'POST'});
-		fetch('/setPiscine?action=Debug&trigger=start&sess='+sessID, {method: 'POST'});
+		fetch('/setPiscine?action=Debug', {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'trigger=start&sess='+sessID});
 		showToast("Mise à jour temps réel des logs activée", 'info');
+	});
+	$(document).on("pageshow", "#pagePiscineDebug", function(){
+		debugTextAreaEl = $(this).find("#debugTextArea")[0];
+		console.log("pageshow debugTextAreaEl=" + debugTextAreaEl);
 	});
 	$(document).on("pagebeforehide","#pagePiscineDebug",function(){
 		console.log("-- STOPPING Piscine Debug Server Events --");
+		debugTextAreaEl = null;
 		piscineDebugEvent.stop();
-		fetch('/setPiscine?action=Debug&trigger=stop&sess='+sessID, {method: 'POST'});
+		fetch('/setPiscine?action=Debug', {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'trigger=stop&sess='+sessID});
 	});

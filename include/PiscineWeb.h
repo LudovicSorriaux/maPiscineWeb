@@ -44,8 +44,9 @@ class PiscineWebClass {
         void sendTempAdd(unsigned char len, char *data);
         void setEtalonData();
         void setTempAdd(char *jsonSondes);
-                    
-           
+        void manageDebugLCD();
+
+
     private :
             enum PageActive { PAGE_PRICIPALE, PAGE_PARAMETRES, PAGE_MAINTENANCE, PAGE_DEBUG, PAGE_NONE };  
             PageActive currentPage = PAGE_NONE;
@@ -91,7 +92,6 @@ class PiscineWebClass {
 
         void sendNewParamsPiscine();
         void managePiscineLCD();
-        void manageDebugLCD();
           
 
         // --- SETUP_FUNCTIONS ---

@@ -368,6 +368,7 @@ function onPageError(xhr) {
 
 // --------------------------------  global init ---------------------------------------------------
 	$(document).on("mobileinit", function (event, ui) {
+		$.mobile.ajaxEnabled = false;        // toutes les pages sont dans le DOM initial - pas besoin d'AJAX
 		$.mobile.defaultPageTransition = "slidefade";
 		$.mobile.dialog.prototype.options.closeBtnText = "Retour";
 		$.mobile.loader.prototype.options.theme = "b";

@@ -146,7 +146,7 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
           printf("[LOGGER] New LogFileName : %s\n",logFileName.c_str());
           logFile = SD.open(logFileName.c_str(),FILE_WRITE);
           if(logFile){
-            logFile.print("date;TempEau;TempAir;TempPAC;TempInt;PHVal;RedoxVal;CLVal;PompePH;PompeCL;PompeALG;PP;PAC;Auto");
+            logFile.println("date;TempEau;TempAir;TempPAC;TempInt;PHVal;RedoxVal;CLVal;PompePH;PompeCL;PompeALG;PP;PAC;Auto");
             logFile.flush();
             logFile.close();
           }
@@ -154,7 +154,7 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
           printf("[LOGGER] New logMoyFileName : %s\n",logMoyFileName.c_str());
           logMoyFile = SD.open(logMoyFileName.c_str(), FILE_WRITE);
           if(logMoyFile){
-            logMoyFile.print("date;TempEau;TempAir;TempPAC;TempInt;PHVal;RedoxVal;CLVal;PompePH;PompeCL;PompeALG;PP;PAC;Auto");
+            logMoyFile.println("date;TempEau;TempAir;TempPAC;TempInt;PHVal;RedoxVal;CLVal;PompePH;PompeCL;PompeALG;PP;PAC;Auto");
             logMoyFile.flush();
             logMoyFile.close();
           }
@@ -165,20 +165,20 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
           logMoyFile = SD.open(logMoyFileName.c_str(), FILE_WRITE);
           if(logMoyFile){
             printDate(theDate,sizeof(theDate));
-            message = String(theDate) + ";"; 
-            message += calculMoyenne(TempEauMoy) + ";";
-            message += calculMoyenne(TempAirMoy) + ";";
-            message += calculMoyenne(TempPACMoy) + ";";
-            message += calculMoyenne(TempIntMoy) + ";";
-            message += calculMoyenne(PHValMoy) + ";";
-            message += calculMoyenne(RedoxValMoy) + ";";
-            message += calculMoyenne(CLValMoy) + ";";
-            message += calculMoyenne(PompePHMoy) + ";";
-            message += calculMoyenne(PompeCLMoy) + ";";
-            message += calculMoyenne(PompeALGMoy) + ";";
-            message += calculMoyenne(PPMoy) + ";";
-            message += calculMoyenne(PACMoy) + ";";
-            message += calculMoyenne(AutoMoy);
+            message = String(theDate) + ";";
+            message += String(calculMoyenne(TempEauMoy)) + ";";
+            message += String(calculMoyenne(TempAirMoy)) + ";";
+            message += String(calculMoyenne(TempPACMoy)) + ";";
+            message += String(calculMoyenne(TempIntMoy)) + ";";
+            message += String(calculMoyenne(PHValMoy)) + ";";
+            message += String(calculMoyenne(RedoxValMoy)) + ";";
+            message += String(calculMoyenne(CLValMoy)) + ";";
+            message += String(calculMoyenne(PompePHMoy)) + ";";
+            message += String(calculMoyenne(PompeCLMoy)) + ";";
+            message += String(calculMoyenne(PompeALGMoy)) + ";";
+            message += String(calculMoyenne(PPMoy)) + ";";
+            message += String(calculMoyenne(PACMoy)) + ";";
+            message += String(calculMoyenne(AutoMoy));
             logMoyFile.println(message.c_str()); 
             logMoyFile.flush();
             logMoyFile.close();
