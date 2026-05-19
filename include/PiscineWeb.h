@@ -45,7 +45,7 @@ class PiscineWebClass {
         void setEtalonData();
         void setTempAdd(char *jsonSondes);
         void manageDebugLCD();
-
+        void sendHeartbeat();                  // Envoie un ping SSE (maintient la connexion proxy active)
 
     private :
             enum PageActive { PAGE_PRICIPALE, PAGE_PARAMETRES, PAGE_MAINTENANCE, PAGE_DEBUG, PAGE_NONE };  
@@ -154,5 +154,10 @@ class PiscineWebClass {
         void addInText(byte *addresse, char *printableAdd);
         void addToHex(byte *add,const char *printableAdd);
         void resetEtalonData(bool all);
-        
+
+        // --- PASSWORD_FUNCTIONS ---
+        void _hashPassword(const char* plain, char* out, size_t outLen); // Hash SHA-256+sel via BearSSL
+        bool _checkPassword(const char* stored, const char* entered);    // Vérifie hash ou plaintext legacy
+        void _migratePasswords();                                         // Hash les passwords plaintext au boot
+
 };

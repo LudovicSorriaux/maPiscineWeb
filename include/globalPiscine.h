@@ -51,6 +51,7 @@
 #define IND_TOTAL 83          // all indexes  
 
 #define MAX_USERNAME_SIZE 11
+#define MAX_PW_HASH_SIZE  74             // 8-hex salt + ':' + 64-hex SHA-256 + '\0'
 #define MAX_WIFI_NAME_SIZE 32
 
 // telecom
@@ -83,7 +84,7 @@
 
   typedef struct users_t {
     char user[MAX_USERNAME_SIZE];
-    char user_passwd[MAX_USERNAME_SIZE];
+    char user_passwd[MAX_PW_HASH_SIZE];  // Hash "SALT:SHA256" ou plaintext (migré au boot)
   } struct_users;
 
   typedef struct wifi_t {
@@ -92,7 +93,7 @@
   } struct_wifi;
 
   typedef struct configuartion_t {
-    char adminPassword[MAX_USERNAME_SIZE];
+    char adminPassword[MAX_PW_HASH_SIZE];  // Hash "SALT:SHA256" ou plaintext (migré au boot)
     users_t users[MAX_USERS];
     wifi_t wifi[MAX_WIFI];
     bool enableLocalAutoLogin = true;

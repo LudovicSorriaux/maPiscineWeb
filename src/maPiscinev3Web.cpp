@@ -93,6 +93,7 @@
     int timerFlush;
     int timerWIFI_NOK, timerWIFI_OK;
     int timerNTP_NOK, timerNTP_OK;
+    int timerHeartbeat;
     bool NTPok = false;
     WiFiUDP ntpUDP;
     NTPClient timeClient(ntpUDP, "europe.pool.ntp.org", 0, 24*3600*1000);     // By default 'time.nist.gov' is used with 60 seconds update interval and
@@ -241,6 +242,11 @@
  */
     void doUpdatePiscineLCD(){      // piscineWeb
         maPiscineWeb.OnUpdatePiscineLCD();
+    }
+
+    // Tick 30 s — heartbeat SSE pour maintenir les connexions proxy actives
+    void doHeartbeat(){
+        maPiscineWeb.sendHeartbeat();
     }
 
 /**
@@ -401,13 +407,14 @@
       timerWIFI_OK = timer.setInterval(60*60*1000L, doCheckWIFIConnection);   // check wifi toutes les heures
       timerWIFI_NOK = timer.setInterval(1000L, doCheckWIFIConnection);        // check wifi toutes les sec si nok
       timerNTP_OK = timer.setInterval(60*60*1000L, doCheckNTPDate);           // toutes les heures get new ntp time
-      timerNTP_NOK = timer.setInterval(5*1000L, doCheckNTPDate);              // toutes les 5 sec si nok. 
+      timerNTP_NOK = timer.setInterval(15*1000L, doCheckNTPDate);             // toutes les 15 sec si nok (minimum autorisé pool.ntp.org)
 
       WiFi.mode(WIFI_AP_STA);                          // IMPORTANT : Définir mode AVANT startWiFi() pour stabilité
       delay(100);                                       // Délai stabilisation mode WiFi
 
-      if(startWiFi()){ 
-        Serial1.println(F("connected...yeey :)"));      
+      if(startWiFi()){
+        Serial1.println(F("connected...yeey :)"));
+        timeClient.begin();  // Ouvre le socket UDP NTP (une seule fois)
 
         while(maxtriesNTP-- != 0){   // wait to get a valid time
           NTPok = getNTPTime();
@@ -450,6 +457,7 @@
       timerWebLCD = timer.setInterval(10000L,doUpdatePiscineLCD);             // toutes les 10 sec
       timerLogger = timer.setInterval(60000L,doLogger);                       // toutes les mn
       timerFlush  = timer.setInterval(15*60*1000L,doFlushLogs);               // flush LittleFS → SD toutes les 15 min
+      timerHeartbeat = timer.setInterval(30*1000L, doHeartbeat);              // heartbeat SSE toutes les 30 sec
        
       // RAM monitoring : État initial après setup
       logger.printf("[RAM] Démarrage terminé - Free heap: %d bytes (%.1f%% libre)\n", 
@@ -671,7 +679,7 @@
 
       AsyncWiFiManager wifiManager(&server,&dns);
       AsyncWiFiManagerParameter custom_user("user", "User", config.users[0].user, sizeof(config.users[0].user));              // id-name, placeholder-prompt, default, length
-      AsyncWiFiManagerParameter custom_user_passwd("passwd", "Password", config.users[0].user_passwd, sizeof(config.users[0].user_passwd));
+      AsyncWiFiManagerParameter custom_user_passwd("passwd", "Password", config.users[0].user_passwd, MAX_USERNAME_SIZE);
       AsyncWiFiManagerParameter custom_adminpasswd("Admpasswd", "Admin Pass", config.adminPassword, sizeof(config.adminPassword));
 
         wifiManager.setAPCallback(configModeCallback);
@@ -846,7 +854,7 @@
  * @brief Charge la configuration admin/user depuis EEPROM (addresses 0-499). Structure : adminPassword(64), user(64), user_password(64), wifi[3].ssid(64), wifi[3].password(64)
  */
     void loadConfigurationEEprom() {
-      char buff[64];
+      char buff[MAX_PW_HASH_SIZE];
       uint8_t i,j;
       uint8_t adminPasswordSize = sizeof(config.adminPassword);
       uint8_t aUserSize = sizeof(config.users[0]);
@@ -1136,12 +1144,11 @@
           // Copy values from the JsonDocument to the Config
 
           if (jsonConfig["adminPassword"].is<String>()) {
-            strlcpy(config.adminPassword,                      // <- destination
-                    jsonConfig["adminPassword"].as<String>().c_str(),   // <- source
-                    MAX_USERNAME_SIZE               // <- destination's capacity
-                    );
+            strlcpy(config.adminPassword,
+                    jsonConfig["adminPassword"].as<String>().c_str(),
+                    MAX_PW_HASH_SIZE);
           } else {
-              strlcpy(config.adminPassword,"manager",MAX_USERNAME_SIZE);
+              strlcpy(config.adminPassword,"manager",MAX_PW_HASH_SIZE);
           }          
           if (jsonConfig["enableLocalAutoLogin"].is<bool>()) {
             config.enableLocalAutoLogin = jsonConfig["enableLocalAutoLogin"].as<bool>();
@@ -1153,8 +1160,8 @@
             if(max_users > MAX_USERS) max_users = MAX_USERS;
             JsonArray usersTable = jsonConfig["users"];
             for (j=0;j<max_users;j++){
-              strlcpy(config.users[j].user,usersTable[j]["username"].as<String>().c_str(),MAX_USERNAME_SIZE);
-              strlcpy(config.users[j].user_passwd,usersTable[j]["password"].as<String>().c_str(),MAX_USERNAME_SIZE);
+              strlcpy(config.users[j].user,usersTable[j]["name"].as<String>().c_str(),MAX_USERNAME_SIZE);
+              strlcpy(config.users[j].user_passwd,usersTable[j]["password"].as<String>().c_str(),MAX_PW_HASH_SIZE);
             }
           }  
           if (jsonConfig["wifi"].is<JsonVariantConst>()) {
@@ -1396,23 +1403,9 @@
  */
     bool getNTPTime(){
       bool rtn = false;
-      int counter = 0;
-      bool timeUpdated = false;
-
-       
-        if(WiFi.status() == WL_CONNECTED){ 
-                 // now connect to ntp server and get time
-          timeClient.begin();
+        if(WiFi.status() == WL_CONNECTED){
           Serial1.print(F(" Trying to get New TIME from NTP "));
-          timeUpdated = timeClient.update();
-          while(!timeUpdated && counter < 20) {
-            timeUpdated = timeClient.forceUpdate();
-            delay(500);
-            counter++;
-            Serial1.print(F("+"));
-          }
-          Serial1.println();
-          if(timeUpdated){ // we could update the time
+          if(timeClient.forceUpdate()){
             time_t newTime = timeClient.getEpochTime();   //time in seconds since Jan. 1, 1970
             newTime = newTime + (3600 * TZ_OFFSET);
             newTime = newTime + dstOffset(newTime);  //Adjust for DLT
@@ -1423,18 +1416,15 @@
             Serial1.printf_P(PSTR(" New TIME calcuated : %02d/%02d/%d %02d:%02d:%02d\n"),day(),month(),year(),hour(),minute(),second());
             webAction.doChangeDate();
             rtn = true;
-          }else{
+          } else {
             Serial1.println(F("Can't get time from ntp server"));
             NTPok = false;
             rtn = false;
           }
-          timeClient.end();
-  //        setSyncProvider(timeClient.getEpochTime);       // the function to get the time from the RTC
-  //        setSyncInterval(3600*12);          // set refresh to every 12 hour (30 days = 2592000);
         } else {
           Serial1.println(F("Can't get time because not connected to WIFI"));
           NTPok = false;
-          rtn = false;     // can't connect to wifi
+          rtn = false;
         }
         return rtn;
     }

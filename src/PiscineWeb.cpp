@@ -15,6 +15,7 @@
 #include "PiscineWebStrings.h"
 #include "IndexNames.h"  // Optimisation RAM #6 : Noms des paramètres en PROGMEM
 #include <LittleFS.h>
+#include <bearssl/bearssl_hash.h>
 
 // Optimisation RAM #5 : Définition de piscineFolder en PROGMEM
 const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
@@ -34,9 +35,73 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
 /**
  * @brief Démarrage complet du serveur web : Charge sessions SD, appelle startServer() (routes AsyncWebServer) et startMDNS() (mDNS responder piscine.local)
  */
+// ─── Hash SHA-256 + sel (BearSSL, ESP8266) ────────────────────────────────────
+
+// Format stocké : "SSSSSSSS:HHHH...H" (8 hex sel + ':' + 64 hex SHA-256 = 73 chars + '\0')
+void PiscineWebClass::_hashPassword(const char* plain, char* out, size_t outLen) {
+    if (!plain || !out || outLen < MAX_PW_HASH_SIZE) return;
+    uint32_t r = (uint32_t)micros() ^ ((uint32_t)random() << 8) ^ ((uint32_t)millis() << 16);
+    char salt[9]; snprintf(salt, sizeof(salt), "%08X", r);
+    char input[9 + MAX_USERNAME_SIZE + 1];
+    snprintf(input, sizeof(input), "%s%s", salt, plain);
+    br_sha256_context ctx;
+    br_sha256_init(&ctx);
+    br_sha256_update(&ctx, input, strlen(input));
+    uint8_t hash[32]; br_sha256_out(&ctx, hash);
+    snprintf(out, outLen, "%s:", salt);
+    char* p = out + 9;
+    for (int i = 0; i < 32; i++, p += 2) snprintf(p, 3, "%02X", hash[i]);
+}
+
+bool PiscineWebClass::_checkPassword(const char* stored, const char* entered) {
+    if (!stored || !entered) return false;
+    size_t len = strlen(stored);
+    if (len == 73 && stored[8] == ':') {
+        char salt[9]; strncpy(salt, stored, 8); salt[8] = '\0';
+        char input[9 + MAX_USERNAME_SIZE + 1];
+        snprintf(input, sizeof(input), "%s%s", salt, entered);
+        br_sha256_context ctx;
+        br_sha256_init(&ctx);
+        br_sha256_update(&ctx, input, strlen(input));
+        uint8_t hash[32]; br_sha256_out(&ctx, hash);
+        char computed[65]; char* p = computed;
+        for (int i = 0; i < 32; i++, p += 2) snprintf(p, 3, "%02X", hash[i]);
+        return strncmp(stored + 9, computed, 64) == 0;
+    }
+    return strcmp(stored, entered) == 0;  // fallback plaintext (avant migration)
+}
+
+// Hash les mots de passe plaintext présents en mémoire au démarrage, sauvegarde le résultat
+void PiscineWebClass::_migratePasswords() {
+    bool changed = false;
+    auto needsMigration = [](const char* s) {
+        size_t l = strlen(s); return l > 0 && !(l == 73 && s[8] == ':');
+    };
+    if (needsMigration(config.adminPassword)) {
+        char plain[MAX_USERNAME_SIZE];
+        strlcpy(plain, config.adminPassword, MAX_USERNAME_SIZE);
+        _hashPassword(plain, config.adminPassword, MAX_PW_HASH_SIZE);
+        changed = true;
+    }
+    for (int i = 0; i < MAX_USERS; i++) {
+        if (config.users[i].user[0] == 0) continue;
+        if (needsMigration(config.users[i].user_passwd)) {
+            char plain[MAX_USERNAME_SIZE];
+            strlcpy(plain, config.users[i].user_passwd, MAX_USERNAME_SIZE);
+            _hashPassword(plain, config.users[i].user_passwd, MAX_PW_HASH_SIZE);
+            changed = true;
+        }
+    }
+    if (changed) {
+        saveConfiguration();
+        logger.println(F("[AUTH] Passwords migrated to SHA-256"));
+    }
+}
+
     void PiscineWebClass::startup(){
       logger.println("[WEB] maPiscineWeb Startup ... ");
-      
+      _migratePasswords();          // hash plaintext passwords left from older firmware
+
       // Charger sessions sauvegardées depuis SD (auto-login après reboot)
       loadSessionsFromSD();
       
@@ -631,7 +696,7 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
             char adminPwd[11];
             request->getParam("adminPassword")->value().toCharArray(adminPwd, 11);
             
-            if (strcmp(adminPwd, config.adminPassword) != 0) {
+            if (!_checkPassword(config.adminPassword, adminPwd)) {
                 request->send(403, "text/plain", "Accès refusé : mot de passe administrateur invalide");
                 logger.printf("[UPLOAD] ❌ Tentative d'accès avec mauvais mot de passe : %s\n", adminPwd);
                 return;
@@ -653,7 +718,7 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
                 char adminPwd[11];
                 request->getParam("adminPassword", true)->value().toCharArray(adminPwd, 11);
                 
-                if (strcmp(adminPwd, config.adminPassword) != 0) {
+                if (!_checkPassword(config.adminPassword, adminPwd)) {
                     request->send(403, "text/plain", "Upload refusé : mot de passe invalide");
                     logger.printf("[UPLOAD] ❌ POST avec mauvais mot de passe : %s\n", adminPwd);
                     return;
@@ -678,7 +743,7 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
         
         char adminPwd[11];
         request->getParam("adminPassword")->value().toCharArray(adminPwd, 11);
-        if (strcmp(adminPwd, config.adminPassword) != 0) {
+        if (!_checkPassword(config.adminPassword, adminPwd)) {
             logger.print("[LISTDIR] ❌ Mot de passe incorrect\n");
             request->send(403, "application/json", "{\"error\":\"Invalid password\"}");
             return;
@@ -770,11 +835,11 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
         }
         for(indUser=0;indUser<MAX_USERS;indUser++){   // find user in config
             if(strcmp(config.users[indUser].user, newusername) == 0){       // found existing user check password
-                if(strcmp(config.users[indUser].user_passwd, newuserpassword) == 0 ){     // good password
+                if(_checkPassword(config.users[indUser].user_passwd, newuserpassword)){
                     flgVerified = true;
                 }
                 break;
-            }  
+            }
         }
 
         if(flgVerified) {                     // If both the username and the password are correct
@@ -847,34 +912,34 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
         return;
     }
 
-    request->getParam("adminpassword",true)->value().toCharArray(theadminpassword,11);      
-    if(strcmp(theadminpassword, config.adminPassword) == 0){                                       // good admin password register new user or update it
+    request->getParam("adminpassword",true)->value().toCharArray(theadminpassword,11);
+    if(_checkPassword(config.adminPassword, theadminpassword)){                                    // good admin password register new user or update it
         request->getParam("username",true)->value().toCharArray(newusername,11);
         request->getParam("password",true)->value().toCharArray(newuserpassword,11);
-        logger.printf("[AUTH] New user: %s, passwd: %s\n",newusername,newuserpassword);
+        logger.printf("[AUTH] New user: %s\n", newusername);
 
         for(indUser=0;indUser<MAX_USERS;indUser++){   // find user in config
-            if(strcmp(config.users[indUser].user, newusername) == 0){       // found existing user check password
+            if(strcmp(config.users[indUser].user, newusername) == 0){
                 flgFoundUser = indUser;
                 break;
             }
-            if(config.users[indUser].user[0]==0){       // found an empty user space
+            if(config.users[indUser].user[0]==0){
                 flgFoundEmpty = indUser;
                 break;
             }
-        }  
-        if(flgFoundUser != -1) {            // Found username and updated the password
+        }
+        if(flgFoundUser != -1) {            // Found username: update password
             jsonRoot["status"] = "User Already Exist";
             jsonRoot["username"] = String(newusername);
             jsonRoot["message"] = "User already exist,updated with new password.";
-            strncpy(config.users[flgFoundUser].user_passwd, newuserpassword,11); 
-            saveNewConfiguration(nullptr,newusername,newuserpassword,nullptr,nullptr);      // save the config to file
+            _hashPassword(newuserpassword, config.users[flgFoundUser].user_passwd, MAX_PW_HASH_SIZE);
+            saveNewConfiguration(nullptr,newusername,config.users[flgFoundUser].user_passwd,nullptr,nullptr);
             logger.println("[AUTH] User already exists, updated with new password");
         } else {                        // not found so new user
-          if(flgFoundEmpty != -1 ){     // flgFoundEmpty is the index breaked so still have room for a new user create a new entry
-            strncpy(config.users[flgFoundEmpty].user, newusername,11); 
-            strncpy(config.users[flgFoundEmpty].user_passwd, newuserpassword,11); 
-            saveNewConfiguration(nullptr,newusername,newuserpassword,nullptr,nullptr);      // save the config to file
+          if(flgFoundEmpty != -1 ){
+            strlcpy(config.users[flgFoundEmpty].user, newusername, MAX_USERNAME_SIZE);
+            _hashPassword(newuserpassword, config.users[flgFoundEmpty].user_passwd, MAX_PW_HASH_SIZE); 
+            saveNewConfiguration(nullptr,newusername,config.users[flgFoundEmpty].user_passwd,nullptr,nullptr);
             generateKey(sessionID,ttl);
             jsonRoot["status"] = "New User Created Succesfully";
             jsonRoot["username"] = newusername;
@@ -923,40 +988,49 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
    * @param request Requête HTTP AsyncWebServer
    * @return true si client local, false sinon
    */
+  // GET /checkLocalAuth[?sess=X] — auto-login si client local ET enableLocalAutoLogin activé.
+  // Valide aussi une session existante (paramètre sess) : retourne sessionValid=true si connue
+  // du serveur. Permet au JS de détecter les sessions perdues après reboot/flash.
   void PiscineWebClass::handleCheckLocalAuth(AsyncWebServerRequest *request) {
-    char jsonBuff[512];  // Optimisation RAM
-    StaticJsonDocument<256> jsonRoot;  // Optimisation RAM
+    char jsonBuff[512];
+    StaticJsonDocument<256> jsonRoot;
     char sessionID[16];
     long ttl = 365 * 24 * 60 * 60;  // 1 an pour clients locaux
-    
+
     bool isLocal = isLocalClient(request);
-    
+
+    // Valide la session existante si transmise (détecte perte après reboot/flash)
+    bool sessionValid = false;
+    if (request->hasParam("sess")) {
+        char sessCheck[16];
+        request->getParam("sess")->value().toCharArray(sessCheck, 16);
+        sessionValid = isSessionValid(sessCheck);
+    }
+
     if (isLocal && config.enableLocalAutoLogin) {
-        // Générer une session automatique pour client local
         generateKey(sessionID, ttl);
-        
         jsonRoot["status"] = "Auto Login Local";
         jsonRoot["isLocal"] = true;
         jsonRoot["autoLogin"] = true;
+        jsonRoot["sessionValid"] = true;
         jsonRoot["sessionID"] = sessionID;
         jsonRoot["ttl"] = ttl;
         jsonRoot["username"] = "local_user";
         jsonRoot["message"] = "Bienvenue (connexion locale automatique)";
-        
-        logger.printf("[AUTH] Auto-login local : IP=%s, TTL=1 an\n", 
+        logger.printf("[AUTH] Auto-login local : IP=%s, TTL=1 an\n",
                      request->client()->remoteIP().toString().c_str());
     } else {
-        jsonRoot["status"] = "Authentication Required";
+        jsonRoot["status"] = sessionValid ? "Session valide" : "Authentication Required";
         jsonRoot["isLocal"] = isLocal;
         jsonRoot["autoLogin"] = false;
-        jsonRoot["message"] = "Authentification requise";
-        
-        logger.printf("[AUTH] Authentification requise : IP=%s, Local=%s, Config=%s\n",
+        jsonRoot["sessionValid"] = sessionValid;
+        jsonRoot["message"] = sessionValid ? "Session active" : "Authentification requise";
+        logger.printf("[AUTH] Auth requise : IP=%s, Local=%s, sessionValid=%s\n",
                      request->client()->remoteIP().toString().c_str(),
                      isLocal ? "true" : "false",
-                     config.enableLocalAutoLogin ? "enabled" : "disabled");
+                     sessionValid ? "true" : "false");
     }
-    
+
     serializeJson(jsonRoot, jsonBuff, sizeof(jsonBuff));
     AsyncWebServerResponse *response = request->beginResponse(200, FPSTR(STR_CONTENT_JSON), jsonBuff);
     response->addHeader(FPSTR(STR_HEADER_CACHE), FPSTR(STR_HEADER_NOCACHE));
@@ -982,11 +1056,11 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
         return;
     }
 
-    request->getParam("adminpassword",true)->value().toCharArray(theadminpassword,11);      
-    if(strcmp(theadminpassword, config.adminPassword) == 0 ){                                      // good admin password allowed to update it
+    request->getParam("adminpassword",true)->value().toCharArray(theadminpassword,11);
+    if(_checkPassword(config.adminPassword, theadminpassword)){                                    // good admin password allowed to update it
         request->getParam("password",true)->value().toCharArray(newadminpassword,11);
-        strncpy( config.adminPassword, newadminpassword, 11);                                        // set the new password
-        saveNewConfiguration(newadminpassword,nullptr,nullptr,nullptr,nullptr);                                                                  // save changes to the config file
+        _hashPassword(newadminpassword, config.adminPassword, MAX_PW_HASH_SIZE);
+        saveNewConfiguration(config.adminPassword,nullptr,nullptr,nullptr,nullptr);                                                                  // save changes to the config file
         jsonRoot[FPSTR(STR_JSON_STATUS)] = FPSTR(STR_ADMIN_PW_UPDATED);
         jsonRoot[FPSTR(STR_JSON_MESSAGE)] = FPSTR(STR_ADMIN_PW_SUCCESS_MSG);
         logger.println(FPSTR(STR_LOG_ADMIN_UPDATED)); 
@@ -3191,6 +3265,10 @@ void PiscineWebClass::handleFileUpload(AsyncWebServerRequest *request, String fi
             logger.println("[UPLOAD] ERREUR: Fichier non ouvert lors de la finalisation");
         }
     }
+}
+
+void PiscineWebClass::sendHeartbeat() {
+    piscineEvents.send("ping", "heartbeat", millis());
 }
   
 

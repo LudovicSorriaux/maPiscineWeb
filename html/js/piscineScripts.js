@@ -125,62 +125,62 @@ var statusErrorMap = {
    *          Si autoLogin=true, utilise onSuccess() existant.
    *          Sinon, affiche page login normale.
    */
+  // Ping /checkLocalAuth au démarrage ; passe le sessID local pour validation serveur.
+  // Après un reboot/flash ESP8266, les sessions sont perdues : sans cette vérification
+  // serveur, le localStorage ferait croire à tort que la session est encore valide.
   function checkLocalAuthOnStartup() {
 	console.log("[LocalAuth] Vérification auto-login local...");
-	
-	// Vérifier d'abord si session valide existe déjà
-	var hasValidSession = checkExistingSessionOrAutoLogin();
-	if (hasValidSession) {
-		console.log("[LocalAuth] Session existante valide détectée");
-		// Rediriger vers page principale
-		var targetPage = mainPage || "#pagePiscinePrincipale";
-		setTimeout(function() {
-			$.mobile.changePage(targetPage, {transition: "slide"});
-		}, 100);
-		return;
-	}
-	
-	// Pas de session existante, vérifier auto-login local
+
+	// Lire la session stockée AVANT l'appel serveur pour la passer en paramètre
+	var storedData = maPiscine.Session.getInstance().get();
+	var storedSess = (storedData && storedData.sessionId) ? storedData.sessionId : '';
+
 	$.ajax({
-		url: '/checkLocalAuth',
+		url: '/checkLocalAuth' + (storedSess ? ('?sess=' + storedSess) : ''),
 		type: 'GET',
 		dataType: 'json',
 		timeout: 5000,
 		success: function(response) {
 			console.log("[LocalAuth] Réponse serveur:", response);
-			
+
 			if (response.autoLogin === true) {
-				// Auto-login activé pour client local
-				console.log("[LocalAuth] Auto-login local activé, traitement via onSuccess");
-				
-				// Adapter la réponse pour onSuccess existant
 				var loginData = {
 					status: "Auto Login Local",
 					username: response.username,
-					password: "",  // Pas de password pour auto-login
+					password: "",
 					sessionID: response.sessionID,
 					ttl: response.ttl,
 					roles: [],
 					isLocal: true,
 					message: response.message
 				};
-				
-				// Appeler le handler onSuccess existant
 				onSuccess(JSON.stringify(loginData), 'success');
-				
+
+			} else if (response.sessionValid === true) {
+				// Serveur confirme que la session est toujours active
+				checkExistingSessionOrAutoLogin(); // restaure globals + cookie
+				var targetPage = mainPage || "#pagePiscinePrincipale";
+				console.log("[LocalAuth] Session serveur valide, accès direct.");
+				setTimeout(function() { $.mobile.changePage(targetPage, {transition: "slide"}); }, 100);
+
 			} else {
-				// Authentification normale requise
-				console.log("[LocalAuth] Authentification requise:", response.message);
-				
-				// Afficher page login (jQuery Mobile)
+				// Session inconnue du serveur (après reboot/flash) ou aucune session locale
+				console.log("[LocalAuth] Session invalide côté serveur, redirection login.");
+				window.localStorage.removeItem("maPiscine-session");
+				setCookie("maPiscine", "", 0);
 				$.mobile.changePage("#pageLogin", {transition: "fade"});
 			}
 		},
 		error: function(xhr, status, error) {
 			console.error("[LocalAuth] Erreur vérification:", status, error);
-			
-			// En cas d'erreur, afficher page login par défaut
-			$.mobile.changePage("#pageLogin", {transition: "fade"});
+			// Serveur injoignable : faire confiance au cache local (hors-ligne)
+			var hasValidSession = checkExistingSessionOrAutoLogin();
+			if (hasValidSession) {
+				var targetPage = mainPage || "#pagePiscinePrincipale";
+				setTimeout(function() { $.mobile.changePage(targetPage, {transition: "slide"}); }, 100);
+			} else {
+				$.mobile.changePage("#pageLogin", {transition: "fade"});
+			}
 		}
 	});
   }
