@@ -79,7 +79,7 @@ Serveur web asynchrone ESP8266 pour la gestion et la supervision de la piscine. 
 ```
 maPiscinev4Web-d1_mini/
 ├── src/
-│   ├── maPiscinev3Web.cpp               # Point d'entrée principal (setup/loop)
+│   ├── maPiscineWeb.cpp               # Point d'entrée principal (setup/loop)
 │   ├── PiscineWeb.cpp                   # Coeur serveur web (routes API, SSE)
 │   ├── PiscineWebActionControler.cpp    # Synchronisation NTP, init params
 │   ├── PiscineWebTelecom.cpp            # Communication ICSC avec ESP32
@@ -130,7 +130,7 @@ maPiscinev4Web-d1_mini/
 
 | Fichier Source                     | Fonctions | Description                                    |
 |------------------------------------|-----------|------------------------------------------------|
-| `maPiscinev3Web.cpp`               | 51        | Point d'entrée, WiFi, NTP, config, timers      |
+| `maPiscineWeb.cpp`               | 51        | Point d'entrée, WiFi, NTP, config, timers      |
 | `PiscineWeb.cpp`                   | 6         | Coeur serveur web, routes API, SSE             |
 | `PiscineWebActionControler.cpp`    | 6         | Synchronisation NTP, refresh données           |
 | `PiscineWebTelecom.cpp`            | 3         | Protocole ICSC, communication série ESP32      |
@@ -140,7 +140,7 @@ maPiscinev4Web-d1_mini/
 
 ### Groupes Fonctionnels Principaux
 
-**maPiscinev3Web.cpp** — Point d'entrée principal
+**maPiscineWeb.cpp** — Point d'entrée principal
 - **Timer Callbacks (9)** : `doCheckMessages()`, `doLogger()`, `doAction()`, `doCheckWIFIConnection()`, `doCheckNTPDate()`, etc.
 - **WiFi Functions (6)** : `startWiFi()`, `useWifiManager()`, `WiFiConnect()`, `ConnectWithStoredCredentials()`, `findPassword()`, `resetWifiSettings()`
 - **Config Functions (9)** : `loadConfiguration()`, `saveConfiguration()`, `loadConfigurationEEprom()`, `saveConfigurationEEprom()`, etc.
@@ -407,7 +407,7 @@ python3 scripts/add_comments_src.py
 
 ## 🔍 Modules Principaux
 
-### `maPiscinev3Web.cpp`
+### `maPiscineWeb.cpp`
 - **Rôle :** Point d'entrée, `setup()` et `loop()` Arduino
 - **Responsabilités :**
   - Initialisation WiFi Manager

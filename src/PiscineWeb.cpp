@@ -146,7 +146,7 @@ void PiscineWebClass::_migratePasswords() {
     }
 
 /**
- * @brief Liste récursive du contenu SD (répertoires + fichiers) avec indentation. Version classe PiscineWebClass (duplicate de maPiscinev3Web.cpp)
+ * @brief Liste récursive du contenu SD (répertoires + fichiers) avec indentation. Version classe PiscineWebClass (duplicate de maPiscineWeb.cpp)
  */
     void PiscineWebClass::printDirectory(File dir, int numTabs) {
 
@@ -2186,7 +2186,7 @@ h1{font-size:4em;color:#5AC8FA;margin:0}p{color:#aaa}a{color:#5AC8FA;text-decora
     }
 
 /**
- * @brief Liste récursive du contenu SD (répertoires + fichiers) avec indentation. Version classe PiscineWebClass (duplicate de maPiscinev3Web.cpp)
+ * @brief Liste récursive du contenu SD (répertoires + fichiers) avec indentation. Version classe PiscineWebClass (duplicate de maPiscineWeb.cpp)
  */
     void PiscineWebClass::printDirectory(File dir, int numTabs, String *output) {
 

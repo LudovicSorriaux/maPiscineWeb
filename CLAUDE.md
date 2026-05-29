@@ -59,7 +59,7 @@ Browser → HTTP/SSE → AsyncWebServer (port 80)
 
 | Fichier | Rôle |
 |---|---|
-| `maPiscinev3Web.cpp` | `setup()`/`loop()`, WiFi, NTP, SD, timers SimpleTimer |
+| `maPiscineWeb.cpp` | `setup()`/`loop()`, WiFi, NTP, SD, timers SimpleTimer |
 | `PiscineWeb.cpp` | Routes API REST, SSE broadcast, authentification sessions |
 | `PiscineWebActionControler.cpp` | Synchro NTP périodique, envoi heure au contrôleur |
 | `PiscineWebTelecom.cpp` | Protocole ICSC, buffers lecture/écriture, callbacks réception |

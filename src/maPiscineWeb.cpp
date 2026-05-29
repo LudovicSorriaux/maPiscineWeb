@@ -1,5 +1,5 @@
 /*******************************************************************************
- * @file    maPiscinev3Web.cpp
+ * @file    maPiscineWeb.cpp
  * @brief   Point d'entrée principal - Serveur web asynchrone ESP8266
  * @details Setup WiFi (WiFiManager), AsyncWebServer, routes API REST, SSE,
  *          initialisation SD card, Logger, NTP, ICSC. Loop principal avec

@@ -4,8 +4,8 @@
  * @details Responsable de la synchronisation NTP, mise à jour date/heure,
  *          initialisation paramètres piscine et rafraîchissement données
  * 
- * Usage   : maPiscinev3Web.cpp (gestion actions web)
- * Référencé par : maPiscinev3Web.cpp, PiscineWeb.cpp
+ * Usage   : maPiscineWeb.cpp (gestion actions web)
+ * Référencé par : maPiscineWeb.cpp, PiscineWeb.cpp
  * Référence     : globalPiscine.h (structures données), TimeLib (NTP sync)
  * 
  * @author  Ludovic Sorriaux

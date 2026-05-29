@@ -6,7 +6,7 @@
  *          pour affichage web historique. Gestion répertoires par date.
  * 
  * Usage   : Logging automatique toutes les X minutes + debug messages
- * Référencé par : PiscineWeb.cpp, maPiscinev3Web.cpp
+ * Référencé par : PiscineWeb.cpp, maPiscineWeb.cpp
  * Référence     : SDFS (carte SD), TimeLib (horodatage), globalPiscineWeb.h
  * 
  * @author  Ludovic Sorriaux

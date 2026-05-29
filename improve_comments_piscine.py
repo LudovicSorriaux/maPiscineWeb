@@ -13,7 +13,7 @@ from pathlib import Path
 
 # Dictionnaire descriptions explicites fonctions
 FUNCTION_DESCRIPTIONS = {
-    # ===== maPiscinev3Web.cpp - Main Entry Point =====
+    # ===== maPiscineWeb.cpp - Main Entry Point =====
     
     # Timer Callbacks (9)
     'void doCheckMessages()': 
@@ -154,7 +154,7 @@ FUNCTION_DESCRIPTIONS = {
         "Rafraîchissement affichage LCD : Appelle managePiscineLCD() pour mettre à jour l'écran LCD virtuel (toutes les 10s)",
     
     'void PiscineWebClass::printDirectory(File dir, int numTabs)': 
-        "Liste récursive du contenu SD (répertoires + fichiers) avec indentation. Version classe PiscineWebClass (duplicate de maPiscinev3Web.cpp)",
+        "Liste récursive du contenu SD (répertoires + fichiers) avec indentation. Version classe PiscineWebClass (duplicate de maPiscineWeb.cpp)",
     
     # ===== PiscineWebActionControler.cpp - Action Controller =====
     
@@ -371,7 +371,7 @@ def replace_generic_comment_blocks(file_path: Path) -> bool:
 
 def add_brief_comments(file_path: Path) -> bool:
     """
-    Ajoute des blocs @brief avant chaque fonction (format maPiscinev3Web.cpp).
+    Ajoute des blocs @brief avant chaque fonction (format maPiscineWeb.cpp).
     
     Args:
         file_path: Chemin vers fichier .cpp à traiter
@@ -461,7 +461,7 @@ def main():
     
     # Fichiers à traiter (7 fichiers)
     target_files = [
-        'maPiscinev3Web.cpp',
+        'maPiscineWeb.cpp',
         'PiscineWeb.cpp',
         'PiscineWebActionControler.cpp',
         'PiscineWebTelecom.cpp',

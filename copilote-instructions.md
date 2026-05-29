@@ -28,7 +28,7 @@ But : fournir aux développeurs et à l'assistant IA un aide-mémoire pratique p
 ## Fichiers Importants
 
 ### Point d'Entrée
-- **`src/maPiscinev3Web.cpp`** : Point d'entrée `setup`/`loop`, serveur web, timers, gestion WiFi et carte SD.
+- **`src/maPiscineWeb.cpp`** : Point d'entrée `setup`/`loop`, serveur web, timers, gestion WiFi et carte SD.
 
 ### Modules Principaux
 - **`src/PiscineWeb.cpp`** : Gestion des endpoints API web (routes REST, handlers).

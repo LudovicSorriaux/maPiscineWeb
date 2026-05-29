@@ -6,7 +6,7 @@
  *          réception (data, time, sync, hello, tempAdd)
  * 
  * Usage   : Communication bidirectionnelle Web ↔ Contrôleur
- * Référencé par : PiscineWeb.cpp, maPiscinev3Web.cpp
+ * Référencé par : PiscineWeb.cpp, maPiscineWeb.cpp
  * Référence     : ICSC (protocole série), globalPiscine.h (structures)
  * 
  * @author  Ludovic Sorriaux

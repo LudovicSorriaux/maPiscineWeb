@@ -144,7 +144,7 @@ static const char piscineFolder[] PROGMEM = "/html";  // Flash
 **Fichiers créés**: `include/IndexNames.h`  
 **Fichiers modifiés**: 
 - `include/globalPiscine.h` (déclaration commentée)
-- `src/maPiscinev3Web.cpp` (définition + initIndexNames commentés)
+- `src/maPiscineWeb.cpp` (définition + initIndexNames commentés)
 - `src/PiscineWeb.cpp` (4 usages modifiés)
 - `src/PiscineWebTelecom.cpp` (4 usages modifiés)
 - `src/PiscineWebActionControler.cpp` (1 usage modifié)
@@ -233,7 +233,7 @@ use JsonDocument instead
 - 📝 `include/PiscineWeb.h` (activeSessions[5], piscineFolder PROGMEM)
 - 📝 `include/globalPiscine.h` (indexName extern commenté)
 - 📝 `src/PiscineWeb.cpp` (15+ fonctions optimisées + 4 usages indexName)
-- 📝 `src/maPiscinev3Web.cpp` (définition + initIndexNames commentés)
+- 📝 `src/maPiscineWeb.cpp` (définition + initIndexNames commentés)
 - 📝 `src/PiscineWebTelecom.cpp` (4 usages indexName modifiés)
 - 📝 `src/PiscineWebActionControler.cpp` (1 usage indexName)
 - 📝 `src/ManagerTelecom.cpp` (1 usage indexName)
@@ -254,7 +254,7 @@ use JsonDocument instead
 **Fichiers modifiés** : 
 - `src/PiscineWeb.cpp` (5 conversions)
 - `src/ManagerTelecom.cpp` (1 conversion)
-- `src/maPiscinev3Web.cpp` (2 conversions)
+- `src/maPiscineWeb.cpp` (2 conversions)
 
 **Conversions effectuées** :
 ```cpp
@@ -268,7 +268,7 @@ JsonDocument jsonConfig → StaticJsonDocument<1024>             // showJsonConf
 // ManagerTelecom.cpp
 JsonDocument doc → StaticJsonDocument<256>                     // doCallbacks
 
-// maPiscinev3Web.cpp
+// maPiscineWeb.cpp
 JsonDocument jsonConfig → StaticJsonDocument<1024>             // loadConfiguration
 JsonDocument jsonConfig → StaticJsonDocument<1024>             // saveConfiguration
 ```

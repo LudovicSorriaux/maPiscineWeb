@@ -5,7 +5,7 @@
  *         mDNS, routes HTTP, handlers de requêtes.
  * 
  * Référencé par :
- *   - maPiscinev3Web.cpp (utilise piscineWeb)
+ *   - maPiscineWeb.cpp (utilise piscineWeb)
  * 
  * Référence :
  *   - globalPiscine.h

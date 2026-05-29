@@ -4,7 +4,7 @@
  *         Macros utilitaires, index de communication, modes de fonctionnement.
  * 
  * Référencé par :
- *   - maPiscinev3Web.cpp
+ *   - maPiscineWeb.cpp
  *   - PiscineWeb.h/cpp
  *   - PiscineWebActionControler.h/cpp
  *   - PiscineWebTelecom.h/cpp

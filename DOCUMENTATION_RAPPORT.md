@@ -16,7 +16,7 @@
 
 | Fichier Source                     | Fonctions | Descriptions ajoutées | État        |
 |------------------------------------|-----------|----------------------|-------------|
-| `maPiscinev3Web.cpp`               | 51        | 51 blocs @brief      | ✅ Complet   |
+| `maPiscineWeb.cpp`               | 51        | 51 blocs @brief      | ✅ Complet   |
 | `PiscineWeb.cpp`                   | 6         | 6 blocs remplacés    | ✅ Complet   |
 | `PiscineWebActionControler.cpp`    | 6         | 6 blocs remplacés    | ✅ Complet   |
 | `PiscineWebTelecom.cpp`            | 3         | 3 blocs remplacés    | ✅ Complet   |
@@ -73,7 +73,7 @@ Création du script `improve_comments_piscine.py` avec 2 stratégies :
 
 ## 📋 Groupes fonctionnels documentés
 
-### maPiscinev3Web.cpp (51 fonctions)
+### maPiscineWeb.cpp (51 fonctions)
 
 **Timer Callbacks (9 fonctions) :**
 - `doCheckMessages()` — Traite messages UART ICSC depuis ESP32
@@ -131,7 +131,7 @@ Création du script `improve_comments_piscine.py` avec 2 stratégies :
 - `startup()` — Démarrage AsyncWebServer + mDNS (piscine.local)
 - `OnUpdate()` — Mise à jour périodique (MDNS.update + SSE push)
 - `OnUpdatePiscineLCD()` — Rafraîchissement LCD virtuel
-- `printDirectory()` — Liste récursive SD (duplicate maPiscinev3Web)
+- `printDirectory()` — Liste récursive SD (duplicate maPiscineWeb)
 - `sendNewParamsPiscine()` — Envoi JSON via SSE aux clients web
 
 ### PiscineWebActionControler.cpp (6 fonctions)
