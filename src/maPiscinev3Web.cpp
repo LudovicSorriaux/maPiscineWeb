@@ -5,8 +5,8 @@
  *          initialisation SD card, Logger, NTP, ICSC. Loop principal avec
  *          gestion mises à jour (PiscineWeb, ActionControler, Telecom, Logger).
  * 
- * @version 4.0.0
- * @date    Novembre 2024
+ * @version 4.5.2
+ * @date    Mai 2026
  * @author  Ludovic Sorriaux
  * 
  * Ma Piscine Manager web site (ESP8266)

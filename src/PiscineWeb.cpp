@@ -2770,23 +2770,32 @@ h1{font-size:4em;color:#5AC8FA;margin:0}p{color:#aaa}a{color:#5AC8FA;text-decora
    * @return true si client local (même sous-réseau), false sinon
    */
     bool PiscineWebClass::isLocalClient(AsyncWebServerRequest *request) {
-        IPAddress clientIP = request->client()->remoteIP();
+        // Si X-Forwarded-For présent (requête via Pi nginx + OCI), c'est une IP internet → non local
+        IPAddress clientIP;
+        if (request->hasHeader("X-Forwarded-For")) {
+            String xff = request->getHeader("X-Forwarded-For")->value();
+            int comma = xff.indexOf(',');
+            String first = (comma > 0) ? xff.substring(0, comma) : xff;
+            first.trim();
+            if (!clientIP.fromString(first)) {
+                return false;
+            }
+        } else {
+            clientIP = request->client()->remoteIP();
+        }
         IPAddress serverIP = WiFi.localIP();
         IPAddress subnet = WiFi.subnetMask();
-        
-        // Vérifier si client et serveur sont dans le même sous-réseau
         for (int i = 0; i < 4; i++) {
             if ((clientIP[i] & subnet[i]) != (serverIP[i] & subnet[i])) {
-                logger.printf("Client distant détecté : %s (serveur: %s, masque: %s)\n", 
-                             clientIP.toString().c_str(), 
+                logger.printf("Client distant détecté : %s (serveur: %s, masque: %s)\n",
+                             clientIP.toString().c_str(),
                              serverIP.toString().c_str(),
                              subnet.toString().c_str());
-                return false;  // Pas dans le même sous-réseau
+                return false;
             }
         }
-        
-        logger.printf("Client local détecté : %s (serveur: %s, masque: %s)\n", 
-                     clientIP.toString().c_str(), 
+        logger.printf("Client local détecté : %s (serveur: %s, masque: %s)\n",
+                     clientIP.toString().c_str(),
                      serverIP.toString().c_str(),
                      subnet.toString().c_str());
         return true;
