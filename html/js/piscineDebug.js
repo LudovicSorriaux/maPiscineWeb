@@ -2,9 +2,10 @@
 var debugLogEl = null;
 var debugLineCount = 0;
 var piscineDebugEvent = null;
+var debugQueue = [];          // buffer pour les messages arrivant avant pageshow
 var MAX_DEBUG_LINES = 300;
 
-function appendDebugLine(text) {
+function _renderDebugLine(text) {
     if (!debugLogEl || !text) return;
     var lines = text.split('\n');
     lines.forEach(function (line) {
@@ -25,6 +26,34 @@ function appendDebugLine(text) {
     debugLogEl.scrollTop = debugLogEl.scrollHeight;
 }
 
+function appendDebugLine(text) {
+    if (!text) return;
+    if (!debugLogEl) {
+        debugQueue.push(text);   // page pas encore visible, bufferiser
+        return;
+    }
+    _renderDebugLine(text);
+}
+
+function flushDebugQueue() {
+    while (debugQueue.length > 0) {
+        _renderDebugLine(debugQueue.shift());
+    }
+}
+
+function debugActivate() {
+    fetch('/setPiscine?action=setActivePage&page=debug', { method: 'POST' })
+        .then(function(r) { console.log("[Debug] setActivePage status:", r.status); })
+        .catch(function(e) { console.log("[Debug] setActivePage erreur:", e); });
+    fetch('/setPiscine?action=Debug', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'trigger=start&sess=' + sessID
+    })
+        .then(function(r) { console.log("[Debug] trigger=start status:", r.status); })
+        .catch(function(e) { console.log("[Debug] trigger=start erreur:", e); });
+}
+
 $(document).delegate("#pagePiscineDebug", "pagebeforecreate", function () {
     var showDebug = 1;
     var $page = $(this);
@@ -34,6 +63,7 @@ $(document).delegate("#pagePiscineDebug", "pagebeforecreate", function () {
             debugLogEl.innerHTML = '';
             debugLineCount = 0;
         }
+        debugQueue = [];
     });
 
     $page.find("#FeedSW").click(function () {
@@ -58,7 +88,12 @@ $(document).delegate("#pagePiscineDebug", "pagebeforecreate", function () {
         onOpen: function () { console.log("[Debug] SSE ouvert"); },
         onEnd: function () { console.log("[Debug] SSE fermé"); },
         onError: function () { console.log("[Debug] SSE erreur"); },
-        onMessage: function () {},
+        onMessage: function (e) {
+            if ($.trim(e.data).includes('hello!')) {
+                console.log("[Debug] hello! reçu → activation debug");
+                debugActivate();
+            }
+        },
         options: { forceAjax: false },
         events: {
             piscineLCDDebug: function (evt) {
@@ -68,8 +103,7 @@ $(document).delegate("#pagePiscineDebug", "pagebeforecreate", function () {
                     return;
                 }
                 try {
-                    var data = $.trim(evt.data);
-                    var returnedData = JSON.parse(data);
+                    var returnedData = JSON.parse($.trim(evt.data));
                     if (returnedData.hasOwnProperty("lignes")) {
                         appendDebugLine(returnedData.lignes);
                     }
@@ -83,23 +117,27 @@ $(document).delegate("#pagePiscineDebug", "pagebeforecreate", function () {
 
 $(document).on("pagebeforeshow", "#pagePiscineDebug", function () {
     console.log("-- STARTING Piscine Debug SSE --");
+    debugLogEl = null;    // sera défini dans pageshow quand le DOM est attaché
+    debugQueue = [];
     if (piscineDebugEvent) piscineDebugEvent.start();
-    fetch('/setPiscine?action=setActivePage&page=debug', { method: 'POST' });
-    fetch('/setPiscine?action=Debug', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'trigger=start&sess=' + sessID
-    });
     showToast("Mise à jour temps réel des logs activée", 'info');
 });
 
 $(document).on("pageshow", "#pagePiscineDebug", function () {
-    debugLogEl = $(this).find("#debugLogContainer")[0];
+    // JQM déplace le contenu hors de $(this) — on ancre sur .screenPieceDebug
+    var $piece = $(this).find('.screenPieceDebug');
+    debugLogEl = $piece.find('#debugLogContainer').get(0);
+    if (!debugLogEl) {
+        debugLogEl = $('<div id="debugLogContainer" class="screenTextZoneDebug"></div>')[0];
+        $piece.append(debugLogEl);
+    }
+    flushDebugQueue();
 });
 
 $(document).on("pagebeforehide", "#pagePiscineDebug", function () {
     console.log("-- STOPPING Piscine Debug SSE --");
     debugLogEl = null;
+    debugQueue = [];
     if (piscineDebugEvent) piscineDebugEvent.stop();
     fetch('/setPiscine?action=Debug', {
         method: 'POST',

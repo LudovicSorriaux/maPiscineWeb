@@ -407,13 +407,14 @@ form .error {
    PAGE DEBUG — log viewer
    ===================================================================== */
 #pagePiscineDebug .screenPieceDebug {
-    overflow: hidden;
+    overflow: auto;
 }
 #pagePiscineDebug #debugLogContainer {
     font-family: 'Courier New', monospace;
     font-size: 0.72em;
     padding: 2px 6px;
     box-sizing: border-box;
+    color: #0d1719;
 }
 #pagePiscineDebug .debug-line {
     margin: 0;
@@ -421,6 +422,8 @@ form .error {
     white-space: pre-wrap;
     word-break: break-all;
     line-height: 1.35;
+    color: #0d1719;
+    display: block;
 }
 #pagePiscineDebug .debug-line-warn {
     color: #5c3a00;

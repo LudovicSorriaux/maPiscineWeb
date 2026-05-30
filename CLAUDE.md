@@ -8,16 +8,19 @@ Serveur web asynchrone ESP8266 (Wemos D1 mini) pour la gestion et supervision d'
 
 ## Commandes
 
-### Firmware (PlatformIO)
+### Firmware + Filesystem (PlatformIO)
 ```bash
-# Compilation
+# Compilation seule
 ~/.platformio/penv/bin/platformio run
 
-# Upload firmware
+# Upload firmware uniquement
 ~/.platformio/penv/bin/platformio run -t upload
 
-# Upload filesystem LittleFS (après build Gulp)
+# Upload filesystem (Gulp buildfs lancé automatiquement via pio-gulp.py)
 ~/.platformio/penv/bin/platformio run -t uploadfs
+
+# Firmware + filesystem en une commande
+~/.platformio/penv/bin/platformio run -t upload -t uploadfs
 
 # Moniteur série (115200 baud, avec décodeur d'exceptions)
 ~/.platformio/penv/bin/platformio device monitor
@@ -26,19 +29,23 @@ Serveur web asynchrone ESP8266 (Wemos D1 mini) pour la gestion et supervision d'
 ~/.platformio/penv/bin/platformio run -t clean && rm -rf .pio
 ```
 
-### Frontend (Gulp / Node.js)
+`pio-gulp.py` (configuré dans `extra_scripts`) déclenche automatiquement `npx gulp buildfs`
+avant chaque build du filesystem LittleFS. **Ne pas utiliser `gulp uploadfs`** (double build).
+
+### Frontend (Gulp / Node.js) — build seul sans upload
 ```bash
-# Installer les dépendances
+# Installer les dépendances (première fois)
 npm install
 
-# Build : minifie et gzippe HTML/CSS/JS → data/*.lgz
+# Build uniquement : minifie et gzippe HTML/CSS/JS → data/*.lgz
 npx gulp
 
-# Watch (rebuild automatique)
+# Watch (rebuild automatique à chaque modif)
 npx gulp watch
 ```
 
-Le build Gulp lit depuis `html/` et écrit dans `data/` (fichiers `.lgz` = gzip). Le filesystem doit être re-uploadé après chaque modification du frontend.
+`npx gulp` seul est utile pour vérifier le build avant upload. Pour uploader, utiliser
+directement `pio run -t uploadfs` qui déclenche Gulp automatiquement.
 
 ## Architecture
 

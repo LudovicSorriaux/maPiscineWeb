@@ -4,10 +4,32 @@
 		sonde1Type="N/A",
 		sonde2Type="N/A",
 		sonde3Type="N/A",
-		gotSonde=false,	
+		sonde1Found=true,
+		sonde2Found=true,
+		sonde3Found=true,
+		gotSonde=false,
 		typePHRedox="N/A";
 
 		
+		// Retourne le texte de bouton pour une sonde absente configurée
+		function absentLabel(type){ return type + " !"; }
+		// Retourne le type serveur depuis la variable interne
+		function typeForServer(t){
+			if(t==="eau") return "Eau";
+			if(t==="air") return "Air";
+			if(t==="pac") return "Pac";
+			if(t==="suppr") return "Suppr";
+			return "N/A";
+		}
+		// Active/désactive le bouton validSondes
+		function updateValidSondes(){
+			if(!gotSonde){ $("#validSondes").addClass("ui-disabled"); return; }
+			var hasAction=["eau","air","pac","suppr"].indexOf(sonde1Type)!==-1||
+			              ["eau","air","pac","suppr"].indexOf(sonde2Type)!==-1||
+			              ["eau","air","pac","suppr"].indexOf(sonde3Type)!==-1;
+			hasAction ? $("#validSondes").removeClass("ui-disabled") : $("#validSondes").addClass("ui-disabled");
+		}
+
 		function doAction(action,param,valParam,param2,valParam2){
 
 /*			doAction("scanPH","typePH",PH4,"");
@@ -209,18 +231,17 @@
 			sondes=[],
 			sonde1={}
 				sonde1.printable=$("#sonde1Val").val(),
-				sonde1.other=$("#sonde1Val").attr("value"),
-				sonde1.type=$("#sonde1Type").text(),
+				sonde1.type=typeForServer(sonde1Type),
 				sonde1.index=sonde1index,
 			sondes.push(sonde1),
 			sonde2={}
 				sonde2.printable=$("#sonde2Val").val(),
-				sonde2.type=$("#sonde2Type").text(),
+				sonde2.type=typeForServer(sonde2Type),
 				sonde2.index=sonde2index,
 			sondes.push(sonde2),
 			sonde3={}
 				sonde3.printable=$("#sonde3Val").val(),
-				sonde3.type=$("#sonde3Type").text(),
+				sonde3.type=typeForServer(sonde3Type),
 				sonde3.index=sonde3index,
 			sondes.push(sonde3),
 			$(this).addClass("ui-disabled"),
@@ -238,6 +259,17 @@
 
 		$("#sonde1Type").click((function(){
 			if(gotSonde){
+				if(!sonde1Found && "N/A"!==sonde1Type){
+					// Sonde configurée absente : basculer entre type configuré et Suppr
+					if(sonde1Type==="suppr"){
+						var orig=sonde1index===0?"Air":sonde1index===1?"Eau":"Pac";
+						$(this).text(absentLabel(orig)); sonde1Type=orig.toLowerCase();
+					} else {
+						$(this).text("Suppr"); sonde1Type="suppr";
+					}
+					updateValidSondes();
+					return;
+				}
 				switch($(this).text()){
 					case"N/A":
 						$(this).text("Eau"),
@@ -276,6 +308,16 @@
 
 		$("#sonde2Type").click((function(){
 			if(gotSonde){
+				if(!sonde2Found && "N/A"!==sonde2Type){
+					if(sonde2Type==="suppr"){
+						var orig=sonde2index===0?"Air":sonde2index===1?"Eau":"Pac";
+						$(this).text(absentLabel(orig)); sonde2Type=orig.toLowerCase();
+					} else {
+						$(this).text("Suppr"); sonde2Type="suppr";
+					}
+					updateValidSondes();
+					return;
+				}
 				switch($(this).text()){
 					case"N/A":
 						$(this).text("Eau"),
@@ -314,6 +356,16 @@
 
 		$("#sonde3Type").click((function(){
 			if(gotSonde){
+				if(!sonde3Found && "N/A"!==sonde3Type){
+					if(sonde3Type==="suppr"){
+						var orig=sonde3index===0?"Air":sonde3index===1?"Eau":"Pac";
+						$(this).text(absentLabel(orig)); sonde3Type=orig.toLowerCase();
+					} else {
+						$(this).text("Suppr"); sonde3Type="suppr";
+					}
+					updateValidSondes();
+					return;
+				}
 				switch($(this).text()){
 					case"N/A":
 						$(this).text("Eau"),
@@ -410,61 +462,65 @@
 				console.log("serverEvent json is "+JSON.stringify(returnedData));
 
 				if(returnedData.hasOwnProperty("sondes")){
+					if(returnedData.sondes.length===0){
+						showToast("Aucune sonde DS18B20 trouvée sur le bus OneWire", 'error');
+						$("#sonde1Val").val(""); $("#sonde1Type").text("N/A"); $("#sonde1Type").addClass("ui-disabled"); sonde1Type="N/A"; sonde1index=-1; sonde1Found=true;
+						$("#sonde2Val").val(""); $("#sonde2Type").text("N/A"); $("#sonde2Type").addClass("ui-disabled"); sonde2Type="N/A"; sonde2index=-1; sonde2Found=true;
+						$("#sonde3Val").val(""); $("#sonde3Type").text("N/A"); $("#sonde3Type").addClass("ui-disabled"); sonde3Type="N/A"; sonde3index=-1; sonde3Found=true;
+						$("#validSondes").addClass("ui-disabled");
+						gotSonde=false;
+					}
 					if(returnedData.sondes.length>=1){
-						sonde=returnedData.sondes[0]
-						if("N/A"===sonde.type){
-							$("#sonde1Val").val(""),
-							$("#sonde1Type").text("N/A"),
-							$("#sonde1Type").addClass("ui-disabled"),
-							sonde1index=-1
-							sonde1Type=sonde.type
-						}else{
-							$("#sonde1Val").val(sonde.printable),
-							$("#sonde1Type").text(sonde.type)
-							$("#sonde1Type").removeClass("ui-disabled"),
-							sonde1Type=sonde.type.toLowerCase(),
-							sonde1index=sonde.index
+						sonde=returnedData.sondes[0];
+						sonde1Found=(sonde.found!==false);
+						sonde1index=sonde.index;
+						if(!sonde1Found && "N/A"!==sonde.type){
+							// Configurée mais absente du bus : affiche avec marqueur "!"
+							$("#sonde1Val").val(sonde.printable);
+							$("#sonde1Type").text(absentLabel(sonde.type));
+							$("#sonde1Type").removeClass("ui-disabled");
+							sonde1Type=sonde.type.toLowerCase();
+						} else {
+							$("#sonde1Val").val(sonde.printable);
+							$("#sonde1Type").text("N/A"===sonde.type?"N/A":sonde.type);
+							$("#sonde1Type").removeClass("ui-disabled");
+							sonde1Type="N/A"===sonde.type?"N/A":sonde.type.toLowerCase();
 						}
-						gotSonde = true;
-					} 
+						gotSonde=true;
+					}
 					if(returnedData.sondes.length>=2){
-						sonde=returnedData.sondes[1]
-						if("N/A"===sonde.type){
-							$("#sonde2Val").val(""),
-							$("#sonde2Type").text("N/A"),
-							$("#sonde2Type").addClass("ui-disabled"),
-							sonde2Type=sonde.type
-							sonde2index=-1
-						}else{
-							$("#sonde2Val").val(sonde.printable),
-							$("#sonde2Type").text(sonde.type),
-							$("#sonde2Type").removeClass("ui-disabled"),
-							sonde2Type=sonde.type.toLowerCase(),
-							sonde2index=sonde.index
+						sonde=returnedData.sondes[1];
+						sonde2Found=(sonde.found!==false);
+						sonde2index=sonde.index;
+						if(!sonde2Found && "N/A"!==sonde.type){
+							$("#sonde2Val").val(sonde.printable);
+							$("#sonde2Type").text(absentLabel(sonde.type));
+							$("#sonde2Type").removeClass("ui-disabled");
+							sonde2Type=sonde.type.toLowerCase();
+						} else {
+							$("#sonde2Val").val(sonde.printable);
+							$("#sonde2Type").text("N/A"===sonde.type?"N/A":sonde.type);
+							$("#sonde2Type").removeClass("ui-disabled");
+							sonde2Type="N/A"===sonde.type?"N/A":sonde.type.toLowerCase();
 						}
 					}
 					if(returnedData.sondes.length>=3){
 						sonde=returnedData.sondes[2];
-						if("N/A"===sonde.type){
-							$("#sonde3Val").val(""),
-							$("#sonde3Type").text("N/A"),
-							$("#sonde3Type").addClass("ui-disabled"),
-							sonde3index=-1
-							sonde3Type="N/A"
+						sonde3Found=(sonde.found!==false);
+						sonde3index=sonde.index;
+						if(!sonde3Found && "N/A"!==sonde.type){
+							$("#sonde3Val").val(sonde.printable);
+							$("#sonde3Type").text(absentLabel(sonde.type));
+							$("#sonde3Type").removeClass("ui-disabled");
+							sonde3Type=sonde.type.toLowerCase();
 						} else {
-							$("#sonde3Val").val(sonde.printable),
-							$("#sonde3Type").text(sonde.type),
-							$("#sonde3Type").removeClass("ui-disabled"),
-							sonde3Type=sonde.type.toLowerCase(),
-							sonde3index=sonde.index
+							$("#sonde3Val").val(sonde.printable);
+							$("#sonde3Type").text("N/A"===sonde.type?"N/A":sonde.type);
+							$("#sonde3Type").removeClass("ui-disabled");
+							sonde3Type="N/A"===sonde.type?"N/A":sonde.type.toLowerCase();
 						}
 					}
-					if(gotSonde){	
-						if("N/A"===sonde1Type&&"N/A"===sonde2Type&&"N/A"===sonde3Type)
-							$("#validSondes").addClass("ui-disabled")
-						else
-							$("#validSondes").removeClass("ui-disabled")
-					}
+					updateValidSondes();
 				} 
 				if(returnedData.hasOwnProperty("phCalc")){
 					value=parseFloat(returnedData.phCalc)

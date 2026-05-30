@@ -131,10 +131,8 @@ void PiscineWebClass::_migratePasswords() {
         if(currentPage == PAGE_PRICIPALE || currentPage == PAGE_PARAMETRES) {          // in page principal or in page param
             sendNewParamsPiscine();
         }
-        if( currentPage == PAGE_DEBUG ) {          // in page debug 
-            if(logger.hasDebugMessage()){ // if debug message available
-                manageDebugLCD();
-            }
+        if( currentPage == PAGE_DEBUG ) {          // in page debug
+            manageDebugLCD();
         }
     }
 
@@ -374,13 +372,23 @@ void PiscineWebClass::_migratePasswords() {
             char strTempo1[256];
             char jsonBuff[320];  // Optimisation RAM : 256 contenu + ~50 escape + 13 overhead
             JsonDocument jsonRoot;  // Optimisation RAM : JSON_OBJECT_SIZE(1) + 256 = ~280
+            static uint32_t lastStatusMs = 0;
 
         if (currentPage == PAGE_DEBUG) {          // in page debug
-            logger.getDebugMessage(strTempo1, sizeof(strTempo1));
-            if(strcmp(strTempo1, "") != 0 ){ // if debug message available
+            if(logger.hasDebugMessage()){
+                logger.getDebugMessage(strTempo1, sizeof(strTempo1));
+            } else if(millis() - lastStatusMs > 5000) {    // statut périodique si pas de messages
+                snprintf(strTempo1, sizeof(strTempo1), "[DEBUG] heap:%u controleur:%s\n",
+                         ESP.getFreeHeap(),
+                         webTelecom.isControleurPresent() ? "OK" : "absent");
+                lastStatusMs = millis();
+            } else {
+                return;
+            }
+            if(strcmp(strTempo1, "") != 0 ){
                 jsonRoot["lignes"] = strTempo1;
                 serializeJson(jsonRoot, jsonBuff, sizeof(jsonBuff));
-                piscineEvents.send(jsonBuff, "piscineLCDDebug", millis());  
+                piscineEvents.send(jsonBuff, "piscineLCDDebug", millis());
             }
         }
     }
@@ -426,36 +434,32 @@ void PiscineWebClass::_migratePasswords() {
         char printableAddresse[16+1];
   
 
-        if(len != 0){       // got some adresses
+        // Octet 48 = foundMask si présent (firmware récent), sinon supposer tout trouvé
+        uint8_t foundMask = (len > 48) ? (uint8_t)data[48] : 0x3F;
+        uint8_t addrLen = (len > 48) ? 48 : len;
+
+        sondes = piscineTempAddJson["sondes"].to<JsonArray>();  // toujours présent, vide si aucune sonde
+        if(addrLen != 0){       // got some adresses
             for (j=0;j<6;j++){
               for(i=0;i<8;i++){
-//                  if(debug) logger.printf(" index is %d, char is %x \n",rtn,addr[j][i]);
                 adresses[j][i] = *(data+ind);
-                if(ind++ >= len) break;
+                if(ind++ >= addrLen) break;
               }
-              if(ind >= len) break;
+              if(ind >= addrLen) break;
             }
-            maxAdd=j;
-            sondes = piscineTempAddJson["sondes"].to<JsonArray>();
+            maxAdd=j+1;     // +1 : inclure la dernière adresse lue avant le break
             for(j=0;j<maxAdd;j++){
                 addInText(adresses[j],printableAddresse);    // source,dest
                 if(strcmp("0000000000000000",printableAddresse)!=0){
                     JsonObject sonde = sondes.add<JsonObject>();
                     sonde["printable"] = printableAddresse;
                     sonde["index"] = j;
+                    sonde["found"] = (bool)((foundMask >> j) & 1);  // trouvé sur le bus lors du scan
                     switch (j) {
-                        case 0: 
-                            sonde["type"] = "Air";
-                        break;
-                        case 1: 
-                            sonde["type"] = "Eau";
-                        break;
-                        case 2: 
-                            sonde["type"] = "Pac";
-                        break;
-                        default: 
-                            sonde["type"] = "N/A";
-                        break;
+                        case 0: sonde["type"] = "Air"; break;
+                        case 1: sonde["type"] = "Eau"; break;
+                        case 2: sonde["type"] = "Pac"; break;
+                        default: sonde["type"] = "N/A"; break;
                     }
                 }
             }
@@ -620,9 +624,9 @@ void PiscineWebClass::_migratePasswords() {
                                                 request->getParam("page")->value().toCharArray(p, 16);      //principale parametres debug maintenance
                                                 if (strcmp(p, "principale") == 0) currentPage = PAGE_PRICIPALE;
                                                 else if (strcmp(p, "parametres") == 0) currentPage = PAGE_PARAMETRES;
-                                                else if (strcmp(p, "debug") == 0) currentPage = PAGE_DEBUG;
+                                                else if (strcmp(p, "debug") == 0) { currentPage = PAGE_DEBUG; logger.printf("[WEB] Page debug activée heap:%u\n", ESP.getFreeHeap()); }
                                                 else if (strcmp(p, "maintenance") == 0) currentPage = PAGE_MAINTENANCE;
-                                                request->send(200); 
+                                                request->send(200);
                                             }    
                 else request->send(404, "text/plain", F("Action inconnue"));
             } else {
