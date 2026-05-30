@@ -1071,7 +1071,7 @@
  * @brief Affiche le contenu de la config EEPROM sur Serial (admin, user, passwords, SSIDs) pour debug
  */
     void printConfigurationEEprom() {
-      char buff[64];
+      char buff[MAX_PW_HASH_SIZE + 1];
       uint8_t i,j;
       uint8_t adminPasswordSize = sizeof(config.adminPassword);
       uint8_t aUserSize = sizeof(config.users[0]);
@@ -1080,24 +1080,27 @@
       uint8_t aWifiSize = sizeof(config.wifi[0]);
       uint8_t ssidSize = sizeof(config.wifi[0].ssid);
       uint8_t ssidPwdSize = sizeof(config.wifi[0].ssid_passwd);
-        
+
         Serial1.println(F("config from EEPROM is : "));
         EEPROM.begin(sizeof(config)+1);
 
         for ( i = 0; i < adminPasswordSize; i++ ){      // adm passwd
-          buff[i] = EEPROM.read ( i );  
-        } 
+          buff[i] = EEPROM.read ( i );
+        }
+        buff[adminPasswordSize] = '\0';
         Serial1.printf_P(PSTR("AdminPassword : %s\n"),buff);
 
         for ( j = 0; j < MAX_USERS; j++ ){              // users
             Serial1.printf_P(PSTR(" User%d : "),j);              // user name
             for ( i = 0; i < userNameSize; ++i ){
-                buff[i] = EEPROM.read ( i + adminPasswordSize + (j*aUserSize) );     
-            } 
+                buff[i] = EEPROM.read ( i + adminPasswordSize + (j*aUserSize) );
+            }
+            buff[userNameSize] = '\0';
             Serial1.printf_P(PSTR("user name : %s, "),buff);
             for ( i = 0; i < userPwdSize; ++i ){       // user pwd
-                buff[i] = EEPROM.read ( i + adminPasswordSize + (j*aUserSize) + userNameSize );     
-            } 
+                buff[i] = EEPROM.read ( i + adminPasswordSize + (j*aUserSize) + userNameSize );
+            }
+            buff[userPwdSize] = '\0';
             Serial1.printf_P(PSTR("passwd : %s, "),buff);
         } // end for each user
 
@@ -1125,7 +1128,7 @@
  * @brief Charge la configuration admin/user depuis EEPROM (addresses 0-499). Structure : adminPassword(64), user(64), user_password(64), wifi[3].ssid(64), wifi[3].password(64)
  */
     void loadConfiguration() {
-        StaticJsonDocument<1024> jsonConfig;  // Optimisation RAM #7 : config file
+        JsonDocument jsonConfig;  // Optimisation RAM #7 : config file
         int j = 0;
 
       // Open file for reading
@@ -1210,7 +1213,7 @@
  * @brief Sauvegarde config admin/user dans EEPROM (5 entrées : adminPassword, user, user_password, 1er SSID/password). Appelle EEPROM.commit()
  */
     void saveConfiguration() {
-          StaticJsonDocument<1024> jsonConfig;  // Optimisation RAM #7 : config file
+          JsonDocument jsonConfig;  // Optimisation RAM #7 : config file
           char jsonBuff[1536];  // Optimisation RAM
           int i;
 

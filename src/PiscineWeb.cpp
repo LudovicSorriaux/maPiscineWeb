@@ -263,8 +263,8 @@ void PiscineWebClass::_migratePasswords() {
     void PiscineWebClass::sendNewParamsPiscine(){
             char jsonBuff[768];  // Optimisation RAM : char[] au lieu de String
             char jsonBuffParams[768];
-            StaticJsonDocument<512> piscineParamsEventsJson;  // Optimisation RAM : StaticJsonDocument
-            StaticJsonDocument<512> piscineEventsJson;
+            JsonDocument piscineParamsEventsJson;  // Optimisation RAM
+            JsonDocument piscineEventsJson;
             bool newValPP = false, newValPParams = false;  
             bool doItFull = false;
 
@@ -312,7 +312,7 @@ void PiscineWebClass::_migratePasswords() {
             char strTempo[30];
             char strTempo1[64], strTempo2[96], strTempo3[128];
             char jsonBuff[384];  // Optimisation RAM : char[] au lieu de String
-            StaticJsonDocument<256> jsonRoot;  // Optimisation RAM
+            JsonDocument jsonRoot;  // Optimisation RAM
 
         if (currentPage == PAGE_PRICIPALE) {          // in page principal
 
@@ -373,7 +373,7 @@ void PiscineWebClass::_migratePasswords() {
     void PiscineWebClass::manageDebugLCD(){
             char strTempo1[256];
             char jsonBuff[320];  // Optimisation RAM : 256 contenu + ~50 escape + 13 overhead
-            StaticJsonDocument<300> jsonRoot;  // Optimisation RAM : JSON_OBJECT_SIZE(1) + 256 = ~280
+            JsonDocument jsonRoot;  // Optimisation RAM : JSON_OBJECT_SIZE(1) + 256 = ~280
 
         if (currentPage == PAGE_DEBUG) {          // in page debug
             logger.getDebugMessage(strTempo1, sizeof(strTempo1));
@@ -393,7 +393,7 @@ void PiscineWebClass::_migratePasswords() {
    */
     void PiscineWebClass::setEtalonData(){
         char jsonBuff[256];  // Optimisation RAM
-        StaticJsonDocument<128> piscineEtalonJson;  // Optimisation RAM
+        JsonDocument piscineEtalonJson;  // Optimisation RAM
 
         if(strcmp(etalon_Data.PHRedox,"PH")==0){
             piscineEtalonJson["phCalc"] = etalon_Data.calculated;
@@ -418,7 +418,7 @@ void PiscineWebClass::_migratePasswords() {
    */
     void PiscineWebClass::sendTempAdd(unsigned char len, char *data){
         char jsonBuff[512];  // Optimisation RAM
-        StaticJsonDocument<384> piscineTempAddJson;  // Optimisation RAM        
+        JsonDocument piscineTempAddJson;  // Optimisation RAM        
         JsonArray sondes;
         unsigned int ind=0;   // start after code command
         unsigned int i,j,maxAdd;
@@ -474,7 +474,7 @@ void PiscineWebClass::_migratePasswords() {
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebClass::setTempAdd(char *jsonSondes){
-        StaticJsonDocument<192> sondes;  // Optimisation RAM #7 : 3 sondes max
+        JsonDocument sondes;  // Optimisation RAM #7 : 3 sondes max
  
         byte address[8];
         byte addresses[3][8];
@@ -818,7 +818,7 @@ void PiscineWebClass::_migratePasswords() {
         char newusername[11], newuserpassword[11];
         uint8_t indUser = 0;
         char jsonBuff[768];  // Optimisation RAM
-        StaticJsonDocument<512> jsonRoot;  // Optimisation RAM
+        JsonDocument jsonRoot;  // Optimisation RAM
         char sessionID[16];                       // calculated at each login set in the cookie maPiscine (15 chars)
         long ttl = 1*60*60;                       // 1 hours by default in sec
         //  long ttl = 2*60;                          // 2 min by default in sec for debug
@@ -901,7 +901,7 @@ void PiscineWebClass::_migratePasswords() {
     char newusername[11], newuserpassword[11], theadminpassword[11];
     uint8_t indUser = 0;
     char jsonBuff[768];  // Optimisation RAM
-    StaticJsonDocument<512> jsonRoot;  // Optimisation RAM #7
+    JsonDocument jsonRoot;  // Optimisation RAM #7
     char sessionID[16];                       // calculated at each login set in the cookie maPiscine (15 chars)
     long ttl = 12*60*60*1000;                 // 12 hours by default
     char flgLogin[8];
@@ -993,7 +993,7 @@ void PiscineWebClass::_migratePasswords() {
   // du serveur. Permet au JS de détecter les sessions perdues après reboot/flash.
   void PiscineWebClass::handleCheckLocalAuth(AsyncWebServerRequest *request) {
     char jsonBuff[512];
-    StaticJsonDocument<256> jsonRoot;
+    JsonDocument jsonRoot;
     char sessionID[16];
     long ttl = 365 * 24 * 60 * 60;  // 1 an pour clients locaux
 
@@ -1048,7 +1048,7 @@ void PiscineWebClass::_migratePasswords() {
     char theadminpassword[11];
     char newadminpassword[11];
     char jsonBuff[512];  // Optimisation RAM
-    StaticJsonDocument<256> jsonRoot;  // Optimisation RAM
+    JsonDocument jsonRoot;  // Optimisation RAM
 
     if( ! request->hasParam("password",true) || ! request->hasParam("adminpassword",true) 
         || request->getParam("password",true)->value() == NULL || request->getParam("adminpassword",true)->value() == NULL) {       // If the POST request doesn't have username and password data
@@ -1089,7 +1089,7 @@ void PiscineWebClass::_migratePasswords() {
     char newusername[11], newuserpassword[11], oldusername[11];
     uint8_t indUser = 0;
     char jsonBuff[512];  // Optimisation RAM
-    StaticJsonDocument<256> jsonRoot;  // Optimisation RAM
+    JsonDocument jsonRoot;  // Optimisation RAM
 
     if( ! request->hasParam("username",true) || ! request->hasParam("nameuserprofile",true) 
         || request->getParam("username",true)->value() == NULL || request->getParam("nameuserprofile",true)->value() == NULL ) { // If the POST request doesn't have username and password data
@@ -1141,7 +1141,7 @@ void PiscineWebClass::_migratePasswords() {
    */
   void PiscineWebClass::handleGetUsers(AsyncWebServerRequest *request){
     char jsonBuff[768];  // Optimisation RAM
-    StaticJsonDocument<512> jsonRoot;  // Optimisation RAM
+    JsonDocument jsonRoot;  // Optimisation RAM
     uint8_t indU=0, indUser=0;
 
         jsonRoot[FPSTR(STR_JSON_STATUS)] = FPSTR(STR_USER_LIST);
@@ -1173,7 +1173,7 @@ void PiscineWebClass::_migratePasswords() {
     char currentUser[11];
     char username[11];
     char jsonBuff[512];  // Optimisation RAM
-    StaticJsonDocument<256> jsonRoot;  // Optimisation RAM
+    JsonDocument jsonRoot;  // Optimisation RAM
 
 
     if(request->hasParam("adminpassword",true)){
@@ -1335,7 +1335,7 @@ void PiscineWebClass::_migratePasswords() {
    */
     void PiscineWebClass::handleInitPiscinePP(AsyncWebServerRequest *request){
         char jsonBuff[768];  // Optimisation RAM
-        StaticJsonDocument<512> piscineEventsJson;  // Optimisation RAM
+        JsonDocument piscineEventsJson;  // Optimisation RAM
 
         for(uint8_t x:piscinePPSet){
             piscineEventsJson[getIndexNameF(x)] = piscineParams[x].valeur;  // Optimisation RAM #6 : PROGMEM
@@ -1355,7 +1355,7 @@ void PiscineWebClass::_migratePasswords() {
    */
     void PiscineWebClass::handleInitPiscinePParams(AsyncWebServerRequest *request){
         char jsonBuffParams[768];  // Optimisation RAM
-        StaticJsonDocument<512> piscineParamsEventsJson;  // Optimisation RAM
+        JsonDocument piscineParamsEventsJson;  // Optimisation RAM
 
         for(uint8_t x:piscineParamsSet){
             piscineParamsEventsJson[getIndexNameF(x)] = piscineParams[x].valeur;  // Optimisation RAM #6 : PROGMEM
@@ -1639,7 +1639,7 @@ void PiscineWebClass::_migratePasswords() {
     void PiscineWebClass::handlePiscineGraphDatas(AsyncWebServerRequest *request) {   // /getPiscineGraphs?sess=x&start=yyyy-mm-dd&end=yyyy-mm-dd
         char start[11], end[11];
         char jsonBuff[256];  // Optimisation RAM
-        StaticJsonDocument<128> jsonRoot;  // Optimisation RAM #7
+        JsonDocument jsonRoot;  // Optimisation RAM #7
 
         logger.println("Enter handlePiscineGraphs");
         if(!checkSessionParam(request)){                                       // check session
@@ -1750,8 +1750,8 @@ void PiscineWebClass::_migratePasswords() {
                      total_days, (long long)t_start, (long long)t_end);
         
         // Vérifier existence fichiers et construire liste dates disponibles
-        StaticJsonDocument<512> doc;
-        JsonArray availableDates = doc.createNestedArray("dates");
+        JsonDocument doc;
+        JsonArray availableDates = doc["dates"].to<JsonArray>();
         int availableCount = 0;
         
         for (int i = 0; i < total_days; i++) {
@@ -1813,7 +1813,7 @@ void PiscineWebClass::_migratePasswords() {
         // Récupérer info via logger
         LoggerClass::FileInfo info = logger.getFileInfo(date.c_str(), chunkSize);
         
-        StaticJsonDocument<256> doc;
+        JsonDocument doc;
         doc["date"] = date;
         doc["exists"] = info.exists;
         doc["size"] = info.size;
@@ -1925,7 +1925,7 @@ void PiscineWebClass::_migratePasswords() {
     void PiscineWebClass::handleInitPiscinePageMaintenance(AsyncWebServerRequest *request){
 
         char jsonBuff[128];  // Optimisation RAM
-        StaticJsonDocument<64> piscineMaintenanceInitJson;  // Optimisation RAM #7
+        JsonDocument piscineMaintenanceInitJson;  // Optimisation RAM #7
 
 
         serializeJson(piscineMaintenanceInitJson, jsonBuff, sizeof(jsonBuff));  // Optimisation RAM
@@ -2226,7 +2226,7 @@ h1{font-size:4em;color:#5AC8FA;margin:0}p{color:#aaa}a{color:#5AC8FA;text-decora
    */
     void PiscineWebClass::showJsonConfig(AsyncWebServerRequest *request){
         char jsonBuff[1536];  // Optimisation RAM
-        StaticJsonDocument<1024> jsonConfig;  // Optimisation RAM #7 : Admin + users array + wifi array
+        JsonDocument jsonConfig;  // Optimisation RAM #7 : Admin + users array + wifi array
         uint8_t i = 0;
 
         logger.println("Asked for print current config");
@@ -2263,7 +2263,6 @@ h1{font-size:4em;color:#5AC8FA;margin:0}p{color:#aaa}a{color:#5AC8FA;text-decora
 
 /*__________________________________________________________AUTHENTIFY_FUNCTIONS__________________________________________________________*/
 
-  /*
   /*
    * bool PiscineWebClass::isSessionValid
    * But : Vérifier validité session + nettoyage sessions expirées/trop anciennes
@@ -2353,7 +2352,7 @@ h1{font-size:4em;color:#5AC8FA;margin:0}p{color:#aaa}a{color:#5AC8FA;text-decora
         sessionFile.close();
 
         // Parse JSON
-        DynamicJsonDocument doc(2048);
+        JsonDocument doc;
         DeserializationError error = deserializeJson(doc, jsonContent);
         if (error) {
             logger.printf("[SESSION] ERREUR parse JSON: %s\n", error.c_str());
@@ -2415,14 +2414,14 @@ h1{font-size:4em;color:#5AC8FA;margin:0}p{color:#aaa}a{color:#5AC8FA;text-decora
         }
 
         // Créer JSON
-        DynamicJsonDocument doc(2048);
-        JsonArray sessions = doc.createNestedArray("sessions");
+        JsonDocument doc;
+        JsonArray sessions = doc["sessions"].to<JsonArray>();
 
         uint8_t saved = 0;
         for (uint8_t i = 0; i < 10; i++) {  // Max 10 sessions
             if (activeSessions[i].ttl == 0) continue;  // Slot vide
 
-            JsonObject session = sessions.createNestedObject();
+            JsonObject session = sessions.add<JsonObject>();
             session["sessID"] = activeSessions[i].sessID;
             session["ttl"] = activeSessions[i].ttl;
             session["timecreated"] = activeSessions[i].timecreated;
