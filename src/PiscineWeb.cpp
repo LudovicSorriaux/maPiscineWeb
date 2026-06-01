@@ -1971,9 +1971,11 @@ void PiscineWebClass::_migratePasswords() {
                         setTempAdd(jsonSondes);
                     }
                 } else if (strcmp(command, "scanPH") == 0){
-                    if(request->hasParam("typePH",true)){           // PH4 or PH7 or PH9                     
-                        request->getParam("typePH",true)->value().toCharArray(type,sizeof(type));      
-                        logger.printf("Scan PH typePH is : %s\n",type);
+                    if(request->hasParam("typePH",true)){           // PH4 or PH7 or PH9
+                        request->getParam("typePH",true)->value().toCharArray(type,sizeof(type));
+                        etalon_Data.tampon = request->hasParam("tampon",true)
+                            ? request->getParam("tampon",true)->value().toFloat() : 0.0f;
+                        logger.printf("Scan PH typePH is : %s tampon=%.2f\n",type,etalon_Data.tampon);
                         strcpy(etalon_Data.action,"Start");
                         strcpy(etalon_Data.PHRedox,"PH");
                         strcpy(etalon_Data.type,type);
@@ -1981,9 +1983,11 @@ void PiscineWebClass::_migratePasswords() {
                         webTelecom.sendEtalonMode();
                     }
                 } else if (strcmp(command, "scanRedox") == 0){
-                    if(request->hasParam("typeRedox",true)){          // "Low" or "High"                      
-                        request->getParam("typeRedox",true)->value().toCharArray(type,sizeof(type));      
-                        logger.printf("Scan Redox typeRedox is : %s\n",type);
+                    if(request->hasParam("typeRedox",true)){          // "Low" or "High"
+                        request->getParam("typeRedox",true)->value().toCharArray(type,sizeof(type));
+                        etalon_Data.tampon = request->hasParam("tampon",true)
+                            ? request->getParam("tampon",true)->value().toFloat() : 0.0f;
+                        logger.printf("Scan Redox typeRedox is : %s tampon=%.2f\n",type,etalon_Data.tampon);
                         strcpy(etalon_Data.action,"Start");
                         strcpy(etalon_Data.PHRedox,"Redox");
                         strcpy(etalon_Data.type,type);

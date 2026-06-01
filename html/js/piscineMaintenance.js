@@ -84,19 +84,16 @@
 			$("#cancelPH").removeClass("ui-disabled");
 			switch($(this).attr("id")){
 				case"PH4Radio":
-					console.log("You clicked PH4");
-					typePHRedox="PH4";
+					typePHRedox="PH4"; $("#PHtampon").val("4.01");
 				break;
 				case"PH7Radio":
-					console.log("You clicked PH7");
-					typePHRedox="PH7";
+					typePHRedox="PH7"; $("#PHtampon").val("7.00");
 				break;
 				case"PH9Radio":
-					console.log("You clicked PH9");
-					typePHRedox="PH9";
+					typePHRedox="PH9"; $("#PHtampon").val("9.00");
 			}
 			if("N/A"!==typePHRedox){
-				doAction("scanPH","typePH",typePHRedox,"");
+				doAction("scanPH","typePH",typePHRedox,"tampon",$("#PHtampon").val());
 				$("#scanPHLed").removeClass("ledOff").addClass("ledOn");
 			}
 		})),
@@ -164,16 +161,14 @@
 			$("#RedoxAjust").val("---");
 			switch($(this).attr("id")){
 				case"redoxLowRadio":
-					console.log("You clicked RedoxLow"),
-					typePHRedox="Low";
+					typePHRedox="Low"; $("#RedoxTampon").val("468");
 					break;
 				case"redoxHighRadio":
-					console.log("You clicked RedoxHigh"),
-					typePHRedox="High"
+					typePHRedox="High"; $("#RedoxTampon").val("650");
 			}
 			if("N/A"!==typePHRedox){
 				$("#scanRedoxLed").removeClass("ledOff").addClass("ledOn"),
-				doAction("scanRedox","typeRedox",typePHRedox,"");
+				doAction("scanRedox","typeRedox",typePHRedox,"tampon",$("#RedoxTampon").val());
 			}
 		}));
 

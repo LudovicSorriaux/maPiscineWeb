@@ -116,9 +116,10 @@
       float mesure = 0.0;
       float ajust = 0.0;
       float calculated = 0.0;
+      float tampon = 0.0;   // valeur réelle du tampon (ex: 6.85 au lieu de 7.0)
       char action[15] = "";
       char PHRedox[10] = "";
-      char type[7] = ""; 
+      char type[7] = "";
     } struct_Etalon_Data;
 
     typedef struct struct_routeur_Data{
