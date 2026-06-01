@@ -30,7 +30,7 @@
 			hasAction ? $("#validSondes").removeClass("ui-disabled") : $("#validSondes").addClass("ui-disabled");
 		}
 
-		function doAction(action,param,valParam,param2,valParam2){
+		function doAction(action,param,valParam,param2,valParam2,param3,valParam3){
 
 /*			doAction("scanPH","typePH",PH4,"");
 			doAction("cancelPH","");
@@ -53,6 +53,9 @@
 			}
 			if(""!==param2){
 				command+="&"+param2+"="+valParam2
+			}
+			if(param3 && ""!==param3){
+				command+="&"+param3+"="+valParam3
 			}
 			console.log("data is :"+command),
 			$.ajax({
@@ -83,15 +86,11 @@
 			typePHRedox="N/A";
 			$("#cancelPH").removeClass("ui-disabled");
 			switch($(this).attr("id")){
-				case"PH4Radio":
-					typePHRedox="PH4"; $("#PHtampon").val("4.01");
-				break;
-				case"PH7Radio":
-					typePHRedox="PH7"; $("#PHtampon").val("7.00");
-				break;
-				case"PH9Radio":
-					typePHRedox="PH9"; $("#PHtampon").val("9.00");
+				case"PH4Radio": typePHRedox="PH4"; break;
+				case"PH7Radio": typePHRedox="PH7"; break;
+				case"PH9Radio": typePHRedox="PH9"; break;
 			}
+			$("#PHtampon").val("");
 			if("N/A"!==typePHRedox){
 				doAction("scanPH","typePH",typePHRedox,"tampon",$("#PHtampon").val());
 				$("#scanPHLed").removeClass("ledOff").addClass("ledOn");
@@ -105,6 +104,7 @@
 			typePHRedox="N/A",
 			$("#PHMesu").val("---"),
 			$("#PHAjust").val("---"),
+			$("#PHtampon").val(""),
 			$(scanPHLed).removeClass("ledOn").addClass("ledOff"),
 			doAction("cancelPH","");
 		}));
@@ -116,7 +116,7 @@
 				$(":input[name= 'PHRadio']").attr("checked",!1),
 				$(":input[name= 'PHRadio']").checkboxradio("refresh"),
 				$(scanPHLed).removeClass("ledOn").addClass("ledOff"),
-				doAction("validEtalon","valEtalon",$("#PHMesu").val(),"type",typePHRedox),
+				doAction("validEtalon","valEtalon",$("#PHMesu").val(),"type",typePHRedox,"tampon",$("#PHtampon").val()),
 				$("#PHMesu").val("---"),
 				$("#PHAjust").val("---"),
 				typePHRedox="N/A"
@@ -141,7 +141,7 @@
 				$("#validPH").addClass("ui-disabled"),
 				$(":input[name= 'PHRadio']").attr("checked",!1),
 				$(":input[name= 'PHRadio']").checkboxradio("refresh"),
-				doAction("validEtalon","valEtalon",$("#PHAjust").val(),"type",typePHRedox),
+				doAction("validEtalon","valEtalon",$("#PHAjust").val(),"type",typePHRedox,"tampon",$("#PHtampon").val()),
 				$("#PHMesu").val("---"),
 				$("#PHAjust").val("---"),
 				$(scanPHLed).removeClass("ledOn").addClass("ledOff"),
@@ -160,12 +160,10 @@
 			$("#cancelRedox").removeClass("ui-disabled"),
 			$("#RedoxAjust").val("---");
 			switch($(this).attr("id")){
-				case"redoxLowRadio":
-					typePHRedox="Low"; $("#RedoxTampon").val("468");
-					break;
-				case"redoxHighRadio":
-					typePHRedox="High"; $("#RedoxTampon").val("650");
+				case"redoxLowRadio":  typePHRedox="Low";  break;
+				case"redoxHighRadio": typePHRedox="High"; break;
 			}
+			$("#RedoxTampon").val("");
 			if("N/A"!==typePHRedox){
 				$("#scanRedoxLed").removeClass("ledOff").addClass("ledOn"),
 				doAction("scanRedox","typeRedox",typePHRedox,"tampon",$("#RedoxTampon").val());
@@ -179,6 +177,7 @@
 			typePHRedox="N/A",
 			$("#RedoxMesu").val("---"),
 			$("#RedoxAjust").val("---"),
+			$("#RedoxTampon").val(""),
 			$(scanRedoxLed).removeClass("ledOn").addClass("ledOff"),
 			doAction("cancelRedox","");
 		}));
@@ -189,7 +188,7 @@
 				$(":input[name= 'RedoxRadio']").attr("checked",!1),
 				$(":input[name= 'RedoxRadio']").checkboxradio("refresh"),
 				$(scanRedoxLed).removeClass("ledOn").addClass("ledOff"),
-				doAction("validEtalon","valEtalon",$("#RedoxMesu").val(),"type",typePHRedox),
+				doAction("validEtalon","valEtalon",$("#RedoxMesu").val(),"type",typePHRedox,"tampon",$("#RedoxTampon").val()),
 				$("#RedoxMesu").val("---"),
 				$("#RedoxAjust").val("---"),
 				typePHRedox="N/A"
@@ -214,13 +213,38 @@
 				$("validRedox").addClass("ui-disabled"),
 				$(":input[name= 'RedoxRadio']").attr("checked",!1),
 				$(":input[name= 'RedoxRadio']").checkboxradio("refresh"),
-				doAction("validEtalon","valEtalon",$("#RedoxAjust").val(),"type",typePHRedox),
+				doAction("validEtalon","valEtalon",$("#RedoxAjust").val(),"type",typePHRedox,"tampon",$("#RedoxTampon").val()),
 				$("#RedoxMesu").val("---"),
 				$("#RedoxAjust").val("---"),
 				typePHRedox="N/A",
 				$(scanRedoxLed).removeClass("ledOn").addClass("ledOff")
 			}
 		}));
+
+		var phTamponTimer = null;
+		var redoxTamponTimer = null;
+
+		$("#PHtampon").on("input", function(){
+			if(typePHRedox === "N/A") return;
+			clearTimeout(phTamponTimer);
+			phTamponTimer = setTimeout(function(){
+				var val = $("#PHtampon").val();
+				if(val !== "" && !isNaN(parseFloat(val))){
+					doAction("setTampon","typePH",typePHRedox,"tampon",val);
+				}
+			}, 1500);
+		});
+
+		$("#RedoxTampon").on("input", function(){
+			if(typePHRedox === "N/A") return;
+			clearTimeout(redoxTamponTimer);
+			redoxTamponTimer = setTimeout(function(){
+				var val = $("#RedoxTampon").val();
+				if(val !== "" && !isNaN(parseFloat(val))){
+					doAction("setTampon","typeRedox",typePHRedox,"tampon",val);
+				}
+			}, 1500);
+		});
 
 		$("#validSondes").click((function(){
 			sondes=[],
@@ -455,6 +479,7 @@
 				data=$.trim(evt.data);
 				var returnedData=JSON.parse(data);
 				console.log("serverEvent json is "+JSON.stringify(returnedData));
+				if(returnedData === null) return;
 
 				if(returnedData.hasOwnProperty("sondes")){
 					if(returnedData.sondes.length===0){
@@ -519,9 +544,9 @@
 				} 
 				if(returnedData.hasOwnProperty("phCalc")){
 					value=parseFloat(returnedData.phCalc)
-					console.log("Got phClac and theVal is :"+value),
+					console.log("Got phCalc and theVal is :"+value),
 					$("#PHCalc").val(value.toFixed(2).toString())
-					if("N/A"!==returnedData.phMesu){
+					if("N/A"!==returnedData.phMesu && parseFloat(returnedData.phMesu) !== 0){
 						if(returnedData.hasOwnProperty("phMesu")){
 							value=parseFloat(returnedData.phMesu),
 							$("#PHMesu").val(value.toFixed(3).toString()),
@@ -531,13 +556,16 @@
 							value=parseFloat(returnedData.phAjust),
 							$("#PHAjust").val(value.toFixed(3).toString())
 						}
+						if(returnedData.hasOwnProperty("phTampon") && returnedData.phTampon !== 0 && $("#PHtampon").val() === ""){
+							$("#PHtampon").val(parseFloat(returnedData.phTampon).toFixed(2).toString())
+						}
 					}
 				}
 				if(returnedData.hasOwnProperty("redoxCalc")){
 					value=parseFloat(returnedData.redoxCalc),
-					console.log("Got redoxClac and theVal is :"+value),
+					console.log("Got redoxCalc and theVal is :"+value),
 					$("#RedoxCalc").val(value.toFixed(1).toString())
-					if("N/A"!==returnedData.redoxMesu){
+					if("N/A"!==returnedData.redoxMesu && parseFloat(returnedData.redoxMesu) !== 0){
 						if(returnedData.hasOwnProperty("redoxMesu")){
 							value=parseFloat(returnedData.redoxMesu),
 							$("#RedoxMesu").val(value.toFixed(1).toString()),
@@ -546,6 +574,9 @@
 						if(returnedData.hasOwnProperty("redoxAjust")){
 							value=parseFloat(returnedData.redoxAjust),
 							$("#RedoxAjust").val(value.toFixed(1).toString())
+						}
+						if(returnedData.hasOwnProperty("redoxTampon") && returnedData.redoxTampon !== 0 && $("#RedoxTampon").val() === ""){
+							$("#RedoxTampon").val(parseFloat(returnedData.redoxTampon).toFixed(0).toString())
 						}
 					}
 				}

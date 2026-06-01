@@ -43,6 +43,7 @@ class PiscineWebClass {
 
         void sendTempAdd(unsigned char len, char *data);
         void setEtalonData();
+        void setTamponData(const struct_Tampons& t);
         void setTempAdd(char *jsonSondes);
         void manageDebugLCD();
         void sendHeartbeat();                  // Envoie un ping SSE (maintient la connexion proxy active)

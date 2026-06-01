@@ -400,22 +400,41 @@ void PiscineWebClass::_migratePasswords() {
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebClass::setEtalonData(){
-        char jsonBuff[256];  // Optimisation RAM
-        JsonDocument piscineEtalonJson;  // Optimisation RAM
+        char jsonBuff[192];
+        JsonDocument piscineEtalonJson;
 
         if(strcmp(etalon_Data.PHRedox,"PH")==0){
-            piscineEtalonJson["phCalc"] = etalon_Data.calculated;
-            piscineEtalonJson["phMesu"] = etalon_Data.mesure;
+            piscineEtalonJson["phCalc"]  = etalon_Data.calculated;
+            piscineEtalonJson["phMesu"]  = etalon_Data.mesure;
             piscineEtalonJson["phAjust"] = etalon_Data.ajust;
         } else if(strcmp(etalon_Data.PHRedox,"Redox")==0){
-            piscineEtalonJson["redoxCalc"] = etalon_Data.calculated;
-            piscineEtalonJson["redoxMesu"] = etalon_Data.mesure;
+            piscineEtalonJson["redoxCalc"]  = etalon_Data.calculated;
+            piscineEtalonJson["redoxMesu"]  = etalon_Data.mesure;
             piscineEtalonJson["redoxAjust"] = etalon_Data.ajust;
+        } else {
+            return;
         }
-        piscineEtalonJson.shrinkToFit();  // optional
         serializeJson(piscineEtalonJson, jsonBuff, sizeof(jsonBuff));
         logger.println(jsonBuff);
-        piscineEvents.send(jsonBuff, "piscineMaintenance", millis());  
+        piscineEvents.send(jsonBuff, "piscineMaintenance", millis());
+    }
+
+    void PiscineWebClass::setTamponData(const struct_Tampons& t){
+        char jsonBuff[64];
+        JsonDocument json;
+        if(strcmp(etalon_Data.PHRedox,"PH")==0){
+            float val = (strcmp(etalon_Data.type,"PH4")==0) ? t.PH4
+                      : (strcmp(etalon_Data.type,"PH9")==0) ? t.PH9 : t.PH7;
+            json["phTampon"] = val;
+        } else if(strcmp(etalon_Data.PHRedox,"Redox")==0){
+            float val = (strcmp(etalon_Data.type,"High")==0) ? t.RHigh : t.RLow;
+            json["redoxTampon"] = val;
+        } else {
+            return;
+        }
+        serializeJson(json, jsonBuff, sizeof(jsonBuff));
+        logger.println(jsonBuff);
+        piscineEvents.send(jsonBuff, "piscineMaintenance", millis());
     }
 
   /*
@@ -1927,17 +1946,8 @@ void PiscineWebClass::_migratePasswords() {
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebClass::handleInitPiscinePageMaintenance(AsyncWebServerRequest *request){
-
-        char jsonBuff[128];  // Optimisation RAM
-        JsonDocument piscineMaintenanceInitJson;  // Optimisation RAM #7
-
-
-        serializeJson(piscineMaintenanceInitJson, jsonBuff, sizeof(jsonBuff));  // Optimisation RAM
-        logger.println(jsonBuff);
-        piscineEvents.send(jsonBuff, "piscineMaintenance", millis());  
         request->send(200, "text/plain","OK InitPiscinePageMaintenance done");
         logger.println("OK InitPiscinePageMaintenance done");
-
     }
 
   /*
@@ -1973,26 +1983,24 @@ void PiscineWebClass::_migratePasswords() {
                 } else if (strcmp(command, "scanPH") == 0){
                     if(request->hasParam("typePH",true)){           // PH4 or PH7 or PH9
                         request->getParam("typePH",true)->value().toCharArray(type,sizeof(type));
-                        etalon_Data.tampon = request->hasParam("tampon",true)
-                            ? request->getParam("tampon",true)->value().toFloat() : 0.0f;
-                        logger.printf("Scan PH typePH is : %s tampon=%.2f\n",type,etalon_Data.tampon);
+                        logger.printf("Scan PH typePH is : %s\n",type);
                         strcpy(etalon_Data.action,"Start");
                         strcpy(etalon_Data.PHRedox,"PH");
                         strcpy(etalon_Data.type,type);
                         flgScanPH = true;
                         webTelecom.sendEtalonMode();
+                        webTelecom.sendGetTampons();  // 'G' séparé pour le tampon stocké
                     }
                 } else if (strcmp(command, "scanRedox") == 0){
                     if(request->hasParam("typeRedox",true)){          // "Low" or "High"
                         request->getParam("typeRedox",true)->value().toCharArray(type,sizeof(type));
-                        etalon_Data.tampon = request->hasParam("tampon",true)
-                            ? request->getParam("tampon",true)->value().toFloat() : 0.0f;
-                        logger.printf("Scan Redox typeRedox is : %s tampon=%.2f\n",type,etalon_Data.tampon);
+                        logger.printf("Scan Redox typeRedox is : %s\n",type);
                         strcpy(etalon_Data.action,"Start");
                         strcpy(etalon_Data.PHRedox,"Redox");
                         strcpy(etalon_Data.type,type);
                         flgScanRedox = true;
                         webTelecom.sendEtalonMode();
+                        webTelecom.sendGetTampons();  // 'G' séparé pour le tampon stocké
                     }
                 } else if (strcmp(command, "cancelScan") == 0){
                     if(request->hasParam("type",true)){           // Redox or PH           
@@ -2022,14 +2030,27 @@ void PiscineWebClass::_migratePasswords() {
                     strcpy(etalon_Data.action,"Cancel");
                     strcpy(etalon_Data.PHRedox,"Redox");
                     webTelecom.sendEtalonMode();
+                } else if (strcmp(command, "setTampon") == 0){
+                    if(request->hasParam("tampon",true)){
+                        float tamponVal = request->getParam("tampon",true)->value().toFloat();
+                        const char* phredox = "";
+                        if(request->hasParam("typePH",true)){
+                            request->getParam("typePH",true)->value().toCharArray(type,sizeof(type));
+                            phredox = "PH";
+                        } else if(request->hasParam("typeRedox",true)){
+                            request->getParam("typeRedox",true)->value().toCharArray(type,sizeof(type));
+                            phredox = "Redox";
+                        }
+                        logger.printf("SetTampon PHRedox=%s type=%s val=%.3f\n",phredox,type,tamponVal);
+                        webTelecom.sendSetTampon(phredox, type, tamponVal);  // 'G' séparé
+                    }
                 } else if (strcmp(command, "validEtalon") == 0){
-                    if(request->hasParam("valEtalon",true)){   
+                    if(request->hasParam("valEtalon",true)){
                         request->getParam("valEtalon",true)->value().toCharArray(value,sizeof(value));
-                        if(request->hasParam("type",true)){                                
-                            request->getParam("type",true)->value().toCharArray(type,sizeof(type));      
-                            logger.printf("Valid Etalon with value %s and type is %s\n",value,type);
+                        if(request->hasParam("type",true)){
+                            request->getParam("type",true)->value().toCharArray(type,sizeof(type));
+                            logger.printf("Valid Etalon type=%s\n",type);
                             strcpy(etalon_Data.action,"Valid");
-                            strcpy(etalon_Data.PHRedox,value);
                             strcpy(etalon_Data.type,type);
                             webTelecom.sendEtalonMode();
                         }

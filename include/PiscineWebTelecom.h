@@ -44,6 +44,7 @@ class PiscineWebTelecomClass {
         void receiveHello(unsigned char src, char command, unsigned char len, char *data);
         void receiveTempAdd(unsigned char src, char command, unsigned char len, char *data);
         void receiveEtalonData(unsigned char src, char command, unsigned char len, char *data);
+        void receiveTampons(unsigned char src, char command, unsigned char len, char *data);
 
         void sendTimeMess();
         void sendAskSyncMess(char typeSync);
@@ -51,7 +52,9 @@ class PiscineWebTelecomClass {
         void sendRouteurPACStatus(char *routerPACStatus);
         void sendHelloMess();
         void sendTempAddMess(bool set, char *theMessage, uint8_t len);
-        void sendEtalonMode();  
+        void sendEtalonMode();
+        void sendGetTampons();
+        void sendSetTampon(const char* PHRedox, const char* type, float value);
            
     private :
       bool waitToTransmit = false;

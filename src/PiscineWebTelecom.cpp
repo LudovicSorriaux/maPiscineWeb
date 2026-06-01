@@ -15,6 +15,7 @@
 #include "PiscineWeb.h"
 #include "IndexNames.h"  // Optimisation RAM #6 : Noms des paramètres en PROGMEM
 
+
     // static callbacks 
     
   static void recData(unsigned char src, char command, unsigned char len, char *data) {
@@ -35,6 +36,10 @@
 
   static void recEtalonData(unsigned char src, char command, unsigned char len, char *data) {
     webTelecom.receiveEtalonData(src, command, len, data);
+  }
+
+  static void recTampons(unsigned char src, char command, unsigned char len, char *data) {
+    webTelecom.receiveTampons(src, command, len, data);
   }
 
   static void recHello(unsigned char src, char command, unsigned char len, char *data) {
@@ -69,6 +74,7 @@
         telecom.registerCommand('A', &recTempAdd);
         telecom.registerCommand('B', &recTempAdd);
         telecom.registerCommand('E', &recEtalonData);
+        telecom.registerCommand('G', &recTampons);
     }
 
 /**
@@ -479,13 +485,14 @@
    * Entrées : voir la signature de la fonction (paramètres)
    * Sortie : valeur de retour ou effet sur l'état interne
    */
-    void PiscineWebTelecomClass::sendEtalonMode(){
+    void PiscineWebTelecomClass::
+    sendEtalonMode(){
           // station (C controler,K keyboard,W web)  
           // command (V values, J jsonText, T time, S sync, H hello, A ask temp add, B set temp add, E etalons, R routeur info)
 
-      char message[sizeof(etalon_Data)]; 
+      char message[sizeof(etalon_Data)];
 
-      memcpy(message, &etalon_Data, sizeof(etalon_Data)); 
+      memcpy(message, &etalon_Data, sizeof(etalon_Data));
       logger.printf("    Now sending etalon Mode message to Controleur with type 'E'\n");
       telecom.send('C', 'E', sizeof(etalon_Data), message); 
     }
@@ -496,6 +503,32 @@
    * Entrées : voir la signature de la fonction (paramètres)
    * Sortie : valeur de retour ou effet sur l'état interne
    */
+    void PiscineWebTelecomClass::receiveTampons(unsigned char src, char command, unsigned char len, char *data){
+      if(command != 'G' || len != sizeof(struct_Tampons)) return;
+      struct_Tampons t;
+      memcpy(&t, data, sizeof(struct_Tampons));
+      logger.printf("    Got Tampons from Controleur: PH4=%.2f PH7=%.2f PH9=%.2f RLow=%.0f RHigh=%.0f\n",
+                    t.PH4, t.PH7, t.PH9, t.RLow, t.RHigh);
+      maPiscineWeb.setTamponData(t);
+    }
+
+    void PiscineWebTelecomClass::sendGetTampons(){
+      char empty = 0;
+      logger.printf("    sendGetTampons to Controleur\n");
+      telecom.send('C', 'G', 0, &empty);
+    }
+
+    void PiscineWebTelecomClass::sendSetTampon(const char* PHRedox, const char* type, float value){
+      struct_SetTampon st;
+      st.value = value;
+      strncpy(st.PHRedox, PHRedox, sizeof(st.PHRedox)-1); st.PHRedox[sizeof(st.PHRedox)-1]=0;
+      strncpy(st.type, type, sizeof(st.type)-1); st.type[sizeof(st.type)-1]=0;
+      char message[sizeof(struct_SetTampon)];
+      memcpy(message, &st, sizeof(struct_SetTampon));
+      logger.printf("    sendSetTampon PHRedox=%s type=%s value=%.3f\n", PHRedox, type, value);
+      telecom.send('C', 'G', sizeof(struct_SetTampon), message);
+    }
+
     void PiscineWebTelecomClass::sendHelloMess(){
           // station (C controler,K keyboard,W web)  
           // command (V values, J jsonText, T time, S sync, H hello, A ask temp add, B set temp add, E etalons, R routeur info)

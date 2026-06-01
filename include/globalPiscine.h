@@ -116,11 +116,24 @@
       float mesure = 0.0;
       float ajust = 0.0;
       float calculated = 0.0;
-      float tampon = 0.0;   // valeur réelle du tampon (ex: 6.85 au lieu de 7.0)
       char action[15] = "";
       char PHRedox[10] = "";
       char type[7] = "";
-    } struct_Etalon_Data;
+    } struct_Etalon_Data;  // 44 bytes — tampons transmis séparément via 'G'
+
+    typedef struct set_tampon_t {
+      float value = 0.0;
+      char PHRedox[10] = "";
+      char type[7] = "";
+    } struct_SetTampon;  // 21 bytes
+
+    typedef struct tampons_t {
+      float PH4  = 4.0f;
+      float PH7  = 7.0f;
+      float PH9  = 9.0f;
+      float RLow = 468.0f;
+      float RHigh= 650.0f;
+    } struct_Tampons;  // 20 bytes
 
     typedef struct struct_routeur_Data{
       float GRIDCurrentPower = 0.0;
