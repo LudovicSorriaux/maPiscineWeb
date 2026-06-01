@@ -352,10 +352,81 @@ git diff --stat
 - Configuration sauvegardée automatiquement.
 - Timeout de connexion configurable.
 
-### Communication Contrôleur
-- Protocole propriétaire (pas ICSC ici, contrairement au Clavier).
-- Synchronisation périodique des états.
-- Bufferisation des commandes si contrôleur indisponible.
+### Communication Contrôleur — Protocole ICSC v4.5.5
+
+Le Web board (D1 mini, station `'W'`) communique avec le Contrôleur ESP32 (station `'C'`) via ICSC sur Serial (115200 baud).
+
+#### Commandes enregistrées
+
+| Commande | Sens | Contenu |
+|---|---|---|
+| `V` | → Contrôleur | `dataStruct` (paramètre + valeur) |
+| `T` | → Contrôleur | Heure NTP |
+| `S` | ↔ | Synchronisation paramètres |
+| `H` | ↔ | Hello / détection présence |
+| `A` / `B` | ↔ | Adresses sondes DS18B20 |
+| `E` | ↔ | Données étalonnage (44 bytes max) |
+| `G` | ↔ | Tampons PH/Redox (GET ou SET) |
+| `R` | → Contrôleur | État routeur PAC |
+
+#### Structures partagées (`include/globalPiscine.h`)
+
+```cpp
+struct struct_Etalon_Data { // 44 bytes — direction Web→Contrôleur
+    float mesure, ajust, calculated;
+    char action[15], PHRedox[10], type[7];
+};
+
+struct struct_Tampons { // 20 bytes — direction Contrôleur→Web
+    float PH4, PH7, PH9, RLow, RHigh;
+};
+
+struct struct_SetTampon { // 21 bytes — direction Web→Contrôleur
+    float value;
+    char PHRedox[10], type[7];
+};
+```
+
+#### Commande 'G' — Tampons
+
+- `sendGetTampons()` : envoie `'G'` vide (len=0) → le contrôleur répond avec `struct_Tampons`
+- `sendSetTampon(PHRedox, type, value)` : envoie `'G'` + `struct_SetTampon` (len=21)
+- `receiveTampons()` : reçoit `struct_Tampons`, appelle `setTamponData()` qui émet un SSE `{"phTampon": x}`
+
+#### Flux étalonnage (page maintenance)
+
+```
+Click PH7 :
+  handlePiscinePageMaintenance("scanPH")
+    → sendEtalonMode()   : 'E' action=Start, PHRedox=PH, type=PH7
+    → sendGetTampons()   : 'G' len=0
+
+Réponses du contrôleur :
+  'E' → receiveEtalonData() → setEtalonData() → SSE {phCalc, phMesu, phAjust}
+  'G' → receiveTampons()   → setTamponData() → SSE {phTampon: 7.01}
+
+JS : #PHtampon se peuple si le champ est vide
+
+Modification debounced du tampon (#PHtampon après 1500ms) :
+  → sendSetTampon("PH", "PH7", 7.01)  : 'G' len=21
+
+Validation calibration :
+  → sendEtalonMode() : 'E' action=Valid, type=PH7  (tampon non inclus)
+```
+
+#### Limitation ICSC ESP8266 → ESP32
+
+Les messages `'E'` sont limités à **44 bytes** dans le sens ESP8266→ESP32 (cause UART non identifiée). Le champ `tampon` a été retiré de `struct_Etalon_Data` et géré via `'G'`. Ne pas dépasser 44 bytes pour les structs envoyées vers le contrôleur.
+
+#### SSE Maintenance (`piscineMaintenance` event)
+
+| Payload SSE | Source | Déclencheur |
+|---|---|---|
+| `{"phCalc", "phMesu", "phAjust"}` | `setEtalonData()` | Mesure PH en cours |
+| `{"redoxCalc", "redoxMesu", "redoxAjust"}` | `setEtalonData()` | Mesure Redox en cours |
+| `{"phTampon": x}` | `setTamponData()` | Réception 'G' tampons |
+| `{"redoxTampon": x}` | `setTamponData()` | Réception 'G' tampons |
+| `{"sondes": [...]}` | `sendTempAdd()` | Scan/résultat DS18B20 |
 
 ### NTP et TimeLib
 - Synchronisation NTP au démarrage et périodique.
@@ -543,4 +614,4 @@ Pour toute question ou bug :
 3. Tester les endpoints API avec curl
 4. Consulter ce fichier pour le workflow
 
-**Date de dernière mise à jour** : 15 novembre 2025
+**Date de dernière mise à jour** : 2026-06-01 (v4.5.5)
