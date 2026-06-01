@@ -420,14 +420,25 @@ void PiscineWebClass::_migratePasswords() {
     }
 
     void PiscineWebClass::setTamponData(const struct_Tampons& t){
+        // Mise en cache de tous les tampons
+        cachedTampons = t;
+        flgTamponsReady = true;
+        logger.printf("[WEB] Tampons cached: PH4=%.2f PH7=%.2f PH9=%.2f RLow=%.0f RHigh=%.0f\n",
+                      t.PH4, t.PH7, t.PH9, t.RLow, t.RHigh);
+        // SSE avec le tampon correspondant au type en cours
+        sendCachedTampon();
+    }
+
+    void PiscineWebClass::sendCachedTampon(){
+        if(!flgTamponsReady) return;
         char jsonBuff[64];
         JsonDocument json;
         if(strcmp(etalon_Data.PHRedox,"PH")==0){
-            float val = (strcmp(etalon_Data.type,"PH4")==0) ? t.PH4
-                      : (strcmp(etalon_Data.type,"PH9")==0) ? t.PH9 : t.PH7;
+            float val = (strcmp(etalon_Data.type,"PH4")==0) ? cachedTampons.PH4
+                      : (strcmp(etalon_Data.type,"PH9")==0) ? cachedTampons.PH9 : cachedTampons.PH7;
             json["phTampon"] = val;
         } else if(strcmp(etalon_Data.PHRedox,"Redox")==0){
-            float val = (strcmp(etalon_Data.type,"High")==0) ? t.RHigh : t.RLow;
+            float val = (strcmp(etalon_Data.type,"High")==0) ? cachedTampons.RHigh : cachedTampons.RLow;
             json["redoxTampon"] = val;
         } else {
             return;
@@ -1988,8 +1999,8 @@ void PiscineWebClass::_migratePasswords() {
                         strcpy(etalon_Data.PHRedox,"PH");
                         strcpy(etalon_Data.type,type);
                         flgScanPH = true;
-                        webTelecom.sendEtalonMode();
-                        webTelecom.sendGetTampons();  // 'G' séparé pour le tampon stocké
+                        webTelecom.sendEtalonMode();  // contrôleur répondra 'E'+'G' en séquence
+                        sendCachedTampon();           // SSE immédiat si cache déjà disponible
                     }
                 } else if (strcmp(command, "scanRedox") == 0){
                     if(request->hasParam("typeRedox",true)){          // "Low" or "High"
@@ -1999,8 +2010,8 @@ void PiscineWebClass::_migratePasswords() {
                         strcpy(etalon_Data.PHRedox,"Redox");
                         strcpy(etalon_Data.type,type);
                         flgScanRedox = true;
-                        webTelecom.sendEtalonMode();
-                        webTelecom.sendGetTampons();  // 'G' séparé pour le tampon stocké
+                        webTelecom.sendEtalonMode();  // contrôleur répondra 'E'+'G' en séquence
+                        sendCachedTampon();           // SSE immédiat si cache déjà disponible
                     }
                 } else if (strcmp(command, "cancelScan") == 0){
                     if(request->hasParam("type",true)){           // Redox or PH           

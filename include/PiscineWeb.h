@@ -44,6 +44,7 @@ class PiscineWebClass {
         void sendTempAdd(unsigned char len, char *data);
         void setEtalonData();
         void setTamponData(const struct_Tampons& t);
+        void sendCachedTampon();
         void setTempAdd(char *jsonSondes);
         void manageDebugLCD();
         void sendHeartbeat();                  // Envoie un ping SSE (maintient la connexion proxy active)
@@ -59,6 +60,8 @@ class PiscineWebClass {
 
             bool flgScanRedox = false;
             bool flgScanPH = false;
+            struct_Tampons cachedTampons;   // cache des 5 tampons reçus via 'G'
+            bool flgTamponsReady = false;   // true dès la première réception 'G'
 
             AsyncWebServer server = AsyncWebServer(80); 
             static const char piscineFolder[] PROGMEM;  // Optimisation RAM : PROGMEM au lieu de String 

@@ -82,6 +82,7 @@
 			$(":input[name= 'RedoxRadio']").checkboxradio("refresh");
 			$("#RedoxMesu").val("---");
 			$("#RedoxAjust").val("---");
+			$("#RedoxTampon").val("");
 			$(scanRedoxLed).removeClass("ledOn").addClass("ledOff");
 			typePHRedox="N/A";
 			$("#cancelPH").removeClass("ui-disabled");
@@ -131,6 +132,7 @@
 				typePHRedox="N/A",
 				$("#PHMesu").val("---"),
 				$("#PHAjust").val("---"),
+				$("#PHtampon").val(""),
 				$(this).removeClass("ledOn").addClass("ledOff"),
 				doAction("cancelScan","type","PH");
 			}
@@ -155,6 +157,7 @@
 			$(":input[name= 'PHRadio']").checkboxradio("refresh"),
 			$("#PHMesu").val("---"),
 			$("#PHAjust").val("---"),
+			$("#PHtampon").val(""),
 			$(scanPHLed).removeClass("ledOn").addClass("ledOff"),
 			typePHRedox="N/A",
 			$("#cancelRedox").removeClass("ui-disabled"),
@@ -203,6 +206,7 @@
 				typePHRedox="N/A",
 				$("#RedoxMesu").val("---"),
 				$("#RedoxAjust").val("---"),
+				$("#RedoxTampon").val(""),
 				$(this).removeClass("ledOn").addClass("ledOff"),
 				doAction("cancelScan","type","Redox")
 			}
@@ -556,10 +560,10 @@
 							value=parseFloat(returnedData.phAjust),
 							$("#PHAjust").val(value.toFixed(3).toString())
 						}
-						if(returnedData.hasOwnProperty("phTampon") && returnedData.phTampon !== 0 && $("#PHtampon").val() === ""){
-							$("#PHtampon").val(parseFloat(returnedData.phTampon).toFixed(2).toString())
-						}
 					}
+				}
+				if(returnedData.hasOwnProperty("phTampon") && returnedData.phTampon !== 0 && $("#PHtampon").val() === ""){
+					$("#PHtampon").val(parseFloat(returnedData.phTampon).toFixed(2).toString())
 				}
 				if(returnedData.hasOwnProperty("redoxCalc")){
 					value=parseFloat(returnedData.redoxCalc),
@@ -575,10 +579,10 @@
 							value=parseFloat(returnedData.redoxAjust),
 							$("#RedoxAjust").val(value.toFixed(1).toString())
 						}
-						if(returnedData.hasOwnProperty("redoxTampon") && returnedData.redoxTampon !== 0 && $("#RedoxTampon").val() === ""){
-							$("#RedoxTampon").val(parseFloat(returnedData.redoxTampon).toFixed(0).toString())
-						}
 					}
+				}
+				if(returnedData.hasOwnProperty("redoxTampon") && returnedData.redoxTampon !== 0 && $("#RedoxTampon").val() === ""){
+					$("#RedoxTampon").val(parseFloat(returnedData.redoxTampon).toFixed(0).toString())
 				}
 			}
 		};
