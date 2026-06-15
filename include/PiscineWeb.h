@@ -75,12 +75,12 @@ class PiscineWebClass {
  
             std::set<uint8_t> piscinePPSet {IND_PHVal,IND_RedoxVal,IND_CLVal, IND_TempAir, IND_TempEau, IND_TempInt, IND_TempPAC, 
                                             IND_PP, IND_PAC, IND_PompePH, IND_PompeCL, IND_PompeALG, IND_Lampe, IND_Volet, IND_Auto};
-            std::set<int> piscineParamsSet {IND_PP, IND_PAC, IND_PompePH, IND_PompeCL, IND_PompeALG, IND_Lampe, IND_Volet, IND_Auto, 
-                                            IND_PlageOnPP, IND_PlageOffPP, IND_PlageOnPAC, IND_PlageOffPAC, IND_TypeTemp, IND_tFixe, IND_tVar, IND_pacViaRouter, IND_PHRef, IND_RedoxRef, 
-                                            IND_TypePompe3,IND_ALGQuantite, IND_ALGFrequence, 
-                                            IND_ClearAlert, IND_InvPACAlert, IND_InvFlowAlert, IND_InvInondationAlert, 
-                                            IND_InvNivPHAlert, IND_InvNivCLAlert, IND_InvNivALGAlert, 
-                                            IND_PlageLampe, IND_PlageOnLampe, IND_PlageOffLampe, IND_PlageVolet, IND_PlageOuvVolet, IND_PlageFermVolet, 
+            std::set<int> piscineParamsSet {IND_PP, IND_PAC, IND_PompePH, IND_PompeCL, IND_PompeALG, IND_Lampe, IND_Volet, IND_Auto,
+                                            IND_PlageOnPP, IND_PlageOffPP, IND_PlageOnPAC, IND_PlageOffPAC, IND_TypeTemp, IND_tFixe, IND_tVar, IND_pacViaRouter, IND_PACAutonome, IND_PHRef, IND_RedoxRef,
+                                            IND_TypePompe3,IND_ALGQuantite, IND_ALGFrequence,
+                                            IND_ClearAlert, IND_InvPACAlert, IND_InvFlowAlert, IND_InvInondationAlert,
+                                            IND_InvNivPHAlert, IND_InvNivCLAlert, IND_InvNivALGAlert,
+                                            IND_PlageLampe, IND_PlageOnLampe, IND_PlageOffLampe, IND_PlageVolet, IND_PlageOuvVolet, IND_PlageFermVolet,
                                             };
 
             typedef struct sessions {
@@ -128,6 +128,7 @@ class PiscineWebClass {
         void handleGraphFileInfo(AsyncWebServerRequest *request);     // Chunked API: Info fichier
         void handleGraphChunk(AsyncWebServerRequest *request);        // Chunked API: Chunk données
         void handlePiscinePageDebug(AsyncWebServerRequest *request);
+        void handleSetDateTime(AsyncWebServerRequest *request);
         void handleInitPiscinePageMaintenance(AsyncWebServerRequest *request);
         void handlePiscinePageMaintenance(AsyncWebServerRequest *request);        
         void handleCheckLocalAuth(AsyncWebServerRequest *request);  // Vérifie si client local + retourne session auto

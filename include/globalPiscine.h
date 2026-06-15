@@ -47,8 +47,8 @@
 #define MAX_WIFI 3                       // max nb of wifi configs
 
 #define MAX_KEY_LEN 15
-#define IND_MAX_PISCINE 55    // last index !!
-#define IND_TOTAL 83          // all indexes  
+#define IND_MAX_PISCINE 56    // last index !!
+#define IND_TOTAL 83          // all indexes
 
 #define MAX_USERNAME_SIZE 11
 #define MAX_PW_HASH_SIZE  74             // 8-hex salt + ':' + 64-hex SHA-256 + '\0'

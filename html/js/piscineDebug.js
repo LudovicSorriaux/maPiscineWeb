@@ -4,12 +4,37 @@ var debugLineCount = 0;
 var piscineDebugEvent = null;
 var debugQueue = [];          // buffer pour les messages arrivant avant pageshow
 var MAX_DEBUG_LINES = 300;
+var HB_THROTTLE_MS = 60000;  // afficher 1 heartbeat max toutes les 60 s dans le log
+var lastHbLogTime = 0;
 
 function _renderDebugLine(text) {
     if (!debugLogEl || !text) return;
     var lines = text.split('\n');
     lines.forEach(function (line) {
         if (!line) return;
+        // Heartbeat = "[DEBUG] heap:XXXX controleur:..."
+        if (/^\[DEBUG\] heap:/.test(line)) {
+            var hbEl = document.getElementById('hbStatus');
+            if (hbEl) {
+                var ts = new Date().toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+                hbEl.textContent = '● heartbeat: ' + ts + '  ' + line.replace('[DEBUG] ','');
+            }
+            var now = Date.now();
+            if (now - lastHbLogTime < HB_THROTTLE_MS) return;
+            lastHbLogTime = now;
+            // affiche dans le log avec style atténué
+            var div = document.createElement('div');
+            div.className = 'debug-line debug-line-hb';
+            div.textContent = line;
+            debugLogEl.appendChild(div);
+            debugLineCount++;
+            while (debugLineCount > MAX_DEBUG_LINES) {
+                debugLogEl.removeChild(debugLogEl.firstChild);
+                debugLineCount--;
+            }
+            debugLogEl.scrollTop = debugLogEl.scrollHeight;
+            return;
+        }
         var div = document.createElement('div');
         var cls = 'debug-line';
         if (/\[ERR|ERROR\b/i.test(line)) cls += ' debug-line-err';
@@ -64,6 +89,7 @@ $(document).delegate("#pagePiscineDebug", "pagebeforecreate", function () {
             debugLineCount = 0;
         }
         debugQueue = [];
+        lastHbLogTime = 0;
     });
 
     $page.find("#FeedSW").click(function () {
@@ -138,6 +164,7 @@ $(document).on("pagebeforehide", "#pagePiscineDebug", function () {
     console.log("-- STOPPING Piscine Debug SSE --");
     debugLogEl = null;
     debugQueue = [];
+    lastHbLogTime = 0;
     if (piscineDebugEvent) piscineDebugEvent.stop();
     fetch('/setPiscine?action=Debug', {
         method: 'POST',

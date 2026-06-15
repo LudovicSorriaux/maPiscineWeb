@@ -1,12 +1,14 @@
 	// page PiscineMaintenance create inits
 	$(document).delegate("#pagePiscineMaintenance","pagebeforecreate",function(){
-		var sonde1index,sonde2index,sonde3index,
+		var sonde1index,sonde2index,sonde3index,sonde4index,
 		sonde1Type="N/A",
 		sonde2Type="N/A",
 		sonde3Type="N/A",
+		sonde4Type="N/A",
 		sonde1Found=true,
 		sonde2Found=true,
 		sonde3Found=true,
+		sonde4Found=true,
 		gotSonde=false,
 		typePHRedox="N/A";
 
@@ -26,7 +28,8 @@
 			if(!gotSonde){ $("#validSondes").addClass("ui-disabled"); return; }
 			var hasAction=["eau","air","pac","suppr"].indexOf(sonde1Type)!==-1||
 			              ["eau","air","pac","suppr"].indexOf(sonde2Type)!==-1||
-			              ["eau","air","pac","suppr"].indexOf(sonde3Type)!==-1;
+			              ["eau","air","pac","suppr"].indexOf(sonde3Type)!==-1||
+			              ["eau","air","pac"].indexOf(sonde4Type)!==-1;
 			hasAction ? $("#validSondes").removeClass("ui-disabled") : $("#validSondes").addClass("ui-disabled");
 		}
 
@@ -251,23 +254,15 @@
 		});
 
 		$("#validSondes").click((function(){
-			sondes=[],
-			sonde1={}
-				sonde1.printable=$("#sonde1Val").val(),
-				sonde1.type=typeForServer(sonde1Type),
-				sonde1.index=sonde1index,
-			sondes.push(sonde1),
-			sonde2={}
-				sonde2.printable=$("#sonde2Val").val(),
-				sonde2.type=typeForServer(sonde2Type),
-				sonde2.index=sonde2index,
-			sondes.push(sonde2),
-			sonde3={}
-				sonde3.printable=$("#sonde3Val").val(),
-				sonde3.type=typeForServer(sonde3Type),
-				sonde3.index=sonde3index,
-			sondes.push(sonde3),
-			$(this).addClass("ui-disabled"),
+			var sondes=[], s1={}, s2={}, s3={};
+			s1.printable=$("#sonde1Val").val(); s1.type=typeForServer(sonde1Type); s1.index=sonde1index; sondes.push(s1);
+			s2.printable=$("#sonde2Val").val(); s2.type=typeForServer(sonde2Type); s2.index=sonde2index; sondes.push(s2);
+			s3.printable=$("#sonde3Val").val(); s3.type=typeForServer(sonde3Type); s3.index=sonde3index; sondes.push(s3);
+			if(sonde4index!==undefined && "N/A"!==sonde4Type){
+				var s4={};
+				s4.printable=$("#sonde4Val").val(); s4.type=typeForServer(sonde4Type); s4.index=sonde4index; sondes.push(s4);
+			}
+			$(this).addClass("ui-disabled");
 			gotSonde = false;
 			doAction("validSondes","sondes",JSON.stringify(sondes),"");
 		}));
@@ -276,6 +271,9 @@
 			$("#sonde1Val").val(""),
 			$("#sonde2Val").val(""),
 			$("#sonde3Val").val(""),
+			$("#sonde4Val").val(""),
+			$("#sonde4Row").hide(), $("#sonde4TypeRow").hide(),
+			sonde4Type="N/A", sonde4index=undefined,
 			doAction("scanSondes",""),
 			$("#validSondes").removeClass("ui-disabled")
 		}));
@@ -425,6 +423,18 @@
 			}
 		}));
 
+		$("#sonde4Type").click((function(){
+			if(gotSonde && sonde4index!==undefined){
+				switch($(this).text()){
+					case"N/A": $(this).text("Eau"); sonde4Type="eau"; break;
+					case"Eau": $(this).text("Air"); sonde4Type="air"; break;
+					case"Air": $(this).text("Pac"); sonde4Type="pac"; break;
+					case"Pac": $(this).text("N/A"); sonde4Type="N/A"; break;
+				}
+				updateValidSondes();
+			}
+		}));
+
 		piscineMaintenanceEvent=$.SSE("/piscineEvents",{		// piscineMaintenanceEvents
 			onOpen:function(e){
 				console.log("Open SSE to /piscineMaintenanceEvents"),
@@ -543,6 +553,19 @@
 							$("#sonde3Type").removeClass("ui-disabled");
 							sonde3Type="N/A"===sonde.type?"N/A":sonde.type.toLowerCase();
 						}
+					}
+					if(returnedData.sondes.length>=4){
+						sonde=returnedData.sondes[3];
+						sonde4Found=(sonde.found!==false);
+						sonde4index=sonde.index;
+						$("#sonde4Val").val(sonde.printable);
+						$("#sonde4Type").text("N/A"===sonde.type?"N/A":sonde.type);
+						$("#sonde4Type").removeClass("ui-disabled");
+						sonde4Type="N/A"===sonde.type?"N/A":sonde.type.toLowerCase();
+						$("#sonde4Row").show(); $("#sonde4TypeRow").show();
+					} else {
+						$("#sonde4Row").hide(); $("#sonde4TypeRow").hide();
+						sonde4Type="N/A"; sonde4index=undefined;
 					}
 					updateValidSondes();
 				} 

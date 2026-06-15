@@ -29,6 +29,7 @@
 		var lampeAutoToServer = true;
 		var voletAutoToServer = true;
 		var pacViaRouterToServer = true;
+		var pacAutonomeToServer = true;
 		var localAutoLoginToServer = true;
 
 
@@ -433,6 +434,29 @@
 					}
 				});
 			} else pacViaRouterToServer = true;
+		});
+
+		// --- PAC Autonome ---
+		$('#pacAutonomeSW').click( function () {
+			if (pacAutonomeToServer){
+				var theVal = $('#pacAutonomeSWitch').is(":checked") ? 1 : 0;
+				$.ajax({
+					type: 'POST',
+					url: '/setPiscine?action=Parametres',
+					data: 'sess=' + sessID + '&param=pacAutonome&val=' + theVal,
+					dataType: "text",
+					success: function(data){
+						console.log("Call to /setPacAutonome is success");
+					},
+					error: function (xhr, status, errorThrown) {
+						console.log('An error occurred while calling /setPacAutonome, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
+						if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){
+							console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
+							showSessionExpiredDialog("Action utilisateur");
+						}
+					}
+				});
+			} else pacAutonomeToServer = true;
 		});
 
 		// --- Local Auto Login ---
@@ -1098,6 +1122,56 @@
 			} else pmp3ToServer = true;
 		});
 
+	// --- Mise à l'Heure ---
+		// Initialise daterangepicker en mode date unique avec date du jour
+		$('#setDateInput').daterangepicker({
+			singleDatePicker: true,
+			showDropdowns: true,
+			autoApply: true,
+			startDate: moment(),
+			locale: {
+				format: 'DD/MM/YYYY',
+				applyLabel: 'OK',
+				cancelLabel: 'Annuler',
+				daysOfWeek: ['Di','Lu','Ma','Me','Je','Ve','Sa'],
+				monthNames: ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'],
+				firstDay: 1
+			}
+		});
+
+		$('.setTimeClockpicker').clockpicker({ autoclose: true });
+
+		$('#setDateTimeBtn').click(function () {
+			var dateStr  = $('#setDateInput').val();
+			var timeStr  = $('#setTimeInput').val();
+			if (!dateStr || !timeStr) {
+				showToast("Veuillez sélectionner date et heure", 'error');
+				return;
+			}
+			var epoch = moment(dateStr + ' ' + timeStr, 'DD/MM/YYYY HH:mm').unix();
+			if (!epoch || isNaN(epoch)) {
+				showToast("Date ou heure invalide", 'error');
+				return;
+			}
+			$.ajax({
+				type: 'POST',
+				url: '/setPiscine?action=SetDateTime',
+				data: 'sess=' + sessID + '&epoch=' + epoch,
+				dataType: 'text',
+				success: function () {
+					showToast("Date/heure envoyée au contrôleur", 'success');
+					console.log("[Params] SetDateTime epoch=" + epoch);
+				},
+				error: function (xhr) {
+					console.log('[Params] SetDateTime error: ' + xhr.status + ' ' + xhr.responseText);
+					showToast("Échec mise à l'heure", 'error');
+					if ((xhr.status === 400) && (xhr.responseText.indexOf("Invalid Session") !== -1)) {
+						showSessionExpiredDialog("Action utilisateur");
+					}
+				}
+			});
+		});
+
 	// ----- server side events
 		piscineParamsEvent = $.SSE('/piscineEvents ', {	//piscineParamsEvents
 			onOpen: function (e) {
@@ -1347,16 +1421,29 @@
 				}
 				if(returnedData.hasOwnProperty('pacViaRouter')){
 					if(returnedData.pacViaRouter == 0) {
-						if ($('#pacViaRouterSWitch').prop("checked")){ 
+						if ($('#pacViaRouterSWitch').prop("checked")){
 							pacViaRouterToServer = false;
 							$('#pacViaRouterSW').click();
 						}
-					} else if(returnedData.pacViaRouter == 1) {	
-						if (!$('#pacViaRouterSWitch').prop("checked")){ 
+					} else if(returnedData.pacViaRouter == 1) {
+						if (!$('#pacViaRouterSWitch').prop("checked")){
 							pacViaRouterToServer = false;
 							$('#pacViaRouterSW').click();
 						}
-					}	
+					}
+				}
+				if(returnedData.hasOwnProperty('pacAutonome')){
+					if(returnedData.pacAutonome == 0) {
+						if ($('#pacAutonomeSWitch').prop("checked")){
+							pacAutonomeToServer = false;
+							$('#pacAutonomeSW').click();
+						}
+					} else if(returnedData.pacAutonome == 1) {
+						if (!$('#pacAutonomeSWitch').prop("checked")){
+							pacAutonomeToServer = false;
+							$('#pacAutonomeSW').click();
+						}
+					}
 				}
 				if(returnedData.hasOwnProperty('localAutoLogin')){
 					if(returnedData.localAutoLogin == 0) {

@@ -101,6 +101,7 @@
     #define IND_volume_piscine 53
     #define IND_Defaults 54
     #define IND_Debug 55
+    #define IND_PACAutonome 56
     //        #define IND_MAX_PISCINE 55
 
         // indexes d'info pas besoin de les stocker

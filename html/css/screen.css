@@ -97,12 +97,12 @@
   z-index: -1;  
 }
 .screenTextZoneDebug{
-  color: #0d1719!important;
-  background-color: #887c2e!important;
+  color: #a8e0a0!important;
+  background-color: #0d1f0e!important;
   height: 97%!important;
   font-weight: normal;
   font-size: 0.9em;
-  text-shadow: 0 0 black;
+  text-shadow: 0 0.5px 4px #1a4a1a;
   overflow: auto !important;
   border : none;
 }

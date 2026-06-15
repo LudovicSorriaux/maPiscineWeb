@@ -649,6 +649,7 @@ void PiscineWebClass::_migratePasswords() {
                 else if (strcmp(action, "Maintenance") == 0)    handlePiscinePageMaintenance(request);
                 else if (strcmp(action, "InitMaintenance") == 0)      handleInitPiscinePageMaintenance(request);
                 else if (strcmp(action, "getGraphDatas") == 0)      handlePiscineGraphDatas(request);
+                else if (strcmp(action, "SetDateTime") == 0)        handleSetDateTime(request);
                 else if (strcmp(action, "setActivePage") == 0) {
                                                 char p[16];
                                                 request->getParam("page")->value().toCharArray(p, 16);      //principale parametres debug maintenance
@@ -1500,6 +1501,12 @@ void PiscineWebClass::_migratePasswords() {
                         piscineParams[IND_pacViaRouter].changedWeb = true;
                         changed = true;
                     }
+                } else if (strcmp(param, "pacAutonome") == 0){
+                    if (piscineParams[IND_PACAutonome].valeur != valParam){
+                        piscineParams[IND_PACAutonome].valeur = valParam;
+                        piscineParams[IND_PACAutonome].changedWeb = true;
+                        changed = true;
+                    }
                 } else if (strcmp(param, "localAutoLogin") == 0){
                     if (config.enableLocalAutoLogin != (valParam != 0)){
                         config.enableLocalAutoLogin = (valParam != 0);
@@ -1951,6 +1958,31 @@ void PiscineWebClass::_migratePasswords() {
     }
 
   /*
+   * @brief Reçoit un timestamp Unix depuis le web, règle l'horloge locale et l'envoie au contrôleur.
+   */
+    void PiscineWebClass::handleSetDateTime(AsyncWebServerRequest *request) {
+        logger.println("[WEB] Enter handleSetDateTime");
+        if (!checkSessionParam(request)) {
+            logger.println("[WEB] ❌ ERREUR : Invalid Session");
+            request->send(400, "text/plain", "400: Invalid Session");
+            return;
+        }
+        if (request->hasParam("epoch", true)) {
+            time_t newEpoch = (time_t)request->getParam("epoch", true)->value().toInt();
+            setTime(newEpoch);
+            webTelecom.sendTimeMess();
+            logger.printf("[WEB] SetDateTime: epoch=%lu => %02d/%02d/%04d %02d:%02d:%02d\n",
+                (unsigned long)newEpoch,
+                day(newEpoch), month(newEpoch), year(newEpoch),
+                hour(newEpoch), minute(newEpoch), second(newEpoch));
+            request->send(200, "text/plain", "OK SetDateTime done");
+        } else {
+            logger.println("[WEB] ❌ ERREUR : paramètre epoch manquant");
+            request->send(400, "text/plain", "400: Invalid Request");
+        }
+    }
+
+  /*
    * void PiscineWebClass::handleInitPiscinePageMaintenance
    * But : (description automatique) — expliquer brièvement l'objectif de la fonction
    * Entrées : voir la signature de la fonction (paramètres)
@@ -2060,6 +2092,19 @@ void PiscineWebClass::_migratePasswords() {
                         request->getParam("valEtalon",true)->value().toCharArray(value,sizeof(value));
                         if(request->hasParam("type",true)){
                             request->getParam("type",true)->value().toCharArray(type,sizeof(type));
+                            // Envoyer le tampon en premier ('G') pour que setPHxvalue l'ait au moment du Valid
+                            if(request->hasParam("tampon",true)){
+                                float tamponVal = request->getParam("tampon",true)->value().toFloat();
+                                // PHRedox dérivé du type (PHRedox est vidé par resetEtalonData)
+                                bool isRedox = (strcmp(type,"Low")==0 || strcmp(type,"High")==0);
+                                float loVal = isRedox ? 100.0f : 0.5f;
+                                float hiVal = isRedox ? 900.0f : 13.5f;
+                                if(tamponVal > loVal && tamponVal < hiVal){
+                                    const char* phredox = isRedox ? "Redox" : "PH";
+                                    logger.printf("Valid: SetTampon avant Valid PHRedox=%s type=%s tampon=%.3f\n", phredox, type, tamponVal);
+                                    webTelecom.sendSetTampon(phredox, type, tamponVal);
+                                }
+                            }
                             logger.printf("Valid Etalon type=%s\n",type);
                             strcpy(etalon_Data.action,"Valid");
                             strcpy(etalon_Data.type,type);

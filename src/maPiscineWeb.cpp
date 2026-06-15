@@ -555,6 +555,7 @@
       strncpy(indexName[IND_PlageOffPAC],"stopTPAC",MAX_KEY_LEN);       // 42 Pompe a Chaleur Plage Off 
       strncpy(indexName[IND_pacViaRouter],"PacViaRouter",MAX_KEY_LEN);  // 43 Controle PAC via routeur
       strncpy(indexName[IND_PAC_Present],"PAC_Present",MAX_KEY_LEN);   // 44 Controle si presence PAC
+      strncpy(indexName[IND_PACAutonome],"pacAutonome",MAX_KEY_LEN);   // 56 PAC autonome (gère elle-même son démarrage)
       strncpy(indexName[IND_dose_PH],"dose_PH",MAX_KEY_LEN);            // 45 Controle PAC via routeur
       strncpy(indexName[IND_dose_CL],"dose_CL",MAX_KEY_LEN);            // 46 Controle PAC via routeur
       strncpy(indexName[IND_ClearAlert],"ClearAlert",MAX_KEY_LEN);      // 47 to clear Alerts

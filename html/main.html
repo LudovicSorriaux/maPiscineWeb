@@ -746,7 +746,19 @@
 										<i class="switchUnchecked"></i>
 									</label>
 									<span class="switchUnchecked"></span>
-								</div>				
+								</div>
+							</div>
+						</div>
+						<div class="grid_5">
+							<div class="ui-field-contain smallFillContent">
+								<label for="pacAutonomeSW" class="smallLabel" style="padding: 0 0 0 0.7em">PAC Autonome</label>
+								<div class="switch" id="pacAutonomeSW">
+									<input type="checkbox" name="pacAutonome" id="pacAutonomeSWitch" checked="false">
+									<label for="pacAutonome" class="switchLabel switchUnchecked">
+										<i class="switchUnchecked"></i>
+									</label>
+									<span class="switchUnchecked"></span>
+								</div>
 							</div>
 						</div>
 						<div class="grid_5">
@@ -1071,8 +1083,28 @@
 				</div>
 
 
+				<!-- Mise à l'Heure -->
+				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
+					<h4>Mise à l'Heure</h4>
+					<fieldset class="container_12 mypanel">
+						<div class="prefix_1 grid_10 suffix_1">
+							<label class="smallLabel" style="padding: 0 0 0 0.5em">Date</label>
+							<input type="text" id="setDateInput" class="form-control" readonly style="width:9em; cursor:pointer;">
+						</div>
+						<div class="prefix_1 grid_10 suffix_1" style="margin-top:0.5em;">
+							<label class="smallLabel" style="padding: 0 0 0 0.5em">Heure</label>
+							<div class="setTimeClockpicker" data-placement="top" data-align="right" data-autoclose="true" style="width:3.7em; display:inline-block;">
+								<input type="text" class="form-control" id="setTimeInput" value="12:00">
+							</div>
+						</div>
+						<div class="prefix_1 grid_10 suffix_1" style="margin-top:1em;">
+							<a href="#" id="setDateTimeBtn" data-role="button" data-mini="true" data-icon="check">Appliquer</a>
+						</div>
+					</fieldset>
+				</div>
+
 			</div>
-		
+
 		</div><!-- /lscape-col droite -->
 		</div><!-- /lscape-layout -->
 		</div>
@@ -1251,6 +1283,12 @@
 					<div class="grid_3 suffix_1">
 						<a href="#" id="sonde3Type" data-mini="true" data-role="button">N/A</a>
 					</div>
+					<div class="grid_8" id="sonde4Row" style="display:none">
+						<input type="text" id="sonde4Val" data-mini="true" class="textInputBorder" readonly="readonly" style="text-align:center">
+					</div>
+					<div class="grid_3 suffix_1" id="sonde4TypeRow" style="display:none">
+						<a href="#" id="sonde4Type" data-mini="true" data-role="button">N/A</a>
+					</div>
 				</fieldset>
 				<fieldset class="container_12">
 					<div class="prefix_1 grid_5">
@@ -1339,6 +1377,11 @@
 				</div>
 				<div class="ui-block-b">
 					<a href="#" id="ClearText" data-role="button" data-mini="true" data-icon="refresh">Clear !</a>
+				</div>
+			</div>
+			<div class="ui-grid-a" style="margin-bottom: 2px;">
+				<div class="ui-block-a" style="width:100%">
+					<span id="hbStatus" style="font-size:0.7em; color:#507850; font-family:'Courier New',monospace; padding-left:4px;">&#9679; heartbeat: --</span>
 				</div>
 			</div>
 			<div is="grid" class="ui-grid-solo">
