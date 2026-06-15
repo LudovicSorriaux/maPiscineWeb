@@ -541,6 +541,15 @@ python3 scripts/add_comments_src.py
 
 Toute modification d'index nécessite **recompilation et upload des 3 firmwares**.
 
+Index actuel : `IND_MAX_PISCINE = 56` (dernier : `IND_PACAutonome = 56`)
+
+| Index | Constante | Description |
+|-------|-----------|-------------|
+| 43 | `IND_pacViaRouter` | PAC via routeur solaire |
+| 44 | `IND_PAC_Present` | PAC présente (PACIsHere) |
+| 55 | `IND_Debug` | Mode debug |
+| **56** | **`IND_PACAutonome`** | **PAC autonome (Poolex Jetblack)** |
+
 ---
 
 ## 📦 Dépendances
@@ -574,6 +583,8 @@ paulstoffregen/Time @ ^1.6.1
 
 | Version | Date       | Modifications                                    |
 |---------|------------|--------------------------------------------------|
+| 4.5.6   | 06/2026    | PAC autonome : toggle "PAC Autonome" dans la page paramètres PAC, handler AJAX `pacAutonome`, sync `IND_PACAutonome=56`, `IND_MAX_PISCINE=56` |
+| 4.5.5   | 05/2026    | Tampons étalonnage via ICSC 'G' séparé, cache tampons BE, nettoyage champs JS |
 | 4.0.0   | 12/2024    | Documentation complète, headers, commentaires    |
 | 3.1     | 11/2024    | Migration ArduinoJson v7, AsyncWebServer         |
 | 3.0     | 10/2024    | Ajout SSE, logging SD Card amélioré              |
