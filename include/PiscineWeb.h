@@ -132,6 +132,7 @@ class PiscineWebClass {
         void handleInitPiscinePageMaintenance(AsyncWebServerRequest *request);
         void handlePiscinePageMaintenance(AsyncWebServerRequest *request);        
         void handleCheckLocalAuth(AsyncWebServerRequest *request);  // Vérifie si client local + retourne session auto
+        void handleApiInfo(AsyncWebServerRequest *request);        // GET /api/info — version firmware
                 // --- Routeur ----
         void handleRouteurInfo(AsyncWebServerRequest *request);
 

@@ -15,6 +15,8 @@
  *   - globalPiscine.h (index ICSC partagés)
  *******************************************************************************/
 
+#define FW_VERSION "v4.5.6"
+
 #define lowByte(w) ((uint8_t) ((w) & 0xff))
 #define highByte(w) ((uint8_t) ((w) >> 8))
 #define getint(l,m) ((uint16_t) ((m << 8) | l))

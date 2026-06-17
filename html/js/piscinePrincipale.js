@@ -6,6 +6,12 @@
 			'<P class="screenTextStatus">' + APP_VERSION + '</P>' +
 			'<P class="screenTextLine">Connexion en cours…</P>'
 		).trigger('create');
+		fetch('/api/info').then(function(r){ return r.json(); }).then(function(d){
+			if(d.version) {
+				APP_VERSION = d.version;
+				$('.screenOutput .screenTextStatus').text(d.version);
+			}
+		}).catch(function(){});
 
 		var power = true;
 		var affRedox = true;

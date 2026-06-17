@@ -608,6 +608,7 @@ void PiscineWebClass::_migratePasswords() {
         
                     // -------- call backs from javascripts ------------
         server.on("/checkLocalAuth", HTTP_GET, std::bind(&PiscineWebClass::handleCheckLocalAuth, this, std::placeholders::_1));  // Nouveau : check auto-login local
+        server.on("/api/info", HTTP_GET, std::bind(&PiscineWebClass::handleApiInfo, this, std::placeholders::_1));               // Version firmware
         // On utilise "/api/auth" pour regrouper tout ce qui touche aux utilisateurs
         server.on("/api/auth", HTTP_POST, [this](AsyncWebServerRequest *request) {
             if (request->hasParam("action")) {
@@ -1070,6 +1071,17 @@ void PiscineWebClass::_migratePasswords() {
     AsyncWebServerResponse *response = request->beginResponse(200, FPSTR(STR_CONTENT_JSON), jsonBuff);
     response->addHeader(FPSTR(STR_HEADER_CACHE), FPSTR(STR_HEADER_NOCACHE));
     response->addHeader(FPSTR(STR_HEADER_CORS), FPSTR(STR_HEADER_CORS_ALL));
+    request->send(response);
+  }
+
+  /*
+   * GET /api/info — retourne la version firmware en JSON : {"version":"v4.5.6"}
+   */
+  void PiscineWebClass::handleApiInfo(AsyncWebServerRequest *request) {
+    char jsonBuff[64];
+    snprintf(jsonBuff, sizeof(jsonBuff), "{\"version\":\"%s\"}", FW_VERSION);
+    AsyncWebServerResponse *response = request->beginResponse(200, FPSTR(STR_CONTENT_JSON), jsonBuff);
+    response->addHeader(FPSTR(STR_HEADER_CACHE), FPSTR(STR_HEADER_NOCACHE));
     request->send(response);
   }
 
