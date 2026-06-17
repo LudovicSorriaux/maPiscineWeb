@@ -1697,7 +1697,38 @@
 		fetch('/setPiscine?action=setActivePage&page=parametres', {method: 'POST'});
 		showToast("Mise à jour données depuis serveur", 'info');
 	});
-	$(document).on('pagebeforehide', '#pagePiscineParametres', function(){       
+	$(document).on('pagebeforehide', '#pagePiscineParametres', function(){
 		console.log('-- STOPPING Piscine Params Server Events --');
 		piscineParamsEvent.stop();
+	});
+
+	// ---- Scroll automatique collapsibles params ----
+	// À l'ouverture : si le bas du panneau dépasse le bas de l'écran, scroller pour le montrer entièrement.
+	// À la fermeture : revenir à la position d'avant l'ouverture.
+	$(document).on('collapsibleexpand', '#pagePiscineParametres .mypanel', function() {
+		var $panel = $(this);
+		$panel.data('scroll-before-expand', $(window).scrollTop());
+		setTimeout(function() {
+			var panelTop    = $panel.offset().top;
+			var panelBottom = panelTop + $panel.outerHeight();
+			var viewH       = window.innerHeight;
+			var viewBottom  = $(window).scrollTop() + viewH;
+			if (panelBottom > viewBottom) {
+				var scrollTo = ($panel.outerHeight() > viewH)
+					? panelTop                       // panneau plus grand que l'écran : montrer l'en-tête
+					: panelBottom - viewH + 8;       // sinon : aligner le bas avec le bas de l'écran
+				$('html, body').animate({ scrollTop: scrollTo }, 280);
+			}
+		}, 220); // laisse l'animation jQuery Mobile se terminer
+	});
+
+	$(document).on('collapsiblecollapse', '#pagePiscineParametres .mypanel', function() {
+		var $panel = $(this);
+		var saved = $panel.data('scroll-before-expand');
+		if (saved !== undefined) {
+			setTimeout(function() {
+				$('html, body').animate({ scrollTop: saved }, 220);
+				$panel.removeData('scroll-before-expand');
+			}, 50);
+		}
 	});
