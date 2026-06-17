@@ -1,6 +1,12 @@
 	// page PiscinePrincipale create inits
 	$(document).delegate("#pagePiscinePrincipale", "pagebeforecreate", function () {
-	//$( document ).on('pagecreate','#pagePiscinePrincipale',function() {		// depricated 
+	//$( document ).on('pagecreate','#pagePiscinePrincipale',function() {		// depricated
+		$('.screenOutput').empty().append(
+			'<h4 class="screenTextTitle"> Piscine Manager</h4>' +
+			'<P class="screenTextStatus">' + APP_VERSION + '</P>' +
+			'<P class="screenTextLine">Connexion en cours…</P>'
+		).trigger('create');
+
 		var power = true;
 		var affRedox = true;
 		var lampeSWToServer = true;

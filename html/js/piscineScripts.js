@@ -1,7 +1,8 @@
 
 // Global functions and variables
 
-console.log('[VERSION] piscineScripts v4.3-responsive');
+var APP_VERSION = 'v4.5.6';
+console.log('[VERSION] piscineScripts ' + APP_VERSION);
 
 var maPiscine = maPiscine || {};
 
