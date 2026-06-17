@@ -631,7 +631,27 @@
 			</fieldset> 
 -->
 			<div data-role="collapsibleset" >
-				<!-- Lampe Auto -->
+					<!-- Mise à l'Heure -->
+				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
+					<h4>Mise à l'Heure</h4>
+					<fieldset class="container_12 mypanel">
+						<div class="prefix_1 grid_10 suffix_1">
+							<label class="smallLabel" style="padding: 0 0 0 0.5em">Date</label>
+							<input type="text" id="setDateInput" class="form-control" readonly style="width:9em; cursor:pointer;">
+						</div>
+						<div class="prefix_1 grid_10 suffix_1" style="margin-top:0.5em;">
+							<label class="smallLabel" style="padding: 0 0 0 0.5em">Heure</label>
+							<div class="setTimeClockpicker" data-placement="top" data-align="right" data-autoclose="true" style="width:3.7em; display:inline-block;">
+								<input type="text" class="form-control" id="setTimeInput" value="12:00">
+							</div>
+						</div>
+						<div class="prefix_1 grid_10 suffix_1" style="margin-top:1em;">
+							<a href="#" id="setDateTimeBtn" data-role="button" data-mini="true" data-icon="check">Appliquer</a>
+						</div>
+					</fieldset>
+				</div>
+
+					<!-- Lampe Auto -->
 				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
 					<h4>Lampe Automatique</h4>
 					<fieldset class="container_12 mypanel"> 
@@ -733,7 +753,7 @@
 						</div>
 					</fieldset> 
 				</div>
-				<!-- Parametes Divers -->
+					<!-- Parametes Divers -->
 				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
 					<h4>Parametres divers</h4>
 					<fieldset class="container_12 mypanel"> 
@@ -1039,8 +1059,7 @@
 						</div>	
 					</fieldset> 
 				</div>
-
-				<!--  PAC -->
+					<!--  PAC : Temperature PAC -->
 				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel"> 
 					<h4>Temperature PAC</h4>
 					<fieldset class="container_12 mypanel"> 
@@ -1064,6 +1083,7 @@
 						</div>	
 					</fieldset>
 				</div>
+					<!--  PAC : Horaire PAC -->
 				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
 					<h4>Horaire PAC</h4>
 					<fieldset class="container_12 mypanel"> 
@@ -1081,28 +1101,6 @@
 						</div>	
 					</fieldset>
 				</div>
-
-
-				<!-- Mise à l'Heure -->
-				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
-					<h4>Mise à l'Heure</h4>
-					<fieldset class="container_12 mypanel">
-						<div class="prefix_1 grid_10 suffix_1">
-							<label class="smallLabel" style="padding: 0 0 0 0.5em">Date</label>
-							<input type="text" id="setDateInput" class="form-control" readonly style="width:9em; cursor:pointer;">
-						</div>
-						<div class="prefix_1 grid_10 suffix_1" style="margin-top:0.5em;">
-							<label class="smallLabel" style="padding: 0 0 0 0.5em">Heure</label>
-							<div class="setTimeClockpicker" data-placement="top" data-align="right" data-autoclose="true" style="width:3.7em; display:inline-block;">
-								<input type="text" class="form-control" id="setTimeInput" value="12:00">
-							</div>
-						</div>
-						<div class="prefix_1 grid_10 suffix_1" style="margin-top:1em;">
-							<a href="#" id="setDateTimeBtn" data-role="button" data-mini="true" data-icon="check">Appliquer</a>
-						</div>
-					</fieldset>
-				</div>
-
 			</div>
 
 		</div><!-- /lscape-col droite -->
