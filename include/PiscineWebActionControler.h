@@ -46,6 +46,5 @@ class PiscineWebActionControlerClass {
         void getControlerValues();
         void processAction(uint8_t index, int16_t valeur);
         void sendWebValuesToControler();
-        void sendManagerValuesToControler();
 
   };

@@ -60,16 +60,14 @@
 // Classes
    class LoggerClass;
    class PiscineWebClass;
-   // class ManagerTelecomClass;  // DÉSACTIVÉ : ESP-NOW manager (optimisation RAM)
    class PiscineWebActionControlerClass;
    class PiscineWebTelecomClass;
 
 // Instances
-   extern LoggerClass logger;                                                   
+   extern LoggerClass logger;
    extern PiscineWebClass maPiscineWeb;
-   extern PiscineWebActionControlerClass webAction;                    
+   extern PiscineWebActionControlerClass webAction;
    extern PiscineWebTelecomClass webTelecom;
-   // extern ManagerTelecomClass managerTelecom;  // DÉSACTIVÉ : ESP-NOW manager (optimisation RAM)
 
 
     // global structures definitions 
@@ -79,7 +77,6 @@
     int16_t valeur;
     bool changedWeb = false;
     bool changedControler = false;
-    bool changedFromManager = false;
   } struct_piscineParams;
 
   typedef struct users_t {
@@ -106,10 +103,6 @@
   } dataStruct;
   
 
-
-// DÉSACTIVÉ : ESP-NOW manager (optimisation RAM)
-// #define ESP_NOW_ETH_ALEN 6              /* Length of ESPNOW peer MAC address */
-// #define ESP_NOW_MAX_DATA_LEN 250        /* Maximum length of ESPNOW data which is sent very time */
 
     //Messages structures
     typedef struct etalon_Data_t{
@@ -147,7 +140,6 @@
 
     // global variables defined in main 
    extern bool debug;
-   extern bool managerPresent;
    extern bool flgInSetup;
    extern const char* mdnsName;   // Domain name for the mDNS responder
 

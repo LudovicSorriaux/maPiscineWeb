@@ -11,7 +11,6 @@
 
 #include "PiscineWebTelecom.h"
 #include "Logger.h"
-// #include "ManagerTelecom.h"  // DÉSACTIVÉ : Communication ESP-NOW avec manager PAC (optimisation RAM)
 #include "PiscineWeb.h"
 #include "IndexNames.h"  // Optimisation RAM #6 : Noms des paramètres en PROGMEM
 
@@ -295,10 +294,6 @@
           piscineParams[i].changedControler = true;
           logger.printf("   ==> ind:%s, valeur:%d\n",getIndexName(i, nameBuf),piscineParams[i].valeur);
         }
-        // DÉSACTIVÉ : ESP-NOW manager (optimisation RAM)
-        // if(managerPresent){
-        //   managerTelecom.sendSyncMess(typeSync);
-        // }  
       }  
     }
 
@@ -428,7 +423,7 @@
    * Entrées : voir la signature de la fonction (paramètres)
    * Sortie : valeur de retour ou effet sur l'état interne
    */
-     void PiscineWebTelecomClass::sendRouteurData(bool data){  // !data = hello  // called from espnow
+     void PiscineWebTelecomClass::sendRouteurData(bool data){  // !data = hello
           // station (C controler,K keyboard,W web)  
           // command (V values, J jsonText, T time, S sync, H hello, A ask temp add, B set temp add, E etalons, R routeur info on|off, C routeurHello, D routeurData)
           char theMessage[sizeof(routeurData)];

@@ -30,11 +30,9 @@
 #if defined(ESP8266)
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
-//#include <espnow.h> 
 //#else
 //#include <WiFi.h>
 //#include <ESPmDNS.h>
-//#include <esp_now.h> 
 #endif
    
 #include <ESPAsyncWebServer.h>
@@ -50,7 +48,6 @@
 #include "globalPiscineWeb.h"
 #include "Logger.h"
 #include "PiscineWebTelecom.h"
-// #include "ManagerTelecom.h"  // DÉSACTIVÉ : Communication ESP-NOW avec manager PAC (optimisation RAM)
 #include "PiscineWeb.h"
 #include "PiscineWebActionControler.h"
 
@@ -76,16 +73,12 @@
     struct_Etalon_Data etalon_Data;
    
         // local variables
-    bool managerPresent = false;
     routeur_Data routeurData;
 
     const uint8_t wifiResetPin = D2;
-    const uint8_t masterSwPin = D1;
-    
+
     int timerWebTelecom;
     int timerWebAction;
-    // int timerManagerTelecom;        // DÉSACTIVÉ : ESP-NOW manager
-    // int timerManagerCheckCnx;       // DÉSACTIVÉ : ESP-NOW manager
     int timerSendWebParams;
     int timerWebLCD;
     int timerLogger;
@@ -104,7 +97,7 @@
     bool shouldSaveConfig = false;    //flag for saving data
     volatile boolean awakenByInterruptRstWifi = false; /* variable to indicate that an interrupt has occured */
 
-    bool flgModulesStarted = false;   // flag to setup modules depending on wifi (web and espnow)
+    bool flgModulesStarted = false;   // flag to setup modules depending on wifi
     bool flgInSetup = true;
 
 
@@ -181,9 +174,8 @@
     LoggerClass logger;                                     // Logger vers Serial et SD Card
     PiscineWebClass maPiscineWeb;                           // gestion sur serveur web              
     PiscineWebTelecomClass webTelecom;      // telecoms avec controleur 
-    PiscineWebActionControlerClass webAction;                    
-    // ManagerTelecomClass managerTelecom;                  // DÉSACTIVÉ : gestion des echanges avec les modules espnow (optimisation RAM)
- 
+    PiscineWebActionControlerClass webAction;
+
  /* -------------   Callback functions  -------------*/
               /* --- Timer Callbacks  --- */
 /**
@@ -214,21 +206,6 @@
     void doAction(){                // webAction
         webAction.OnUpdate();
     }
-        
-// DÉSACTIVÉ : ESP-NOW manager (optimisation RAM)
-// /**
-//  * @brief Callback timer : Vérifie la connexion ESP-NOW avec le manager PAC et tente reconnexion si perdue
-//  */
-//     void doCheckManagerTelecomConnection(){   // managerTelecom
-//       managerTelecom.reconnectControlerTelecom();  
-//     }
-//     
-// /**
-//  * @brief Callback timer : Envoie les nouvelles valeurs de paramètres piscine au manager ESP-NOW (si actif)
-//  */
-//     void doManagerTelecomManage(){            // managerTelecom   
-//       managerTelecom.sendToManagerNewValues();                            // ManageNewValues();
-//     }
 
 /**
  * @brief Callback timer : Appelle maPiscineWeb.OnUpdate() pour envoyer les paramètres mis à jour via SSE vers les clients web
@@ -256,13 +233,8 @@
       if(WiFi.status() != WL_CONNECTED){      // wifi is not connected
         if(startWiFi()){                      // wifi (re)started
           if(!flgModulesStarted){
-            WiFi.mode(WIFI_AP_STA);           //Set device in AP_STA mode to handle espnow and web
+            WiFi.mode(WIFI_AP_STA);
             maPiscineWeb.startup();
-            // DÉSACTIVÉ : ESP-NOW manager (optimisation RAM)
-            // if(managerPresent){
-            //   managerTelecom.managerTelecomInitialisation();
-            //   managerTelecom.setTimeCallBack(setTheTime);
-            // }  
             flgModulesStarted = true;
           }
           timer.enable(timerWIFI_OK);
@@ -385,11 +357,6 @@
       pinMode(wifiResetPin,INPUT_PULLUP);         // D2 on the Wemos
   //    attachInterrupt(digitalPinToInterrupt(wifiResetPin), interuptCallBackRstWifi, FALLING);
 
-      pinMode(masterSwPin,INPUT_PULLUP);          // D1 on the Wemos
-//      (digitalRead(masterSwPin) == HIGH) ? managerPresent = false : managerPresent = true;
-      managerPresent = false;
-      Serial1.printf_P(PSTR("Master pin is %s\n"),(digitalRead(masterSwPin) == HIGH) ? "false" : "true");
-      
       // initIndexNames();  // OBSOLETE : remplacé par IndexNames.h (PROGMEM, -1260 octets RAM)
       webTelecom.initTelecom();
       webAction.initializePiscineParams();
@@ -424,11 +391,6 @@
         }
         logger.OnUpdate();
         maPiscineWeb.startup();
-        // DÉSACTIVÉ : ESP-NOW manager (optimisation RAM)
-        // if(managerPresent){
-        //   managerTelecom.managerTelecomInitialisation();
-        //   managerTelecom.setTimeCallBack(setTheTime);
-        // }
         flgModulesStarted = true;
 
         timer.enable(timerWIFI_OK);
@@ -448,11 +410,6 @@
       }  
       timerWebTelecom = timer.setInterval(100L, doCheckMessages);             // telecom 100ms
       timerWebAction = timer.setInterval(200L, doAction);                     // actions exchanges
-      // DÉSACTIVÉ : ESP-NOW manager (optimisation RAM)
-      // if(managerPresent){
-      //   timerManagerTelecom = timer.setInterval(1250L, doManagerTelecomManage);             // pas trop vite to laisser du temps a controlerTelecom...
-      //   timerManagerCheckCnx = timer.setInterval(60000L, doCheckManagerTelecomConnection);  // check if still connected to controlerTelecom every minute d'inactivité
-      // }
       timerSendWebParams = timer.setInterval(500L,doSendWebParams);          // toutes les 1/2 sec
       timerWebLCD = timer.setInterval(10000L,doUpdatePiscineLCD);             // toutes les 10 sec
       timerLogger = timer.setInterval(60000L,doLogger);                       // toutes les mn

@@ -11,7 +11,6 @@
 #include "PiscineWebActionControler.h"
 #include "Logger.h"
 #include "PiscineWebTelecom.h"
-#include "ManagerTelecom.h"
 #include "globalPiscineWeb.h"
 #include "IndexNames.h"  // Optimisation RAM #6 : Noms des paramètres en PROGMEM
 
@@ -33,12 +32,11 @@
       }
       
 /**
- * @brief Réinitialise tous les flags changed* du tableau piscineParams[] (changedWeb, changedFromManager, changedControler = false)
+ * @brief Réinitialise tous les flags changed* du tableau piscineParams[] (changedWeb, changedControler = false)
  */
       void PiscineWebActionControlerClass::initializePiscineParams(){
         for(int i=0;i<IND_MAX_PISCINE+1;i++){
           piscineParams[i].changedWeb = false;
-          piscineParams[i].changedFromManager = false;
           piscineParams[i].changedControler = false;
         }
       }
@@ -89,10 +87,6 @@
           }
           getControlerValues();         // do normal stuff if controler present
           sendWebValuesToControler();   // Next send new values
-
-          if(managerPresent){
-            sendManagerValuesToControler();
-          }
         }
 
       }
@@ -130,10 +124,6 @@
               if(index < IND_ClearAlert){       // only store used parameters
                 piscineParams[index].valeur = valeur;
                 piscineParams[index].changedControler = true;
-                // DÉSACTIVÉ : ESP-NOW manager (optimisation RAM)
-                // if(managerPresent){
-                //   managerTelecom.sendNewValue(index,valeur);
-                // }  
                 switch (index) {
                   case IND_TempEau:
                   case IND_TempAir:
@@ -177,12 +167,8 @@
               } 
               if(valeur == 1){    // if ==0 dont do anything
                 logger.println("Ask for new time...");
-                if (!NTPok){                // if NTP OK new date is sent by proc and ack OK 
+                if (!NTPok){                // if NTP OK new date is sent by proc and ack OK
                   logger.println("Time asked but Can't get time from ntp server");
-                  // DÉSACTIVÉ : ESP-NOW manager (optimisation RAM)
-                  // if(managerPresent) {
-                  //   managerTelecom.askNewTime();
-                  // }  
                 } else {
                   webTelecom.sendTimeMess();
                 } 
@@ -218,19 +204,5 @@
       }
     }
 
-  /*
-   * void PiscineWebActionControlerClass::sendManagerValuesToControler
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
-    void PiscineWebActionControlerClass::sendManagerValuesToControler(){
-      for(int i=0;i<IND_MAX_PISCINE;i++){  
-        if(piscineParams[i].changedFromManager) {  
-          webTelecom.setWriteData(i, piscineParams[i].valeur);
-          piscineParams[i].changedFromManager = false;
-        }
-      }
-    }
 
 

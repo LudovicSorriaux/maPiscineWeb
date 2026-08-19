@@ -8,7 +8,6 @@
  *   - PiscineWeb.h/cpp
  *   - PiscineWebActionControler.h/cpp
  *   - PiscineWebTelecom.h/cpp
- *   - ManagerTelecom.h/cpp
  *   - Logger.h/cpp
  * 
  * Référence :
