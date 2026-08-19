@@ -340,6 +340,11 @@
 			<h1 class="myh1">Piscine Manager</h1>
 			<a href="#optionsPiscineManager" data-icon="gear" class="ui-btn-right">Options</a>
 		</div>
+
+		<div id="alertBanner" class="alertBanner" style="display:none">
+			<span id="alertBannerText"></span>
+			<a href="#" id="alertBannerAck" data-role="button" data-mini="true" data-inline="true" style="display:none">Acquitter</a>
+		</div>
 		
 		<div role="main" class="ui-content" data-inset="false">
 			<div class="lscape-layout">
@@ -791,6 +796,18 @@
 									</label>
 									<span class="switchUnchecked"></span>
 								</div>				
+							</div>
+						</div>
+						<div class="grid_5 suffix_2">
+							<div class="ui-field-contain smallFillContent">
+								<label class="smallLabel" style="padding: 0 0 0 0.7em">Coef. dose CL</label>
+								<a href="#" id="resetCoefCL" data-role="button" data-mini="true" data-icon="refresh">Reset</a>
+							</div>
+						</div>
+						<div class="grid_5">
+							<div class="ui-field-contain smallFillContent">
+								<label class="smallLabel" style="padding: 0 0 0 0.7em">Coef. dose PH-</label>
+								<a href="#" id="resetCoefPHm" data-role="button" data-mini="true" data-icon="refresh">Reset</a>
 							</div>
 						</div>
  					</fieldset>
@@ -1257,7 +1274,7 @@
 			</div>
 		</div><!-- /lscape-col droite -->
 		</div><!-- /lscape-layout -->
-		
+
 		<!-- Sondes température - centré en dessous en mode paysage -->
 		<div class="sondes-center-panel">
 			<div class="mypanel">

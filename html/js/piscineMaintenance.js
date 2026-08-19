@@ -102,6 +102,7 @@
 		})),
 
 		$("#cancelPH").click((function(){
+			var cancelType = typePHRedox;
 			$("#validPH").addClass("ui-disabled"),
 			$(":input[name= 'PHRadio']").attr("checked",!1),
 			$(":input[name= 'PHRadio']").checkboxradio("refresh"),
@@ -110,7 +111,7 @@
 			$("#PHAjust").val("---"),
 			$("#PHtampon").val(""),
 			$(scanPHLed).removeClass("ledOn").addClass("ledOff"),
-			doAction("cancelPH","");
+			("N/A" !== cancelType) ? doAction("cancelPH","typePH",cancelType) : doAction("cancelPH","");
 		}));
 
 		$("#validPH").click((function(){
@@ -177,6 +178,7 @@
 		}));
 
 		$("#cancelRedox").click((function(){
+			var cancelType = typePHRedox;
 			$("#validRedox").addClass("ui-disabled"),
 			$(":input[name= 'RedoxRadio']").attr("checked",!1),
 			$(":input[name= 'RedoxRadio']").checkboxradio("refresh"),
@@ -185,7 +187,7 @@
 			$("#RedoxAjust").val("---"),
 			$("#RedoxTampon").val(""),
 			$(scanRedoxLed).removeClass("ledOn").addClass("ledOff"),
-			doAction("cancelRedox","");
+			("N/A" !== cancelType) ? doAction("cancelRedox","typeRedox",cancelType) : doAction("cancelRedox","");
 		}));
 
 		$("#validRedox").click((function(){
@@ -569,7 +571,11 @@
 					}
 					updateValidSondes();
 				} 
-				if(returnedData.hasOwnProperty("phCalc")){
+				if(returnedData.hasOwnProperty("action") && returnedData.action === "Cancel"){
+					if(returnedData.hasOwnProperty("phCalc")) showToast("Étalon(s) pH effacé(s)", 'info');
+					else if(returnedData.hasOwnProperty("redoxCalc")) showToast("Étalon(s) Redox effacé(s)", 'info');
+				}
+				if(returnedData.hasOwnProperty("phCalc") && returnedData.action !== "Cancel"){
 					value=parseFloat(returnedData.phCalc)
 					console.log("Got phCalc and theVal is :"+value),
 					$("#PHCalc").val(value.toFixed(2).toString())
@@ -588,7 +594,7 @@
 				if(returnedData.hasOwnProperty("phTampon") && returnedData.phTampon !== 0 && $("#PHtampon").val() === ""){
 					$("#PHtampon").val(parseFloat(returnedData.phTampon).toFixed(2).toString())
 				}
-				if(returnedData.hasOwnProperty("redoxCalc")){
+				if(returnedData.hasOwnProperty("redoxCalc") && returnedData.action !== "Cancel"){
 					value=parseFloat(returnedData.redoxCalc),
 					console.log("Got redoxCalc and theVal is :"+value),
 					$("#RedoxCalc").val(value.toFixed(1).toString())

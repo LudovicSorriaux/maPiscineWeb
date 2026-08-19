@@ -583,6 +583,7 @@ paulstoffregen/Time @ ^1.6.1
 
 | Version | Date       | Modifications                                    |
 |---------|------------|--------------------------------------------------|
+| 4.5.6 (non taggé) | 08/2026 | Fix auto-login local : `/checkLocalAuth` revalide la session existante (`sess`) au lieu d'en recréer une à chaque appel, suppression du plafond `MAX_SESSION_AGE` (1 semaine) qui purgeait à tort les sessions 1 an ; fix bouton "ClearAlerts" (écrivait `IND_MAX_PISCINE` au lieu de `IND_ClearAlert`) ; nouveau bandeau d'alerte `#alertBanner` (dashboard) décodant le bitmask `Alerte` (SSE `piscineData`), boutons "Reset coef CL"/"Reset coef PH-" (page Paramètres) |
 | 4.5.6   | 06/2026    | PAC autonome : toggle "PAC Autonome" dans la page paramètres PAC, handler AJAX `pacAutonome`, sync `IND_PACAutonome=56`, `IND_MAX_PISCINE=56` |
 | 4.5.5   | 05/2026    | Tampons étalonnage via ICSC 'G' séparé, cache tampons BE, nettoyage champs JS |
 | 4.0.0   | 12/2024    | Documentation complète, headers, commentaires    |

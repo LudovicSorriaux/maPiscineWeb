@@ -482,6 +482,29 @@
 			} else localAutoLoginToServer = true;
 		});
 
+		// --- Reset coefficients asservissement adaptatif (dosage CL / PH-) ---
+		function resetDoseCoef(command, label){
+			if(!confirm("Réinitialiser le coefficient de dosage " + label + " appris à sa valeur de référence ?")) return;
+			$.ajax({
+				type: 'POST',
+				url: '/setPiscine?action=Maintenance',
+				data: 'sess=' + sessID + '&command=' + command,
+				dataType: "text",
+				success: function(data){
+					console.log("Call to /setPiscineMaintenance with command=" + command + " is success");
+				},
+				error: function (xhr, status, errorThrown) {
+					console.log('An error occurred while calling /setPiscineMaintenance, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
+					if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
+						console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
+						showSessionExpiredDialog("Action utilisateur");
+					}
+				}
+			});
+		}
+		$('#resetCoefCL').click(function(){ resetDoseCoef("resetCoefCL", "CL"); });
+		$('#resetCoefPHm').click(function(){ resetDoseCoef("resetCoefPHm", "PH-"); });
+
 
 
 	// --- PH et Redox reference ---

@@ -73,8 +73,8 @@ class PiscineWebClass {
             
 
  
-            std::set<uint8_t> piscinePPSet {IND_PHVal,IND_RedoxVal,IND_CLVal, IND_TempAir, IND_TempEau, IND_TempInt, IND_TempPAC, 
-                                            IND_PP, IND_PAC, IND_PompePH, IND_PompeCL, IND_PompeALG, IND_Lampe, IND_Volet, IND_Auto};
+            std::set<uint8_t> piscinePPSet {IND_PHVal,IND_RedoxVal,IND_CLVal, IND_TempAir, IND_TempEau, IND_TempInt, IND_TempPAC,
+                                            IND_PP, IND_PAC, IND_PompePH, IND_PompeCL, IND_PompeALG, IND_Lampe, IND_Volet, IND_Auto, IND_Alerte};
             std::set<int> piscineParamsSet {IND_PP, IND_PAC, IND_PompePH, IND_PompeCL, IND_PompeALG, IND_Lampe, IND_Volet, IND_Auto,
                                             IND_PlageOnPP, IND_PlageOffPP, IND_PlageOnPAC, IND_PlageOffPAC, IND_TypeTemp, IND_tFixe, IND_tVar, IND_pacViaRouter, IND_PACAutonome, IND_PHRef, IND_RedoxRef,
                                             IND_TypePompe3,IND_ALGQuantite, IND_ALGFrequence,

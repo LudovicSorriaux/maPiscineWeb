@@ -403,6 +403,7 @@ void PiscineWebClass::_migratePasswords() {
         char jsonBuff[192];
         JsonDocument piscineEtalonJson;
 
+        piscineEtalonJson["action"] = etalon_Data.action;
         if(strcmp(etalon_Data.PHRedox,"PH")==0){
             piscineEtalonJson["phCalc"]  = etalon_Data.calculated;
             piscineEtalonJson["phMesu"]  = etalon_Data.mesure;
@@ -1043,7 +1044,18 @@ void PiscineWebClass::_migratePasswords() {
         sessionValid = isSessionValid(sessCheck);
     }
 
-    if (isLocal && config.enableLocalAutoLogin) {
+    if (sessionValid) {
+        // Session existante déjà valide côté serveur : on la confirme telle quelle,
+        // sans en générer une nouvelle (évite de saturer la table activeSessions[10]
+        // à chaque rechargement de page et d'évincer des sessions encore actives)
+        jsonRoot["status"] = "Session valide";
+        jsonRoot["isLocal"] = isLocal;
+        jsonRoot["autoLogin"] = false;
+        jsonRoot["sessionValid"] = true;
+        jsonRoot["message"] = "Session active";
+        logger.printf("[AUTH] Session existante confirmée : IP=%s\n",
+                     request->client()->remoteIP().toString().c_str());
+    } else if (isLocal && config.enableLocalAutoLogin) {
         generateKey(sessionID, ttl);
         jsonRoot["status"] = "Auto Login Local";
         jsonRoot["isLocal"] = true;
@@ -1614,9 +1626,9 @@ void PiscineWebClass::_migratePasswords() {
                         changed = true;
                     }
                 } else if (strcmp(param, "clearAlert") == 0){
-                    if (piscineParams[IND_MAX_PISCINE].valeur != valParam){        // replace IND_ClearAlert
-                        piscineParams[IND_MAX_PISCINE].valeur = valParam;
-                        piscineParams[IND_MAX_PISCINE].changedWeb = true;
+                    if (piscineParams[IND_ClearAlert].valeur != valParam){
+                        piscineParams[IND_ClearAlert].valeur = valParam;
+                        piscineParams[IND_ClearAlert].changedWeb = true;
                         changed = true;
                     }
                 } else if (strcmp(param, "flowAlert") == 0){
@@ -2076,14 +2088,40 @@ void PiscineWebClass::_migratePasswords() {
                         }
                     }
                 } else if (strcmp(command, "cancelPH") == 0){
-                    logger.println("Cancel PH Etalon");
                     strcpy(etalon_Data.action,"Cancel");
                     strcpy(etalon_Data.PHRedox,"PH");
+                    if(request->hasParam("typePH",true)){
+                        request->getParam("typePH",true)->value().toCharArray(type,sizeof(type));
+                        strcpy(etalon_Data.type, type);
+                        logger.printf("Cancel PH Etalon type=%s\n", type);
+                    } else {
+                        strcpy(etalon_Data.type,"");
+                        logger.println("Cancel PH Etalon (all)");
+                    }
                     webTelecom.sendEtalonMode();
                 } else if (strcmp(command, "cancelRedox") == 0){
-                    logger.println("Cancel Redox Etalon");
                     strcpy(etalon_Data.action,"Cancel");
                     strcpy(etalon_Data.PHRedox,"Redox");
+                    if(request->hasParam("typeRedox",true)){
+                        request->getParam("typeRedox",true)->value().toCharArray(type,sizeof(type));
+                        strcpy(etalon_Data.type, type);
+                        logger.printf("Cancel Redox Etalon type=%s\n", type);
+                    } else {
+                        strcpy(etalon_Data.type,"");
+                        logger.println("Cancel Redox Etalon (all)");
+                    }
+                    webTelecom.sendEtalonMode();
+                } else if (strcmp(command, "resetCoefCL") == 0){
+                    strcpy(etalon_Data.action,"Cancel");
+                    strcpy(etalon_Data.PHRedox,"DoseCoef");
+                    strcpy(etalon_Data.type,"CL");
+                    logger.println("Reset coefficient dose CL (asservissement adaptatif)");
+                    webTelecom.sendEtalonMode();
+                } else if (strcmp(command, "resetCoefPHm") == 0){
+                    strcpy(etalon_Data.action,"Cancel");
+                    strcpy(etalon_Data.PHRedox,"DoseCoef");
+                    strcpy(etalon_Data.type,"PHm");
+                    logger.println("Reset coefficient dose PH- (asservissement adaptatif)");
                     webTelecom.sendEtalonMode();
                 } else if (strcmp(command, "setTampon") == 0){
                     if(request->hasParam("tampon",true)){
@@ -2370,23 +2408,17 @@ h1{font-size:4em;color:#5AC8FA;margin:0}p{color:#aaa}a{color:#5AC8FA;text-decora
         uint8_t i = 0;
         bool flagOK=false;
         bool sessionsModified = false;
-        const time_t MAX_SESSION_AGE = 604800;  // 1 semaine en secondes (7 * 86400)
 
-        // Nettoyage sessions expirées ou trop anciennes
+        // Nettoyage sessions expirées — chaque session porte déjà son propre ttl
+        // (1h/1jour/30jours/1an selon le contexte), pas besoin d'un plafond indépendant :
+        // un ancien plafond fixe à 1 semaine purgeait à tort les sessions auto-login (1 an).
         for (i=0; i<10; i++){  // 10 sessions max
             if(activeSessions[i].ttl == 0) continue;  // Slot vide, skip
-            
+
             time_t sessionExpiry = activeSessions[i].timecreated + activeSessions[i].ttl;
-            time_t sessionAge = now() - activeSessions[i].timecreated;
-            
-            // Supprimer si : expirée OU > 1 semaine
-            if (sessionExpiry < now() || sessionAge > MAX_SESSION_AGE) {
-                if (sessionExpiry < now()) {
-                    logger.printf("[SESSION] Suppression session expirée: %s\n", activeSessions[i].sessID);
-                } else {
-                    logger.printf("[SESSION] Suppression session trop ancienne (>1 semaine): %s\n", activeSessions[i].sessID);
-                }
-                
+
+            if (sessionExpiry < now()) {
+                logger.printf("[SESSION] Suppression session expirée: %s\n", activeSessions[i].sessID);
                 activeSessions[i].sessID[0] = 0;
                 activeSessions[i].ttl = 0;
                 activeSessions[i].timecreated = 0;
@@ -2593,15 +2625,13 @@ h1{font-size:4em;color:#5AC8FA;margin:0}p{color:#aaa}a{color:#5AC8FA;text-decora
     strlcpy( sessID, strSess, 16);  
     logger.printf("new key is : %s\n", sessID);  
 
-    // Nettoyage sessions expirées ou trop anciennes (> 1 semaine)
-    const time_t MAX_SESSION_AGE = 604800;  // 1 semaine
+    // Nettoyage sessions expirées — respecte le ttl propre à chaque session (voir isSessionValid)
     for (i=0; i<10; i++){  // 10 sessions max
         if(activeSessions[i].ttl == 0) continue;
-        
+
         time_t sessionExpiry = activeSessions[i].timecreated + activeSessions[i].ttl;
-        time_t sessionAge = now() - activeSessions[i].timecreated;
-        
-        if (sessionExpiry < now() || sessionAge > MAX_SESSION_AGE) {
+
+        if (sessionExpiry < now()) {
             activeSessions[i].sessID[0]=0;
             activeSessions[i].ttl=0;
             activeSessions[i].timecreated=0;

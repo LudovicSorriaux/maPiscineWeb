@@ -278,6 +278,46 @@
 			});
 		}
 
+		// --- Bandeau d'alerte : décodage local du masque IND_Alerte reçu du contrôleur ---
+		// bit1=inondation, bit2=flux, bit3=PAC, bit4=pH vide, bit5=CL vide, bit6=ALG vide,
+		// bit7=fenêtre de filtration trop courte. Ordre = priorité d'affichage (bit1 en premier).
+		var ALERT_LABELS = ["Inondation", "Absence de flux d'eau", "Problème PAC", "Plus de pH+",
+		                     "Plus de chlore", "Plus de produit pompe 3", "Fenêtre de filtration trop courte"];
+
+		function updateAlertBanner(valAlert){
+			if(!valAlert || valAlert === 0){
+				$('#alertBanner').fadeOut(200);
+				return;
+			}
+			var messages = [];
+			for(var bit = 0; bit < ALERT_LABELS.length; bit++){
+				if(valAlert & (1 << bit)){
+					messages.push(ALERT_LABELS[bit]);
+				}
+			}
+			$('#alertBannerText').text('ALERTE : ' + messages.join(' — '));
+			$('#alertBannerAck').show();
+			$('#alertBanner').fadeIn(200);
+		}
+
+		$('#alertBannerAck').click(function(){
+			$.ajax({
+				type: 'POST',
+				url: '/setPiscine?action=Parametres',
+				data: 'sess=' + sessID + '&param=clearAlert&val=1',
+				dataType: "text",
+				success: function(data){
+					console.log("Call to /clearAlert (banner) is success");
+				},
+				error: function (xhr, status, errorThrown) {
+					console.log('An error occurred while calling /clearAlert, data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
+					if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){
+						showSessionExpiredDialog("Action utilisateur");
+					}
+				}
+			});
+		});
+
 		function piscineDataServer(evt){
 			var today = new Date();
 			var timeLeft;
@@ -384,9 +424,12 @@
 					if(returnedData.hasOwnProperty('P3')){
 						if(returnedData.P3 == 0) {
 							$('#P3Led').removeClass('ledOn').addClass('ledOff');
-						} else {	
+						} else {
 							$('#P3Led').removeClass('ledOff').addClass('ledOn');
-						}	
+						}
+					}
+					if(returnedData.hasOwnProperty('Alerte')){
+						updateAlertBanner(parseInt(returnedData.Alerte));
 					}
 					if(returnedData.hasOwnProperty('autoMode')){
 						if(returnedData.autoMode == 0) {

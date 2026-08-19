@@ -1,5 +1,7 @@
 # 📊 Diagramme de flux - Auto-login local
 
+> ⚠️ **Mise à jour (08/2026)** : l'étape 4 ci-dessous a changé. Le client transmet désormais son `sessionId` local (s'il en a un) en paramètre `?sess=` de l'appel `GET /checkLocalAuth`, et le serveur valide **d'abord** cette session existante avant d'envisager un auto-login. Dans la version d'origine du diagramme, le serveur régénérait systématiquement une nouvelle session à chaque appel (scénario A, étape 6a), ce qui saturait la table de sessions — ce n'était pas le comportement voulu, voir `AUTOLOGIN_LOCAL_README.md` pour le détail du bug corrigé.
+
 ## 🔄 Flux complet d'authentification
 
 ```
@@ -27,8 +29,13 @@
        │  [Si session expirée/absente]     │                                   │
        │  ↓ Continue...                    │                                   │
        │                                   │                                   │
-       │  4. GET /checkLocalAuth           │                                   │
+       │  4. GET /checkLocalAuth?sess=X    │                                   │
+       │  (X = sessionId local si connu)   │                                   │
        ├──────────────────────────────────>│                                   │
+       │                                   │  4bis. isSessionValid(X) ?        │
+       │                                   │  [Si oui] → confirmer, PAS de     │
+       │                                   │  nouvelle session (voir 7a')      │
+       │                                   │  [Si non] → suite normale ↓       │
        │                                   │                                   │
        │                                   │  5. Récupérer IP client           │
        │                                   │  request->client()->remoteIP()    │

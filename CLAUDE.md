@@ -108,7 +108,7 @@ Les callbacks périodiques sont enregistrés dans `setup()` :
 
 | Méthode | URL | Action |
 |---|---|---|
-| GET | `/checkLocalAuth` | Vérifie si auto-login local activé |
+| GET | `/checkLocalAuth?sess=X` | Valide la session `sess` existante si fournie, sinon vérifie l'auto-login local |
 | POST | `/api/auth?action=logon` | Login |
 | POST | `/api/auth?action=register` | Inscription nouvel utilisateur |
 | POST | `/api/auth?action=changeAdmin` | Changement mot de passe admin |
@@ -159,6 +159,7 @@ Navigation par swipe gauche/droite via attributs `nextLeft`/`nextRight` sur chaq
 
 - **8 LEDs d'état** : Lampe (orange), Volet (rose), P.P. (bleu), PAC (jaune), PH (vert), CL (cyan), P3 (violet), Auto (blanc)
 - **Écran LCD simulé** : 3 lignes de texte, mode Alerte avec clignotement
+- **Bandeau d'alerte** (`#alertBanner`) : décodage côté JS (`updateAlertBanner()` dans `piscinePrincipale.js`) du bitmask `Alerte` reçu par SSE — 7 types d'alerte (inondation, flux, PAC, pH/CL/ALG vide, fenêtre de filtration trop courte), libellés complets, bouton "Acquitter" (POST `param=clearAlert&val=1` vers `/setPiscine?action=Parametres`)
 - **3 jauges circulaires** (gauge.js) : PH (4–10.4), CL (0–2.4), Redox (500–900 mV) — tap sur zone pour basculer CL↔Redox
 - **4 températures** : Air (rose), Eau (cyan), Int (vert), PAC (orange)
 - **3 interrupteurs custom** : Lampe, Power (contrôle SSE), Volet
@@ -166,7 +167,7 @@ Navigation par swipe gauche/droite via attributs `nextLeft`/`nextRight` sur chaq
 ### Page Paramètres (`#pagePiscineParametres`)
 
 Sections collapsibles :
-- **Paramètres divers** : PAC via Router, Local Auto Login
+- **Paramètres divers** : PAC via Router, Local Auto Login, switch `ClearAlertSW` (acquitte les alertes, écrit `IND_ClearAlert`), boutons "Reset coef CL" / "Reset coef PH-" (réinitialisent les coefficients de l'asservissement adaptatif du contrôleur)
 - **Mode Manuel** : Mode Manuel + 5 pompes (PP, PAC, PmpPH, PmpCL, PmpALG)
 - **Pompe Principale** : horaires start/stop (clockpicker)
 - **Horaire PAC** : start/stop
@@ -205,7 +206,7 @@ Abonnement via `$.SSE('/piscineEvents')` (library `jquery.sse.min.js`).
 
 | Event SSE | Champs JSON | Mise à jour UI |
 |---|---|---|
-| `piscineData` | `phVal` (×100), `redoxVal`, `clVal` (×100), `tempAir/Eau/Int/PAC` (×100), `lampe`, `volet`, `PP`, `PAC`, `PH`, `CL`, `P3`, `autoMode` (0/1) | Jauges, temperatures, LEDs, switches |
+| `piscineData` | `phVal` (×100), `redoxVal`, `clVal` (×100), `tempAir/Eau/Int/PAC` (×100), `lampe`, `volet`, `PP`, `PAC`, `PH`, `CL`, `P3`, `autoMode` (0/1), `Alerte` (bitmask 7 bits) | Jauges, temperatures, LEDs, switches, bandeau d'alerte (`updateAlertBanner()`) |
 | `piscineLCDData` | `ligne1`, `ligne2`, `ligne3`, `Alerte` (presence) | Écran LCD simulé (clignotement si Alerte) |
 | message `hello!` | — | Déclenche `InitPagePrincipale` POST |
 
@@ -213,7 +214,7 @@ Abonnement via `$.SSE('/piscineEvents')` (library `jquery.sse.min.js`).
 
 - **Session** : `localStorage` clé `maPiscine-session` → `{username, password, roles, sessionId, theExpirationDate, mainPage}`
 - **Cookie** : `maPiscine` = sessionID (durée = TTL serveur en heures)
-- **Auto-login local** : `GET /checkLocalAuth` au démarrage — si `autoLogin=true`, session 1 an sans saisie de mot de passe
+- **Auto-login local** : `GET /checkLocalAuth?sess=<sessionId>` au démarrage (le `sessionId` local stocké, si présent, est transmis pour validation serveur) — si la session existante est encore valide côté serveur, elle est simplement confirmée (`sessionValid=true`, pas de nouvelle session créée) ; sinon, si client local + `autoLogin` activé, une nouvelle session 1 an est générée (`autoLogin=true`) sans saisie de mot de passe
 - **Rôles** : Piscine, Arrosage, Chauffage, Lampes, Volets (checkboxes à l'inscription)
 - **Validation formulaires** : jQuery Validate — username min 5 chars max 15, password min 5 max 10
 - **Expiration** : vérifiée à chaque changement de page + alerte toast 5 min avant + dialog auto-redirect 10s

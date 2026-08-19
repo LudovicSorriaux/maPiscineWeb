@@ -1008,3 +1008,16 @@ form .error {
     }
 
 }
+
+/* --- Bandeau d'alerte (masque IND_Alerte décodé côté client) --- */
+.alertBanner {
+    background-color: #d9534f;
+    color: #fff;
+    text-align: center;
+    padding: 0.6em 1em;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+.alertBanner .ui-btn {
+    margin: 0.3em 0 0 0.5em;
+}

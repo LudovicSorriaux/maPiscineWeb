@@ -4,6 +4,8 @@
 **Projet** : maPiscinev4Web-d1_mini  
 **Fonctionnalité** : Détection réseau local + auto-login automatique
 
+> ⚠️ **Mise à jour (08/2026)** : ce résumé décrit l'implémentation initiale. Deux bugs y ont depuis été corrigés dans `handleCheckLocalAuth()`/`isSessionValid()`/`generateKey()` (`src/PiscineWeb.cpp`) : l'endpoint générait une nouvelle session à chaque appel au lieu de revalider une session existante (paramètre `sess`), et un plafond fixe `MAX_SESSION_AGE` de 1 semaine purgeait à tort les sessions auto-login (TTL 1 an). Voir `AUTOLOGIN_LOCAL_README.md` pour le détail du comportement actuel.
+
 ---
 
 ## ✅ Ce qui a été implémenté

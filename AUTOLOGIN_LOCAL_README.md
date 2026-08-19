@@ -63,18 +63,34 @@ bool PiscineWebClass::isLocalClient(AsyncWebServerRequest *request) {
 
 ## 📡 Endpoint API : `/checkLocalAuth`
 
+> ⚠️ **Mise à jour (08/2026)** : l'endpoint vérifie désormais **en priorité** si une session existante est encore valide côté serveur (paramètre `sess`, transmis par le client depuis son `localStorage`) avant d'envisager un auto-login. Dans la version initiale, l'endpoint générait **systématiquement** une nouvelle session à chaque appel — donc à chaque chargement de page — ce qui saturait la table `activeSessions[10]` en quelques heures d'usage normal et évinçait des sessions encore actives (symptôme : redemande de connexion après quelques heures alors que le TTL auto-login est de 1 an). C'était un bug, pas le comportement voulu ; voir `src/PiscineWeb.cpp::handleCheckLocalAuth()`.
+
 ### Requête
 ```http
-GET /checkLocalAuth HTTP/1.1
+GET /checkLocalAuth?sess=<sessionId> HTTP/1.1
 Host: mapiscine.local
 ```
+Le paramètre `sess` est optionnel : le frontend le transmet quand un `sessionId` est déjà présent dans le `localStorage` (`html/js/piscineScripts.js::checkLocalAuthOnStartup()`), pour permettre au serveur de le revalider (utile notamment après un reboot/flash, où les sessions serveur sont perdues sans que le client le sache).
 
-### Réponse (Client local avec auto-login activé)
+### Réponse (session existante toujours valide côté serveur)
+```json
+{
+  "status": "Session valide",
+  "isLocal": true,
+  "autoLogin": false,
+  "sessionValid": true,
+  "message": "Session active"
+}
+```
+Aucune nouvelle session n'est créée dans ce cas — la session transmise est simplement confirmée.
+
+### Réponse (Client local avec auto-login activé, pas de session existante valide)
 ```json
 {
   "status": "Auto Login Local",
   "isLocal": true,
   "autoLogin": true,
+  "sessionValid": true,
   "sessionID": "A7f2K9mP3xL5q1R",
   "ttl": 31536000,
   "username": "local_user",
@@ -88,6 +104,7 @@ Host: mapiscine.local
   "status": "Authentication Required",
   "isLocal": false,
   "autoLogin": false,
+  "sessionValid": false,
   "message": "Authentification requise"
 }
 ```
@@ -204,6 +221,8 @@ $(document).ready(function() {
 | **Local avec login** | IP locale + login manuel | **30 jours** | Confort usage |
 | **Distant keepAlive** | IP distante + checkbox "Se souvenir" | **1 jour** | Sécurité renforcée |
 | **Distant normal** | IP distante | **1 heure** | Sécurité max |
+
+Chaque session est purgée uniquement selon son propre `ttl` (voir `isSessionValid()`/`generateKey()`). Une ancienne version du code appliquait en plus un plafond fixe indépendant `MAX_SESSION_AGE = 604800` (1 semaine) qui purgeait à tort les sessions auto-login (TTL 1 an) après seulement 7 jours — ce plafond a été supprimé, il n'y a plus d'expiration prématurée pour les sessions longue durée.
 
 ---
 
