@@ -34,7 +34,6 @@
 
     #define TOUS 0
     #define CLAVIER 1
-    #define RADIO 2
     #define WEB 3
     #define CONTROLEUR 4
 
@@ -44,7 +43,7 @@
         
 // definition des indexes pour telecoms
     #define IND_libre 0       // 
-    #define IND_Alerte 1          // alerte value : 0 noAlerts, 1 innondation, 2 plus de ph, 3 plus de cl, 4 plus de alg, 5 1+2, 6 1+3, 7 1+4, 8 1+2+3, 9 1+2+4, 10 1+3+4, 11 1+2+3+4, 12 2+3, 13 2+4, 14 2+3+4, 15 3+4 
+    #define IND_Alerte 1          // masque bitmask 7 bits (valAlert cote controleur) : bit1 innondation, bit2 flux, bit3 PAC, bit4 ph vide, bit5 cl vide, bit6 alg vide, bit7 filtration trop courte ; valeur = OR des bits actifs, 0 = pas d'alerte
     #define IND_TempEau 2         // Temp Eau val
     #define IND_TempAir 3         // Temp Air Val
     #define IND_TempPAC 4         // Temp Eau sortie de PAC
