@@ -271,7 +271,7 @@ void PiscineWebClass::_migratePasswords() {
             nbAppels = 20;                  // 10 sec env
         }
 
-        for(int i=0;i<IND_ClearAlert;i++){           // +1 for IND_ClearAlert
+        for(int i=0;i<=IND_coefPHm;i++){              // borne haute = dernier index "config" utilisé (58) ; ClearAlert(52)/PACAutonome(56)/coefCL(57)/coefPHm(58) étaient auparavant exclus par erreur (i<IND_ClearAlert=52)
             if( (doItFull) || (piscineParams[i].changedControler)) {
                 if (currentPage == PAGE_PRICIPALE) {          // in page principal
                     if(piscinePPSet.find(i) != piscinePPSet.end()){
