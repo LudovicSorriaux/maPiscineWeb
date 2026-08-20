@@ -257,7 +257,7 @@ Envoyée en binaire brut (`memcpy`, `sizeof(dataStruct)`) sur la commande `V`.
 | 52 | `ClearAlert` | W→C | Acquittement alerte (paramètre générique, pas de logique métier ici) |
 | 53 | `volumePiscine` | W↔C | Volume piscine (calcul de dosage) |
 | 55 | `Set Debug` | C→W | Bascule mode debug web |
-| 56 | `pacAutonome` | — | Défini mais **absent de toute logique** dans les fichiers analysés (voir `TOCHECK.md`) |
+| 56 | `pacAutonome` | W↔C | Switch "PAC Autonome" (page Paramètres, onglet Divers, `#pacAutonomeSWitch`) → `handlePiscineParams()` (paramètre string `pacAutonome`) |
 | 60 | `WifiStatus` | C→W (demande) puis W→C (réponse) | Piloté par `processAction()` |
 | 61 | `EPOCH` | C→W (demande) puis W→C (réponse) | Le web répond avec l'heure si NTP synchronisé |
 | 82 | `BlinkWifiLed` | W→C | État LED WiFi (0 off / 1 on / -1..-3 clignotements) |
