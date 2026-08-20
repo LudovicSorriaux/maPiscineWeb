@@ -255,19 +255,24 @@ var statusErrorMap = {
   function showSessionExpiredDialog(action) {
 
 	console.log("[LocalAuth] Session expirée, redirection login");
-		
+
+	// Récupère sa propre copie des données de session : ne pas dépendre du scope
+	// de l'appelant (checkSessionValidity() et onPageError() appellent tous deux
+	// cette fonction, mais aucun ne partage ses variables locales avec elle).
+	var sessionData = maPiscine.Session.getInstance().get();
+
 	// Nettoyer session
 	window.localStorage.removeItem("maPiscine-session");
 	setCookie("maPiscine", "", 0);
-	
-	// Mettre à jour contenu dialog dynamiquement
-	var expiredTime = new Date(sessionData.theExpirationDate).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
-	var expiredDate = new Date(sessionData.theExpirationDate).toLocaleDateString('fr-FR');
-	var sessionDuration = Math.floor((sessionData.theExpirationDate - (now - timeRemaining)) / 3600000); // heures
-	
+
+	// Mettre à jour contenu dialog dynamiquement (dégradé si aucune donnée de session disponible)
 	var message = "<p><strong>Votre session a expiré.</strong></p>";
-	message += "<p>Heure d'expiration : <strong>" + expiredDate + " à " + expiredTime + "</strong></p>";
-	message += "<p>Utilisateur : <strong>" + (sessionData.username || userName) + "</strong></p>";
+	if (sessionData && sessionData.theExpirationDate) {
+		var expiredTime = new Date(sessionData.theExpirationDate).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
+		var expiredDate = new Date(sessionData.theExpirationDate).toLocaleDateString('fr-FR');
+		message += "<p>Heure d'expiration : <strong>" + expiredDate + " à " + expiredTime + "</strong></p>";
+	}
+	message += "<p>Utilisateur : <strong>" + ((sessionData && sessionData.username) || userName || "") + "</strong></p>";
 	message += "<p>Action : <strong>" + action + "</strong></p>";
 	message += "<p><em>Veuillez vous reconnecter.</em></p>";
 	message += "<p><em>Redirection automatique dans 10 secondes...</em></p>";

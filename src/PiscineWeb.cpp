@@ -2304,6 +2304,12 @@ h1{font-size:4em;color:#5AC8FA;margin:0}p{color:#aaa}a{color:#5AC8FA;text-decora
         JsonDocument jsonConfig;  // Optimisation RAM #7 : Admin + users array + wifi array
         uint8_t i = 0;
 
+        if(!checkSessionParam(request)){                                       // route de debug exposant hash mdp + wifi : session requise
+            logger.println("[WEB] ❌ showJsonConfig : Invalid Session");
+            request->send(400, "text/plain", "400: Invalid Session");
+            return;
+        }
+
         logger.println("Asked for print current config");
 
         jsonConfig["adminPassword"] = config.adminPassword;
