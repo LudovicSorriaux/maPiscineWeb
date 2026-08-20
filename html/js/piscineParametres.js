@@ -1468,6 +1468,12 @@
 						}
 					}
 				}
+				if(returnedData.hasOwnProperty('coefCL')){
+					$('#coefCLValue').text((returnedData.coefCL / 100).toFixed(2));
+				}
+				if(returnedData.hasOwnProperty('coefPHm')){
+					$('#coefPHmValue').text((returnedData.coefPHm / 100).toFixed(2));
+				}
 				if(returnedData.hasOwnProperty('localAutoLogin')){
 					if(returnedData.localAutoLogin == 0) {
 						if ($('#localAutoLoginSWitch').prop("checked")){ 

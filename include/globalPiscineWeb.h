@@ -102,6 +102,8 @@
     #define IND_Defaults 54
     #define IND_Debug 55
     #define IND_PACAutonome 56
+    #define IND_coefCL 57          // ratio doseCL/baselineDoseCL x100 (info, 100 = coefficient neutre)
+    #define IND_coefPHm 58         // ratio dosePHm/baselineDosePHm x100 (info, 100 = coefficient neutre)
     //        #define IND_MAX_PISCINE 55
 
         // indexes d'info pas besoin de les stocker
