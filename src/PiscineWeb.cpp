@@ -602,14 +602,14 @@ void PiscineWebClass::_migratePasswords() {
 //        server.reset();
 
     // --- 1. ROUTES API
-        server.on("/", HTTP_ANY, std::bind(&PiscineWebClass::handleRoot, this, std::placeholders::_1));                         // Call the 'handleRoot' function when a client requests URI "/"                         // Call the 'handleRoot' function when a client requests URI "/"
+        server.on("/", HTTP_ANY, [this](AsyncWebServerRequest *request){ handleRoot(request); });                         // Call the 'handleRoot' function when a client requests URI "/"                         // Call the 'handleRoot' function when a client requests URI "/"
 
                     // -------- call backs for debug ------------
-        server.on("/jsonConfig", HTTP_ANY, std::bind(&PiscineWebClass::showJsonConfig, this, std::placeholders::_1));
+        server.on("/jsonConfig", HTTP_ANY, [this](AsyncWebServerRequest *request){ showJsonConfig(request); });
         
                     // -------- call backs from javascripts ------------
-        server.on("/checkLocalAuth", HTTP_GET, std::bind(&PiscineWebClass::handleCheckLocalAuth, this, std::placeholders::_1));  // Nouveau : check auto-login local
-        server.on("/api/info", HTTP_GET, std::bind(&PiscineWebClass::handleApiInfo, this, std::placeholders::_1));               // Version firmware
+        server.on("/checkLocalAuth", HTTP_GET, [this](AsyncWebServerRequest *request){ handleCheckLocalAuth(request); });  // Nouveau : check auto-login local
+        server.on("/api/info", HTTP_GET, [this](AsyncWebServerRequest *request){ handleApiInfo(request); });               // Version firmware
         // On utilise "/api/auth" pour regrouper tout ce qui touche aux utilisateurs
         server.on("/api/auth", HTTP_POST, [this](AsyncWebServerRequest *request) {
             if (request->hasParam("action")) {
@@ -627,12 +627,12 @@ void PiscineWebClass::_migratePasswords() {
                 request->send(400, "text/plain", F("Action manquante"));
             }
         });
-/*        server.on("/logon", HTTP_POST, std::bind(&PiscineWebClass::handleLogin, this, std::placeholders::_1)); 			  
-        server.on("/register", HTTP_POST, std::bind(&PiscineWebClass::handleRegister, this, std::placeholders::_1)); 	
-        server.on("/changeAdmin", HTTP_POST, std::bind(&PiscineWebClass::handleChangAdminPW, this, std::placeholders::_1)); 	
-        server.on("/userProfile", HTTP_POST, std::bind(&PiscineWebClass::handleUserProfile, this, std::placeholders::_1));  
-        server.on("/getUsers", HTTP_POST, std::bind(&PiscineWebClass::handleGetUsers, this, std::placeholders::_1));  
-        server.on("/deleteUsers", HTTP_POST, std::bind(&PiscineWebClass::handleDeleteUsers, this, std::placeholders::_1));  
+/*        server.on("/logon", HTTP_POST, [this](AsyncWebServerRequest *request){ handleLogin(request); }); 			  
+        server.on("/register", HTTP_POST, [this](AsyncWebServerRequest *request){ handleRegister(request); }); 	
+        server.on("/changeAdmin", HTTP_POST, [this](AsyncWebServerRequest *request){ handleChangAdminPW(request); }); 	
+        server.on("/userProfile", HTTP_POST, [this](AsyncWebServerRequest *request){ handleUserProfile(request); });  
+        server.on("/getUsers", HTTP_POST, [this](AsyncWebServerRequest *request){ handleGetUsers(request); });  
+        server.on("/deleteUsers", HTTP_POST, [this](AsyncWebServerRequest *request){ handleDeleteUsers(request); });  
 */
 
             // -------- call backs from restapi ------------
@@ -668,20 +668,20 @@ void PiscineWebClass::_migratePasswords() {
         });
 
 /*
-        server.on("/setPiscinePagePrincip", HTTP_POST, std::bind(&PiscineWebClass::handleInitPiscinePP, this, std::placeholders::_1)); 
-        server.on("/setPiscinePageParams", HTTP_POST, std::bind(&PiscineWebClass::handleInitPiscinePParams, this, std::placeholders::_1)); 
-        server.on("/setPiscineParam", HTTP_POST, std::bind(&PiscineWebClass::handlePiscineParams, this, std::placeholders::_1)); 
-        server.on("/setPiscineDebug", HTTP_POST, std::bind(&PiscineWebClass::handlePiscinePageDebug, this, std::placeholders::_1)); 
-        server.on("/setPiscineMaintenance", HTTP_POST, std::bind(&PiscineWebClass::handlePiscinePageMaintenance, this, std::placeholders::_1)); 
-        server.on("/setPiscineInitMaintenance", HTTP_POST, std::bind(&PiscineWebClass::handleInitPiscinePageMaintenance, this, std::placeholders::_1)); 
+        server.on("/setPiscinePagePrincip", HTTP_POST, [this](AsyncWebServerRequest *request){ handleInitPiscinePP(request); }); 
+        server.on("/setPiscinePageParams", HTTP_POST, [this](AsyncWebServerRequest *request){ handleInitPiscinePParams(request); }); 
+        server.on("/setPiscineParam", HTTP_POST, [this](AsyncWebServerRequest *request){ handlePiscineParams(request); }); 
+        server.on("/setPiscineDebug", HTTP_POST, [this](AsyncWebServerRequest *request){ handlePiscinePageDebug(request); }); 
+        server.on("/setPiscineMaintenance", HTTP_POST, [this](AsyncWebServerRequest *request){ handlePiscinePageMaintenance(request); }); 
+        server.on("/setPiscineInitMaintenance", HTTP_POST, [this](AsyncWebServerRequest *request){ handleInitPiscinePageMaintenance(request); }); 
 */
             // ---------- Routeur ------
-        server.on("/setRouteurInfo", HTTP_POST, std::bind(&PiscineWebClass::handleRouteurInfo, this, std::placeholders::_1)); 
+        server.on("/setRouteurInfo", HTTP_POST, [this](AsyncWebServerRequest *request){ handleRouteurInfo(request); }); 
 
             // ---------- Graphs API Chunked (fix WDT reset) ------
-        server.on("/api/graph/plan", HTTP_POST, std::bind(&PiscineWebClass::handleGraphPlan, this, std::placeholders::_1));
-        server.on("/api/graph/file-info", HTTP_GET, std::bind(&PiscineWebClass::handleGraphFileInfo, this, std::placeholders::_1));
-        server.on("/api/graph/chunk", HTTP_GET, std::bind(&PiscineWebClass::handleGraphChunk, this, std::placeholders::_1));
+        server.on("/api/graph/plan", HTTP_POST, [this](AsyncWebServerRequest *request){ handleGraphPlan(request); });
+        server.on("/api/graph/file-info", HTTP_GET, [this](AsyncWebServerRequest *request){ handleGraphFileInfo(request); });
+        server.on("/api/graph/chunk", HTTP_GET, [this](AsyncWebServerRequest *request){ handleGraphChunk(request); });
 
     // --- 2. GESTION DU SSE UNIQUE ---
         piscineEvents.onConnect([](AsyncEventSourceClient *client){
@@ -769,7 +769,7 @@ void PiscineWebClass::_migratePasswords() {
         );
 
     // --- 4. NOT FOUND ---
-        server.onNotFound(std::bind(&PiscineWebClass::handleOtherFiles, this, std::placeholders::_1));           			  // When a client requests an unknown URI (i.e. something other than "/"), call function handleNotFound"
+        server.onNotFound([this](AsyncWebServerRequest *request){ handleOtherFiles(request); });           			  // When a client requests an unknown URI (i.e. something other than "/"), call function handleNotFound"
     
     // Endpoint pour lister le contenu d'un répertoire
     server.on("/listdir", HTTP_GET, [this](AsyncWebServerRequest *request) {
@@ -1345,13 +1345,13 @@ void PiscineWebClass::_migratePasswords() {
         int headers = request->headers();
         int i;
         for(i=0;i<headers;i++){
-            AsyncWebHeader* h = request->getHeader(i);
+            const AsyncWebHeader* h = request->getHeader(i);
             logger.printf("_HEADER[%s]: %s\n", h->name().c_str(), h->value().c_str());
         }
 
         int params = request->params();
         for(i=0;i<params;i++){
-            AsyncWebParameter* p = request->getParam(i);
+            const AsyncWebParameter* p = request->getParam(i);
             if(p->isFile()){
             logger.printf("_FILE[%s]: %s, size: %u\n", p->name().c_str(), p->value().c_str(), p->size());
             } else if(p->isPost()){
@@ -2288,13 +2288,13 @@ h1{font-size:4em;color:#5AC8FA;margin:0}p{color:#aaa}a{color:#5AC8FA;text-decora
     int headers = request->headers();
     int i;
     for(i=0;i<headers;i++){
-        AsyncWebHeader* h = request->getHeader(i);
+        const AsyncWebHeader* h = request->getHeader(i);
         logger.printf("_HEADER[%s]: %s\n", h->name().c_str(), h->value().c_str());
     }
 
     int params = request->params();
     for(i=0;i<params;i++){
-        AsyncWebParameter* p = request->getParam(i);
+        const AsyncWebParameter* p = request->getParam(i);
         if(p->isFile()){
         logger.printf("_FILE[%s]: %s, size: %u\n", p->name().c_str(), p->value().c_str(), p->size());
         } else if(p->isPost()){
