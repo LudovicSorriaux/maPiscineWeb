@@ -203,6 +203,7 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
         char message[256];  // Optimisation RAM #10 : String → char[]
         char theDate[20];
 
+      capBufferFile("/buf/log_buf.log");
       logFile = LittleFS.open("/buf/log_buf.log", "a");
       if(logFile){
         printDate(theDate,sizeof(theDate));
@@ -466,6 +467,7 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
       char message[128];
         if(!alertFile && alertFileName.length() > 0) {
           // Écriture vers LittleFS buffer (pas besoin de SD)
+          capBufferFile("/buf/alert_buf.log");
           alertFile = LittleFS.open("/buf/alert_buf.log", "a");
           if(!alertFile) {
             LittleFS.mkdir("/buf");
@@ -537,19 +539,43 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
     }
 
   /*
+   * void LoggerClass::capBufferFile
+   * But : Garde-fou taille sur un buffer LittleFS (/buf/*.log) : si la SD reste absente
+   *       longtemps, flushLogsToSD() ne vide plus jamais ces fichiers — sans limite, ils
+   *       finiraient par saturer LittleFS, partagée avec la config/sessions/assets web.
+   *       Au-delà de MAX_BUF_FILE_SIZE, le buffer est vidé (perte des données les plus
+   *       anciennes non flushées) plutôt que de risquer de saturer le système de fichiers.
+   * Entrées : path - chemin LittleFS du buffer ("/buf/log_buf.log" ou "/buf/alert_buf.log")
+   * Sortie : aucune
+   */
+    void LoggerClass::capBufferFile(const char* path){
+      File f = LittleFS.open(path, "r");
+      if(!f) return;
+      size_t sz = f.size();
+      f.close();
+      if(sz > MAX_BUF_FILE_SIZE){
+        Serial1.printf_P(PSTR("[LOGGER] ⚠️ Buffer %s > %u Ko (SD absente trop longtemps) — vidé pour protéger LittleFS\n"),
+                          path, (unsigned)(MAX_BUF_FILE_SIZE/1024));
+        LittleFS.remove(path);
+      }
+    }
+
+  /*
    * void LoggerClass::checkSD
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
+   * But : Retente le montage de la carte SD si elle était absente (rappelée périodiquement
+   *       par flushLogsToSD() — sans ça, cardPresent reste bloqué à false pour toujours dès
+   *       qu'elle a manqué une fois, même si la carte est réinsérée ou réparée)
+   * Sortie : aucune (positionne cardPresent, recrée l'arborescence /log si la carte revient)
    */
     void LoggerClass::checkSD(){
       if(!cardPresent){
         if(!SD.begin(SDchipSelect)){          // see if the card is present and can be initialized:
-          Serial1.println(F("[SD] ❌ ERREUR : SDCard Initialization Failed"));
           cardPresent = false;
           return;
         } else {
           cardPresent = true;
+          Serial1.println(F("[SD] ✅ Carte SD (re)détectée"));
+          initDirs();    // recrée l'arborescence /log/YYYY/... si elle n'existe pas encore sur cette carte
         }
       }
     }
@@ -728,6 +754,9 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
  * Sortie : aucune
  */
   void LoggerClass::flushLogsToSD() {
+    if (!cardPresent) {
+      checkSD();    // retente le montage : sans ça cardPresent reste bloqué à false indéfiniment
+    }
     if (!cardPresent) {
       Serial1.println(F("[LOGGER] Flush: SD absent, accumulation LittleFS continue"));
       return;

@@ -73,7 +73,7 @@ Il ne fait que compiler le firmware (`pio run`, cible par défaut = build seul).
 
 | Fichier | Rôle |
 |---|---|
-| `src/maPiscineWeb.cpp` (1468 lignes) | `setup()`/`loop()`, gestion WiFi (connexion directe → SSID stockés → portail captif), NTP + DST France, EEPROM/LittleFS config, SimpleTimer (tous les callbacks périodiques) |
+| `src/maPiscineWeb.cpp` (1468 lignes) | `setup()`/`loop()`, gestion WiFi (connexion directe → SSID stockés → portail captif), NTP + DST France, config JSON/LittleFS, SimpleTimer (tous les callbacks périodiques) |
 | `src/PiscineWeb.cpp` (3415 lignes) + `include/PiscineWeb.h` | Classe `PiscineWebClass` : serveur `AsyncWebServer`, toutes les routes HTTP/API, SSE, sessions, mots de passe, upload de fichiers |
 | `src/PiscineWebTelecom.cpp` (537 lignes) + `.h` | Classe `PiscineWebTelecomClass` : encapsulation du protocole ICSC (émission/réception vers le contrôleur ESP32) |
 | `src/PiscineWebActionControler.cpp` (208 lignes) + `.h` | Classe `PiscineWebActionControlerClass` : couche applicative entre le buffer ICSC brut et `piscineParams[]`, synchro NTP → contrôleur |
@@ -82,7 +82,6 @@ Il ne fait que compiler le firmware (`pio run`, cible par défaut = build seul).
 | `include/globalPiscine.h` | Constantes partagées avec les autres projets (contrôleur, clavier) : codes messages ICSC génériques, IDs systèmes, structures `struct_configuration`, `dataStruct`, `struct_Etalon_Data`, `struct_Tampons` |
 | `include/globalPiscineWeb.h` | Constantes spécifiques web : table des index `IND_*` (paramètres piscine), macros utilitaires |
 | `include/IndexNames.h` | Table PROGMEM des 84 noms de paramètres (`IND_*` → chaîne), utilisée pour sérialiser le JSON SSE sans consommer de RAM |
-| `include/indexesDef.h` | **Table obsolète et non utilisée** — voir `TOCHECK.md` |
 
 ### 3.1 Boucle principale (`maPiscineWeb.cpp`, `SimpleTimer`)
 
@@ -118,11 +117,11 @@ Chaque tentative pilote une LED d'état via `IND_BlinkWifiLed` (0=off, 1=on, -1=
 | Méthode | Chemin | Handler | Rôle |
 |---|---|---|---|
 | ANY | `/` | `handleRoot` | Sert `/html/main.html` (LittleFS), 404 sinon |
-| ANY | `/jsonConfig` | `showJsonConfig` | **Debug non protégé** — dump JSON config (admin/users/wifi, y compris hash mots de passe) |
+| ANY | `/jsonConfig` | `showJsonConfig` | Debug — dump JSON config (admin/users/wifi, y compris hash mots de passe), protégé par session |
 | GET | `/checkLocalAuth` | `handleCheckLocalAuth` | Auto-login local + validation de session existante |
 | GET | `/api/info` | `handleApiInfo` | `{"version": "v4.5.6"}` |
 | POST | `/api/auth` | dispatcher sur paramètre `action` | `logon`→login, `register`, `changeAdmin`, `userProfile`, `getUsers`, `deleteUsers` |
-| POST | `/setPiscine` | dispatcher sur paramètre `action` | `InitPagePrincipale`, `InitPageParams`, `Parametres`, `Debug`, `Maintenance`, `InitMaintenance`, `getGraphDatas`, `SetDateTime`, `setActivePage` |
+| POST | `/setPiscine` | dispatcher sur paramètre `action` | `InitPagePrincipale`, `InitPageParams`, `Parametres`, `Debug`, `Maintenance`, `InitMaintenance`, `SetDateTime`, `setActivePage` |
 | POST | `/setRouteurInfo` | `handleRouteurInfo` | Transmet au contrôleur l'état de pilotage PAC via le routeur solaire |
 | POST | `/api/graph/plan` | `handleGraphPlan` | Étape 1 du système graphique "chunké" |
 | GET | `/api/graph/file-info` | `handleGraphFileInfo` | Étape 2 |
@@ -175,7 +174,7 @@ Si le client passe par le reverse-proxy WAN (architecture OCI+Pi mentionnée dan
 2. Sinon, si client local **et** `config.enableLocalAutoLogin` (paramètre configurable, stocké dans `/cfg/piscine.cfg`) → nouvelle session `username="local_user"`, TTL 1 an, `autoLogin:true`.
 3. Sinon → `sessionValid:false`, le frontend redirige vers la page de login.
 
-Côté frontend, ce flux est piloté par `html/js/piscineScripts.js` (`checkLocalAuthOnStartup()`, appelée au chargement de la page) — voir §7.1. Le fichier `html/js/localAuth.js.backup` (extension `.backup`, non référencé par aucun `<script>` dans `main.html`) est du **code mort résiduel**, remplacé par cette implémentation dans `piscineScripts.js`.
+Côté frontend, ce flux est piloté par `html/js/piscineScripts.js` (`checkLocalAuthOnStartup()`, appelée au chargement de la page) — voir §7.1.
 
 ### 4.4 Mots de passe
 
@@ -183,10 +182,7 @@ Côté frontend, ce flux est piloté par `html/js/piscineScripts.js` (`checkLoca
 - `_hashPassword()` : sel pseudo-aléatoire 32 bits (`micros() ^ (random()<<8) ^ (millis()<<16)`), SHA-256 via BearSSL sur `sel+motdepasse`.
 - `_checkPassword()` : si le stocké fait 73 caractères avec `:` en position 8 → recalcule et compare le hash ; sinon → comparaison directe en clair (`strcmp`), pour compatibilité ascendante avec d'anciens mots de passe non migrés.
 - `_migratePasswords()` : appelée au démarrage (`startup()`), hash tout mot de passe (admin + jusqu'à 5 utilisateurs) qui n'est pas déjà au format hashé, puis sauvegarde si changement.
-- **Incohérences relevées** (voir aussi `TOCHECK.md`) :
-  - `handleUserProfile` stocke le nouveau mot de passe **en clair** (`strncpy` direct, sans passer par `_hashPassword`), contrairement à `handleRegister`/`handleChangAdminPW`. Il sera re-haché au redémarrage suivant par `_migratePasswords()`, mais reste en clair entre-temps.
-  - `handleDeleteUsers` compare le mot de passe admin fourni avec `strcmp` direct au lieu de `_checkPassword` — une fois le mot de passe admin migré (hashé), cette comparaison échouera systématiquement : suppression d'utilisateurs potentiellement cassée en usage normal.
-  - `showJsonConfig` (route `/jsonConfig`) n'est protégée par **aucune authentification** et expose la config complète (utilisateurs, hash de mots de passe, SSID/mots de passe WiFi).
+- Tous les handlers de gestion de mot de passe (`handleRegister`, `handleChangAdminPW`, `handleUserProfile`) hashent systématiquement via `_hashPassword()`, et toutes les comparaisons de mot de passe admin (`handleDeleteUsers`, `/upload`, `/listdir`) passent par `_checkPassword()`. `handleUserProfile` exige en plus une session valide et le mot de passe admin avant tout changement.
 
 ### 4.5 SSE (`/piscineEvents`)
 
@@ -205,19 +201,14 @@ Un envoi **complet** de `piscineData`/`piscineParamsData` a lieu tous les ~20 ap
 
 ### 4.6 Système d'alertes côté web
 
-`IND_Alerte` (index 1) est un **entier énuméré de 0 à 15**, pas un vrai bitmask OR :
-```
-0 aucune, 1 inondation, 2 plus de pH, 3 plus de CL, 4 plus de ALG,
-5=1+2, 6=1+3, 7=1+4, 8=1+2+3, 9=1+2+4, 10=1+3+4, 11=1+2+3+4, 12=2+3, 13=2+4, 14=2+3+4, 15=3+4
-```
-Ce module **ne fait aucun décodage/traitement** de cette valeur : elle est reçue du contrôleur via ICSC et retransmise telle quelle en SSE (`piscineData.Alerte`). Tout le décodage bitmask→message et la logique d'acquittement (ACK) sont côté **frontend JS** (voir §7.3) et côté **contrôleur** (hors périmètre). `IND_ClearAlert` (52) est traité comme un paramètre générique : positionné par le frontend, transmis au contrôleur via le mécanisme `changedWeb` standard (aucune logique métier d'acquittement ici).
+`IND_Alerte` (index 1) est un **vrai bitmask 7 bits** (bit1 inondation, bit2 flux, bit3 PAC, bit4 pH vide, bit5 CL vide, bit6 ALG vide, bit7 filtration trop courte ; valeur = OR des bits actifs, 0 = pas d'alerte), envoyé tel quel par le contrôleur.
 
-> Note : ce système d'encodage "énuméré" (pas un vrai bitmask) est cohérent avec une refonte "vrai bitmask 7 bits" en cours sur les projets frères (mémoire utilisateur) — ce module **web** reflète donc l'ancien système, pas la refonte.
+Ce module **ne fait aucun décodage/traitement** de cette valeur : elle est reçue du contrôleur via ICSC et retransmise telle quelle en SSE (`piscineData.Alerte`). Tout le décodage bitmask→message et la logique d'acquittement (ACK) sont côté **frontend JS** (voir §7.3, `updateAlertBanner()` dans `piscinePrincipale.js`, qui décode bien le vrai bitmask) et côté **contrôleur** (hors périmètre). `IND_ClearAlert` (52) est traité comme un paramètre générique : positionné par le frontend, transmis au contrôleur via le mécanisme `changedWeb` standard (aucune logique métier d'acquittement ici).
 
 ### 4.7 Fichiers statiques et upload
 
 - **Fichiers web statiques → LittleFS** (`handleFileRead`, préfixe `/html`) : cherche d'abord `<chemin>.lgz` (gzip pré-compressé par Gulp), sinon sert le fichier brut. `Cache-Control: max-age=86400`.
-- **Upload / listing de répertoire → carte SD** (`handleFileUpload`, `/upload`, `/listdir`), protégés par le paramètre `adminPassword` en clair comparé à `config.adminPassword` (donc comparaison **hashée si migré**, ce qui signifie que la valeur `adminPassword` transmise en clair par le client doit correspondre — à vérifier, cf. incohérence potentielle similaire à `handleDeleteUsers`, voir `TOCHECK.md`).
+- **Upload / listing de répertoire → carte SD** (`handleFileUpload`, `/upload`, `/listdir`), protégés par le paramètre `adminPassword` comparé via `_checkPassword()`.
 - 404 : tente `/404.html` (LittleFS) puis fallback sur une page HTML embarquée en PROGMEM dans le firmware si absente.
 
 ## 5. Protocole ICSC côté web
@@ -305,7 +296,7 @@ Application "single page" jQuery Mobile 1.4.5, une seule page `main.html` conten
 
 ### 7.1 Page de login et auto-login local
 
-Le fichier réellement actif est **`piscineScripts.js`** — `html/js/localAuth.js.backup` n'est référencé par **aucune balise `<script>`** de `main.html` (seule `css/localAuth.css` y est encore liée, pour le style des toasts). C'est un vestige d'une implémentation intermédiaire à fichier séparé (dont un gabarit de référence subsiste dans `html/main_example_autologin.txt`, non chargé) ; la logique correspondante a été **portée telle quelle dans `piscineScripts.js`** (fonctions `checkLocalAuthOnStartup()`, `checkExistingSessionOrAutoLogin()`, `checkSessionValidity()`, `showToast()`).
+Le fichier actif est **`piscineScripts.js`** (fonctions `checkLocalAuthOnStartup()`, `checkExistingSessionOrAutoLogin()`, `checkSessionValidity()`, `showToast()`).
 
 Flux exact au chargement de `main.html` :
 1. `checkLocalAuthOnStartup()` (appelée en bas du fichier, hors tout `$(document).ready`) lit la session éventuellement en cache (`localStorage["maPiscine-session"]`) et l'ajoute en paramètre `sess` de l'appel.
@@ -381,9 +372,8 @@ Double stockage client : cookie `maPiscine` (le `sessID`) + `localStorage["maPis
 |---|---|
 | **LittleFS** | Fichiers web statiques (`/html/*.lgz`), configuration (`/cfg/piscine.cfg`), tampons de logs (`/buf/log_buf.log`, `/buf/alert_buf.log`) avant flush SD |
 | **Carte SD** (CS = `D8`, FAT) | Logs journaliers (`/log/{année}/logs/{mois}/...`), logs de moyennes horaires (`...-Moy.log`), logs d'alertes/debug (`/log/{année}/alerts/Alerts-{mois}.log`), sessions actives (`/sessions.json`), fichiers uploadés via `/upload` |
-| **EEPROM** | Ancien mécanisme de stockage config (adresses 0-499), encore maintenu en parallèle du fichier JSON LittleFS (`loadConfigurationEEprom`/`saveConfigurationEEprom`) — voir `TOCHECK.md` pour le statut exact de cette double persistance |
 
-`startSD()` retente 3 fois (`SD.begin()`) avec 500 ms d'attente entre essais ; en cas d'échec, `cardPresent=false` et le logger bascule en mode "tampon LittleFS uniquement" (voir §5 Logger ci-dessous), sans purge automatique si l'absence de SD se prolonge (risque de saturation LittleFS, voir `TOCHECK.md`).
+`startSD()` retente 3 fois (`SD.begin()`) avec 500 ms d'attente entre essais ; en cas d'échec, `cardPresent=false` et le logger bascule en mode "tampon LittleFS uniquement" (voir §9 Logger ci-dessous). `checkSD()` retente ensuite le montage à chaque flush (toutes les 15 min) tant que la carte reste absente, et recrée l'arborescence `/log/` dès qu'elle est (re)détectée.
 
 ## 9. Logger (`Logger.h` / `logger.cpp`)
 
@@ -398,26 +388,16 @@ Deux niveaux de stockage : un tampon **LittleFS** toujours actif (même sans car
 - `logMoyFile` : moyennes horaires, `...-Moy.log`, écrit directement sur SD (pas de tampon LittleFS)
 - `alertFile` : logs texte/debug, `/log/{année}/alerts/Alerts-{mois}.log`
 
-**Flush** : `timerFlush` (15 min) + déclenché aussi lors des rollovers jour/mois (changement de `dayOfWeek`/`month()`). Si SD absente, `flushLogsToSD()` est un no-op — le tampon LittleFS continue de grossir sans purge (voir `TOCHECK.md`).
+**Flush** : `timerFlush` (15 min) + déclenché aussi lors des rollovers jour/mois (changement de `dayOfWeek`/`month()`). Si SD absente, `flushLogsToSD()` retente le montage via `checkSD()` avant de renoncer ; si elle reste indisponible, le tampon LittleFS continue de grossir mais est plafonné à 100 Ko par fichier (`capBufferFile()`, appelée avant chaque écriture) — au-delà, le buffer est vidé plutôt que de risquer de saturer LittleFS (partagée avec la config/sessions/assets web).
 
-**API "chunking" anti-watchdog** (`getFileInfo`, `fetchChunk`) : lecture d'un fichier de log par blocs de taille paramétrable (défaut 1024 octets), pour éviter un reset watchdog matériel lors du chargement de gros historiques pour les graphiques web — l'ancien système (`handlePiscineGraphDatas`, encore présent) charge tout en un bloc borné à 64 Ko / 100 itérations de 256 octets, avec un commentaire explicite dans le code signalant qu'une version chunkée provoquait un *Soft WDT reset*.
+**API "chunking" anti-watchdog** (`getFileInfo`, `fetchChunk`) : lecture d'un fichier de log par blocs de taille paramétrable (défaut 1024 octets), pour éviter un reset watchdog matériel lors du chargement de gros historiques pour les graphiques web.
 
 ## 10. Points d'attention / pièges connus
 
-1. **`/jsonConfig` non protégé** — expose la configuration complète (utilisateurs, hash mots de passe, SSID/mots de passe WiFi) sans authentification.
-2. **`handleUserProfile` stocke le nouveau mot de passe en clair** (pas de `_hashPassword`), contrairement aux autres handlers de gestion de mot de passe — corrigé seulement au redémarrage suivant par la migration automatique.
-3. **`handleDeleteUsers` compare le mot de passe admin en clair** (`strcmp`) — cassé une fois le mot de passe admin migré (hashé).
-4. **`dataStruct.destination` jamais renseigné** côté web — champ vestigial ou utilisé côté contrôleur seulement, à valider.
-5. **Deux tables de libellés d'index parallèles et incompatibles** : `IndexNames.h` (actuelle, 84 entrées) vs `indexesDef.h` (obsolète, 43 entrées, **non incluse par aucun fichier du projet** — confirmé par recherche exhaustive). Code mort à supprimer.
-6. **Encodage `IND_Alerte`** : énuméré 0-15, pas un vrai bitmask OR — piège classique si un développeur tente un décodage bit à bit naïf.
-7. **CI ne construit pas les assets web** — un firmware qui compile n'implique pas une interface web fonctionnelle (JS/HTML non vérifiés).
-8. **Watchdog ESP8266** — deux garde-fous explicites dans le code (buffer log 256 octets/100 itérations max, puis API chunking dédiée) pour éviter les Soft WDT reset lors de la lecture de gros fichiers depuis la SD ; à respecter pour toute nouvelle fonctionnalité de lecture de fichiers volumineux.
-9. **`MDNS.addServiceTxt(...)` désactivé** (commenté) avec la mention "Crash etharp_output" — bug connu de la stack réseau ESP8266 avec cette API.
-10. **Double persistance de la configuration** (EEPROM + fichier JSON LittleFS `/cfg/piscine.cfg`) maintenue en parallèle — voir `TOCHECK.md` pour le statut exact (laquelle fait référence au boot).
-11. **Mots de passe WiFi stockés en clair** dans `/cfg/piscine.cfg` et `data/cfg/piscine.cfg` (confirmé en lisant le fichier de config du dépôt) — cohérent avec le besoin (WiFiManager doit pouvoir s'y reconnecter), mais à garder en tête pour toute distribution du dépôt/de ses sauvegardes.
-12. **Décodage du bitmask d'alerte potentiellement incompatible entre backend et frontend** : le backend web transmet `IND_Alerte` tel quel (encodage énuméré 0-15 documenté en commentaire dans `globalPiscineWeb.h`, §4.6), alors que le frontend (`piscinePrincipale.js`, §7.3) le décode comme un **vrai bitmask** (`valAlert & (1<<bit)` pour bit 0 à 6). Si le contrôleur envoie effectivement la valeur énumérée documentée, l'affichage des alertes combinées serait erroné. Point à trancher avec le code du contrôleur — voir `TOCHECK.md`.
-13. **`showSessionExpiredDialog()` (`piscineScripts.js` lignes 255-286) référence des variables (`sessionData`, `now`, `timeRemaining`) qui ne sont pas dans son scope** — potentiel `ReferenceError` si elle est appelée depuis un handler d'erreur AJAX (400 "Invalid Session") plutôt que depuis `checkSessionValidity()`. À tester en conditions réelles.
-14. **`html/js/localAuth.js.backup` est du code mort** (non chargé par `main.html`) — ne pas le modifier en pensant qu'il est actif ; la logique réelle vit dans `piscineScripts.js`.
+1. **CI ne construit pas les assets web** — un firmware qui compile n'implique pas une interface web fonctionnelle (JS/HTML non vérifiés).
+2. **Watchdog ESP8266** — deux garde-fous explicites dans le code (buffer log 256 octets/100 itérations max, puis API chunking dédiée) pour éviter les Soft WDT reset lors de la lecture de gros fichiers depuis la SD ; à respecter pour toute nouvelle fonctionnalité de lecture de fichiers volumineux.
+3. **`MDNS.addServiceTxt(...)` désactivé** (commenté) avec la mention "Crash etharp_output" — bug connu de la stack réseau ESP8266 avec cette API.
+4. **Mots de passe WiFi stockés en clair** dans `/cfg/piscine.cfg` et `data/cfg/piscine.cfg` (confirmé en lisant le fichier de config du dépôt) — cohérent avec le besoin (WiFiManager doit pouvoir s'y reconnecter), mais à garder en tête pour toute distribution du dépôt/de ses sauvegardes.
 
 ## 11. Aucune trace de RF24 / ESP-NOW / ManagerTelecom
 

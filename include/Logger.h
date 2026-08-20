@@ -79,6 +79,11 @@ class LoggerClass : public Print {
         size_t filePointer = 0;
         uint nbAlertsFileOpenErrors = 10;
 
+        // Garde-fou taille : si la SD reste absente longtemps, ces buffers LittleFS
+        // (partagée avec config/sessions/assets web) ne doivent pas grossir sans limite.
+        static const size_t MAX_BUF_FILE_SIZE = 100 * 1024;   // 100 Ko par fichier buffer
+        void capBufferFile(const char* path);
+
         int16_t TempEauMoy = 0;
         int16_t TempAirMoy = 0;
         int16_t TempPACMoy = 0;
