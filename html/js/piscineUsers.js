@@ -121,9 +121,12 @@
 			required: true,
 			equalTo: "#userpasswordprofile"
 		  },
-		password: {
+		userpasswordprofile: {
           minlength: 5,
           maxlength: 11,
+          required: true
+        },
+        adminpassword: {
           required: true
         }
       },
@@ -132,21 +135,26 @@
           required : "Please enter your username",
           minlength: "Your username must be at least 5 chars",
 		  maxlength: "Your username must be at most 11 chars"
-        },  
+        },
         password2: {
 			required: "Please re-enter the password",
 			equalTo: "Password Check isn't the same"
 		  },
-		password: {
+		userpasswordprofile: {
           required: "Please provide a password",
           minlength: "Your password must be at least 5 chars",
 		  maxlength: "Your password must be at most 11 chars"
 
-        }      },
+        },
+        adminpassword: {
+          required: "Please provide the admin password"
+        }
+      },
       submitHandler: function(form){
-		$("#UPusername").val(userName);  
+		$("#UPusername").val(userName);
+		$("#UPsess").val(sessID);
         validateLogin($(form),"/userProfile");
-      }        
+      }
     });
   });
 // delete user form validation

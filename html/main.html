@@ -233,9 +233,14 @@
 			<h1 class="myh1">Change Profile</h1>
 			<form action="" method="post" name="userProfile"  id="userProfileForm" data-transition="slide">
 				<input type="hidden" name="username" id="UPusername" value="">
+				<input type="hidden" name="sess" id="UPsess" value="">
 				<div class="ui-field-contain">
 					<label for="nameuserprofile">User Name</label>
 					<input type="text" name="nameuserprofile" class="myinput borderFeild" id="nameuserprofile" maxlength="15">
+				</div>
+				<div class="ui-field-contain">
+					<label for="adminpassword">Admin Password</label>
+					<input type="password" name="adminpassword" id="UPadminpassword" class="myinput borderFeild" maxlength="10" placeholder="Enter Admin Password">
 				</div>
 				<table>
 					<tr>

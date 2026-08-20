@@ -123,7 +123,6 @@ class PiscineWebClass {
         void handleInitPiscinePP(AsyncWebServerRequest *request);
         void handleInitPiscinePParams(AsyncWebServerRequest *request);
         void handlePiscineParams(AsyncWebServerRequest *request);
-        void handlePiscineGraphDatas(AsyncWebServerRequest *request);
         void handleGraphPlan(AsyncWebServerRequest *request);         // Chunked API: Plan chargement
         void handleGraphFileInfo(AsyncWebServerRequest *request);     // Chunked API: Info fichier
         void handleGraphChunk(AsyncWebServerRequest *request);        // Chunked API: Chunk données

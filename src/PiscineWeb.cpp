@@ -650,7 +650,6 @@ void PiscineWebClass::_migratePasswords() {
                 else if (strcmp(action, "Debug") == 0)          handlePiscinePageDebug(request);
                 else if (strcmp(action, "Maintenance") == 0)    handlePiscinePageMaintenance(request);
                 else if (strcmp(action, "InitMaintenance") == 0)      handleInitPiscinePageMaintenance(request);
-                else if (strcmp(action, "getGraphDatas") == 0)      handlePiscineGraphDatas(request);
                 else if (strcmp(action, "SetDateTime") == 0)        handleSetDateTime(request);
                 else if (strcmp(action, "setActivePage") == 0) {
                                                 char p[16];
@@ -1145,34 +1144,54 @@ void PiscineWebClass::_migratePasswords() {
    */
   void PiscineWebClass::handleUserProfile(AsyncWebServerRequest *request){
     bool flgfound = false;
-    char newusername[11], newuserpassword[11], oldusername[11];
+    char newusername[11], newuserpassword[11], oldusername[11], theadminpassword[11];
     uint8_t indUser = 0;
     char jsonBuff[512];  // Optimisation RAM
     JsonDocument jsonRoot;  // Optimisation RAM
 
-    if( ! request->hasParam("username",true) || ! request->hasParam("nameuserprofile",true) 
+    if( ! request->hasParam("username",true) || ! request->hasParam("nameuserprofile",true)
+        || ! request->hasParam("adminpassword",true)
         || request->getParam("username",true)->value() == NULL || request->getParam("nameuserprofile",true)->value() == NULL ) { // If the POST request doesn't have username and password data
         request->send(400, FPSTR(STR_CONTENT_PLAIN), FPSTR(STR_INVALID_REQUEST));         // The request is invalid, so send HTTP status 400
         return;
     }
 
-    request->getParam("username",true)->value().toCharArray(oldusername,15); 
-    request->getParam("nameuserprofile",true)->value().toCharArray(newusername,15); 
-    if( request->hasParam("password",true)) request->getParam("password",true)->value().toCharArray(newuserpassword,10);
-    logger.printf("[AUTH] Update user: %s, passwd: %s\n",newusername,newuserpassword);
+    if(!checkSessionParam(request)){                                       // check session
+        logger.println("[AUTH] ❌ handleUserProfile : Invalid Session");
+        request->send(400, FPSTR(STR_CONTENT_PLAIN), "400: Invalid Session");
+        return;
+    }
+
+    request->getParam("adminpassword",true)->value().toCharArray(theadminpassword,11);
+    if(!_checkPassword(config.adminPassword, theadminpassword)){            // check admin password before allowing any change
+        logger.println("[AUTH] ❌ handleUserProfile : Bad AdminPassword");
+        jsonRoot[FPSTR(STR_JSON_STATUS)] = "Bad AdminPassword";
+        jsonRoot[FPSTR(STR_JSON_MESSAGE)] = "You entered an invalid admin password, please try again !";
+        serializeJson(jsonRoot, jsonBuff, sizeof(jsonBuff));
+        AsyncWebServerResponse *response = request->beginResponse(200, FPSTR(STR_CONTENT_PLAIN), jsonBuff);
+        response->addHeader(FPSTR(STR_HEADER_CACHE), FPSTR(STR_HEADER_NOCACHE));
+        response->addHeader(FPSTR(STR_HEADER_CORS), FPSTR(STR_HEADER_CORS_ALL));
+        request->send(response);
+        return;
+    }
+
+    request->getParam("username",true)->value().toCharArray(oldusername,15);
+    request->getParam("nameuserprofile",true)->value().toCharArray(newusername,15);
+    if( request->hasParam("userpasswordprofile",true)) request->getParam("userpasswordprofile",true)->value().toCharArray(newuserpassword,10);
+    logger.printf("[AUTH] Update user: %s\n",newusername);
 
         for(indUser=0;indUser<MAX_USERS;indUser++){   // check to see if user already exist
             if(strcmp(config.users[indUser].user, oldusername) == 0){       // found existing user only update the password
             strncpy(config.users[indUser].user,newusername,11);
             if(request->hasParam("ChangePassword")){
-                strncpy(config.users[indUser].user_passwd, newuserpassword, 11);
-            } 
+                _hashPassword(newuserpassword, config.users[indUser].user_passwd, MAX_PW_HASH_SIZE);
+            }
             saveConfiguration();      // save the config to file
             flgfound = true;
             break;
         }
-    }  
-    if(flgfound) {            // Found username and updated 
+    }
+    if(flgfound) {            // Found username and updated
         jsonRoot[FPSTR(STR_JSON_STATUS)] = FPSTR(STR_USER_PROFILE_UPDATED);
         jsonRoot[FPSTR(STR_JSON_USERNAME)] = newusername;
         jsonRoot[FPSTR(STR_JSON_PASSWORD)] = newuserpassword;
@@ -1181,8 +1200,8 @@ void PiscineWebClass::_migratePasswords() {
     } else {                  // not found so can't update
         jsonRoot[FPSTR(STR_JSON_STATUS)] = FPSTR(STR_USER_PROFILE_NOT_UPDATED);
         jsonRoot[FPSTR(STR_JSON_MESSAGE)] = FPSTR(STR_USER_NOT_FOUND_MSG);
-        logger.println(FPSTR(STR_LOG_USER_NOT_FOUND)); 
-    } 
+        logger.println(FPSTR(STR_LOG_USER_NOT_FOUND));
+    }
     serializeJson(jsonRoot, jsonBuff, sizeof(jsonBuff));
     AsyncWebServerResponse *response = request->beginResponse(200, FPSTR(STR_CONTENT_PLAIN), jsonBuff);
     response->addHeader(FPSTR(STR_HEADER_CACHE), FPSTR(STR_HEADER_NOCACHE));
@@ -1236,8 +1255,8 @@ void PiscineWebClass::_migratePasswords() {
 
 
     if(request->hasParam("adminpassword",true)){
-        request->getParam("adminpassword",true)->value().toCharArray(theadminpassword,11);      
-        if(strcmp(theadminpassword, config.adminPassword) == 0 ){                                    // good admin password allowed to process
+        request->getParam("adminpassword",true)->value().toCharArray(theadminpassword,11);
+        if(_checkPassword(config.adminPassword, theadminpassword)){                                    // good admin password allowed to process
         for (int i=0; i<MAX_USERS;i++){
             sprintf(currentUser, "user%d",i);
             logger.printf("[AUTH] Current user is %s\n",currentUser);
@@ -1688,85 +1707,6 @@ void PiscineWebClass::_migratePasswords() {
                 }
                 request->send(200, "text/plain","OK setPiscineParams done");
                 logger.printf("[WEB] OK setPiscineParams done, changed is:%s\n",(changed)?"true":"false");
-            } else {                                                            // bad parameter
-                logger.println("Error : Invalid Parameter");
-                request->send(400, "text/plain", "400: Invalid Parameter");        
-            }
-        }
-    }
-
-  /*
-   * void PiscineWebClass::handlePiscineGraphDatas
-   * But : (description automatique) — expliquer brièvement l'objectif de la fonction
-   * Entrées : voir la signature de la fonction (paramètres)
-   * Sortie : valeur de retour ou effet sur l'état interne
-   */
-    void PiscineWebClass::handlePiscineGraphDatas(AsyncWebServerRequest *request) {   // /getPiscineGraphs?sess=x&start=yyyy-mm-dd&end=yyyy-mm-dd
-        char start[11], end[11];
-        char jsonBuff[256];  // Optimisation RAM
-        JsonDocument jsonRoot;  // Optimisation RAM #7
-
-        logger.println("Enter handlePiscineGraphs");
-        if(!checkSessionParam(request)){                                       // check session
-            logger.println("Error : Invalid Session");
-            request->send(400, "text/plain", "400: Invalid Session");        
-        } else {                                                              // good sessid, then do things
-            if( (request->hasParam("start",true)) && (request->hasParam("end",true)) ){                                
-                request->getParam("start",true)->value().toCharArray(start,sizeof(start));      
-                request->getParam("end",true)->value().toCharArray(end,sizeof(end));      
-                logger.printf("Get Graph datas Start : %s, End : %s\n",start,end);
-                if(!logger.setStartEnd(start,end)){     // problems with dates
-                    jsonRoot["status"] = "Error";
-                    jsonRoot["message"] = "Probleme sur les dates debut et fin";
-                    jsonRoot["correction"] = (String)"Vérifier les dates de début: " + start + " et de fin: " +end+" demandées";
-                    serializeJson(jsonRoot, jsonBuff, sizeof(jsonBuff));  // Optimisation RAM
-                    AsyncWebServerResponse *response = request->beginResponse(200, "application/json", jsonBuff);
-                    response->addHeader("Cache-Control","no-cache");
-                    response->addHeader("Access-Control-Allow-Origin","*");
-                    request->send(response);
-                } else {
-                    // RÉPONSE SIMPLE NON-CHUNKED (fix WDT reset)
-                    // Chunked response causait Soft WDT reset car fetchDatas() boucle SD trop longue
-                    // Solution: String simple + buffer petit (256B) + limite 1 fichier/appel
-                    
-                    String graphData = "";
-                    char buffer[256];  // Buffer réduit 1024→256B pour forcer itérations courtes
-                    size_t totalRead = 0;
-                    int loopCount = 0;  // Compteur sécurité
-                    
-                    logger.printf("[GRAPH] Chargement données SD (réponse simple)...\n");
-                    
-                    while (true) {
-                        // Sécurité: max 100 itérations (100×256B = 25KB max)
-                        if (loopCount++ >= 100) {
-                            logger.printf("[GRAPH] WARNING: Limite 100 itérations atteinte\n");
-                            break;
-                        }
-                        
-                        size_t bytesRead = logger.fetchDatas(buffer, sizeof(buffer) - 1);
-                        
-                        if (bytesRead == 0) break;
-                        
-                        buffer[bytesRead] = '\0';
-                        graphData += buffer;
-                        totalRead += bytesRead;
-                        
-                        // Limite STRICTE 64KB pour éviter crash RAM
-                        if (totalRead > 65536) {
-                            logger.printf("[GRAPH] WARNING: Données tronquées à 64KB\n");
-                            break;
-                        }
-                    }
-                    
-                    logger.printf("[GRAPH] Chargement terminé: %d bytes\n", graphData.length());
-                    
-                    AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", graphData);
-                    response->addHeader("Server","Web Server Piscine");
-                    response->addHeader("Cache-Control","no-cache");
-                    request->send(response);
-                    
-                    logger.printf("OK handlePiscineGraphs done\n");
-                }
             } else {                                                            // bad parameter
                 logger.println("Error : Invalid Parameter");
                 request->send(400, "text/plain", "400: Invalid Parameter");        

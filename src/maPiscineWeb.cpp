@@ -21,7 +21,6 @@
 #include <FS.h>                 //this needs to be first, or it all crashes and burns...
 #include <SimpleTimer.h>
 #include <TimeLib.h>
-#include <EEPROM.h>   
 #include <SPI.h>
 #include <SD.h>
 #include <LittleFS.h>
@@ -128,23 +127,14 @@
     bool ConnectWithStoredCredentials();
     void resetWifiSettings();
 
-/**
- * @brief Charge la configuration admin/user depuis EEPROM (addresses 0-499). Structure : adminPassword(64), user(64), user_password(64), wifi[3].ssid(64), wifi[3].password(64)
- */
-    void loadConfigurationEEprom();
-    void saveConfigurationEEprom(const char *adminPassword,const char *user,const char * user_password,const char * ssid, const char * ssid_password);
-/**
- * @brief Affiche le contenu de la config EEPROM sur Serial (admin, user, passwords, SSIDs) pour debug
- */
-    void printConfigurationEEprom();
     void printConfiguration() ;
 /**
- * @brief Charge la configuration admin/user depuis EEPROM (addresses 0-499). Structure : adminPassword(64), user(64), user_password(64), wifi[3].ssid(64), wifi[3].password(64)
+ * @brief Charge la configuration admin/user depuis le fichier JSON LittleFS (/cfg/piscine.cfg)
  */
     void loadConfiguration() ;
     void saveConfiguration() ;
 /**
- * @brief Met à jour config en mémoire (adminPassword, user, user_password, wifi[0]), puis appelle saveConfiguration() et saveConfigurationEEprom()
+ * @brief Met à jour config en mémoire (adminPassword, user, user_password, wifi[0]), puis appelle saveConfiguration()
  */
     void saveNewConfiguration(const char *adminPassword,const char *user,const char * user_password,const char * ssid, const char * ssid_password);
     void printDirectory(File dir, int numTabs);
@@ -340,7 +330,7 @@
 /*_____________________________________________SETUP___________________________________________________________*/
 
 /**
- * @brief Initialisation complète ESP8266 : Serial, GPIO, EEPROM, SD card, WiFi, NTP, classes (webTelecom, logger, webAction, maPiscineWeb), et démarrage timers SimpleTimer
+ * @brief Initialisation complète ESP8266 : Serial, GPIO, SD card, WiFi, NTP, classes (webTelecom, logger, webAction, maPiscineWeb), et démarrage timers SimpleTimer
  */
     void setup(){
       uint8_t maxtriesNTP = 10;
@@ -805,285 +795,9 @@
       resetWifiSettingsInConfig();
     }
 
-/*________________________________________Config_FUNCTIONS____________________________________________________*/
-
-    // Loads the configuration from EEprom adminPassword & users
-/**
- * @brief Charge la configuration admin/user depuis EEPROM (addresses 0-499). Structure : adminPassword(64), user(64), user_password(64), wifi[3].ssid(64), wifi[3].password(64)
- */
-    void loadConfigurationEEprom() {
-      char buff[MAX_PW_HASH_SIZE];
-      uint8_t i,j;
-      uint8_t adminPasswordSize = sizeof(config.adminPassword);
-      uint8_t aUserSize = sizeof(config.users[0]);
-      uint8_t userNameSize = sizeof(config.users[0].user);
-      uint8_t userPwdSize = sizeof(config.users[0].user_passwd);
-      uint8_t aWifiSize = sizeof(config.wifi[0]);
-      uint8_t ssidSize = sizeof(config.wifi[0].ssid);
-      uint8_t ssidPwdSize = sizeof(config.wifi[0].ssid_passwd);
-
-
-        Serial1.println(F("loading config"));
-        EEPROM.begin(sizeof(config)+1);
-        i = EEPROM.read(sizeof(config));
-//        i=0;                // for debug simulaes a first time
-        if (i != 0x75){   // the first time 
-          strncpy(config.adminPassword,"manager",adminPasswordSize);    // manager by default
-          for (j=0;j<MAX_USERS;j++){
-            strncpy(config.users[j].user,"",userNameSize);
-            strncpy(config.users[j].user_passwd,"",userPwdSize);
-          }
-          for (j=0;j<MAX_WIFI;j++){
-            strncpy(config.wifi[j].ssid,"",ssidSize);
-            strncpy(config.wifi[j].ssid_passwd,"",ssidPwdSize);
-          }
-          saveConfigurationEEprom("manager","","","","");
-        } else {        // not the first time
-          for ( i = 0; i < adminPasswordSize; i++ ){                 // adminpasswd
-            buff[i] = EEPROM.read ( i );  // read Persistance from EEPROM (Adress = 100...) 
-          } 
-          if( buff[0] == 0) {
-            strcpy(buff,"manager"); // manager by default
-          } else {
-            strncpy(config.adminPassword,buff,adminPasswordSize);
-            for ( j = 0; j < MAX_USERS; j++ ){                  // USERS
-              for ( i = 0; i < userNameSize; ++i ){             // user name
-                buff[i] = EEPROM.read ( i + adminPasswordSize + (j*aUserSize) ); 
-              } 
-              if( buff[0] == 0) {
-                break;                                          // no more users
-              } else {
-                strncpy(config.users[j].user,buff,userNameSize);  
-                for ( i = 0; i < userPwdSize; ++i ){            // User password j
-                  buff[i] = EEPROM.read ( i + adminPasswordSize + (j*aUserSize) + userNameSize );      
-                } 
-                strncpy(config.users[j].user_passwd,buff,userPwdSize);  
-              }
-            } // end for each user    
-
-            for ( j = 0; j < MAX_WIFI; j++ ){                  // WIFI
-              for ( i = 0; i < ssidSize; ++i ){             // ssid name
-                buff[i] = EEPROM.read ( i + adminPasswordSize + (MAX_USERS*aUserSize) + (j*aWifiSize) ); 
-              } 
-              if( buff[0] == 0) {
-                break;                                          // no more ssid
-              } else {
-                strncpy(config.wifi[j].ssid,buff,ssidSize);  
-                for ( i = 0; i < ssidPwdSize; ++i ){            // ssid password 
-                  buff[i] = EEPROM.read ( i + adminPasswordSize + (MAX_USERS*aUserSize) + (j*aWifiSize) + ssidSize );      
-                } 
-                strncpy(config.wifi[j].ssid_passwd,buff,ssidPwdSize);  
-              }
-            } // end for each wifi    
-          }
-        }
-        EEPROM.end();
-        Serial1.println(F("config is now :"));
-        Serial1.printf_P(PSTR("AdminPassword : %s\n"),config.adminPassword);
-        for ( j = 0; j < MAX_USERS; j++ ){
-          Serial1.printf_P(PSTR(" User%d : user name : %s, passwd : %s\n"),j,config.users[j].user,config.users[j].user_passwd);
-        }     
-        for ( j = 0; j < MAX_WIFI; j++ ){
-          Serial1.printf_P(PSTR(" SSID%d : SSID name : %s, SSID passwd : %s\n"),j,config.wifi[j].ssid,config.wifi[j].ssid_passwd);
-        }     
-    }
-
-/**
- * @brief Sauvegarde config admin/user dans EEPROM (5 entrées : adminPassword, user, user_password, 1er SSID/password). Appelle EEPROM.commit()
- */
-    void saveConfigurationEEprom(const char *adminPassword,const char *user,const char * user_password,const char * ssid, const char * ssid_password) {
-      uint8_t i,j,k;
-      bool firstTime = true;
-      bool flgFoundSSID = false;
-      uint8_t adminPasswordSize = sizeof(config.adminPassword);
-      uint8_t aUserSize = sizeof(config.users[0]);
-      uint8_t userNameSize = sizeof(config.users[0].user);
-      uint8_t userPwdSize = sizeof(config.users[0].user_passwd);
-      uint8_t aWifiSize = sizeof(config.wifi[0]);
-      uint8_t ssidSize = sizeof(config.wifi[0].ssid);
-      uint8_t ssidPwdSize = sizeof(config.wifi[0].ssid_passwd);
-
-        Serial1.printf_P(PSTR("Saving config : adminPW : %s, user : %s, passwd : %s, SSID : %s, SSIDPwd : %s\n"),adminPassword,user,user_password, ssid, ssid_password);
-
-        EEPROM.begin(sizeof(config)+1);
-        i = EEPROM.read(sizeof(config));
-//        i=0;                // for debug simulaes a first time
-        (i == 0x75) ? firstTime = false : firstTime = true;
-
-        if( adminPassword[0] != 0) {
-          for ( i = 0; i < adminPasswordSize; i++ ){
-            EEPROM.write ( i , adminPassword[i] );
-            config.adminPassword[i] = adminPassword[i];
-            if(adminPassword[i]==0)
-              break;
-          } 
-        } 
-
-        if(firstTime) {         // configure the config with good values
-          for ( j = 1; j < MAX_USERS; j++ ){                                      // set to 0 next users values
-            for ( i = 0; i < userNameSize; i++ ){
-              EEPROM.write ( i + adminPasswordSize + (j*aUserSize), 0 );
-            } 
-            for ( i = 0; i < userPwdSize; i++ ){
-              EEPROM.write ( i + adminPasswordSize + (j*aUserSize) + (userNameSize), 0 );
-            } 
-          }  
-          for ( j = 1; j < MAX_WIFI; j++ ){                                      // set to 0 next wifi values
-            for ( i = 0; i < ssidSize; i++ ){
-              EEPROM.write ( i + adminPasswordSize + (MAX_USERS*aUserSize) + (j*aWifiSize), 0 );
-            } 
-            for ( i = 0; i < ssidPwdSize; i++ ){
-              EEPROM.write ( i + adminPasswordSize + (MAX_USERS*aUserSize) + (j*aWifiSize) + ssidSize, 0 );
-            } 
-          }  
-       } else {                 // not the first time so find a empty slot
-          if( user[0] != 0) {
-             for (k=0;k<MAX_USERS;k++){
-               if(config.users[k].user[0]==0) break;
-             }
-             if (k<MAX_USERS-1) {  // space left moving all so new fits in first place  
-               for (j=k;j<0;j--){
-                 memcpy(&config.users[j+1],&config.users[j],aUserSize);
-                 for (i=0;i<aUserSize;i++){
-                  EEPROM.write ( i + adminPasswordSize + ((j+1)*aUserSize), EEPROM.read(i + adminPasswordSize + ((j)*aUserSize)) );
-                 }
-               }   
-             }                     // replacing at the first place  
-            for ( i = 0; i < userNameSize; ++i ){                   // user0  
-              EEPROM.write ( i + adminPasswordSize , user[i] );   
-              config.users[0].user[i] = user[i];
-              if(user[i]==0)
-                break;
-            } 
-            for ( i = 0; i < userPwdSize; ++i ){            // passwd user0
-              EEPROM.write ( i + adminPasswordSize + (userNameSize), user_password[i] ); 
-              config.users[0].user_passwd[i] = user_password[i];
-              if(user_password[i]==0)
-                break;
-            } 
-          }
-          if( ssid[0] != 0) {
-            for (k=0;k<MAX_WIFI;k++){
-              if(strcmp(config.wifi[k].ssid,ssid)==0){   // if same ssid
-                flgFoundSSID = true;
-                break;
-              }  
-              if(config.wifi[k].ssid[0]==0) break;       // if empty space
-            }
-            if(flgFoundSSID){                            // already there then recopy the new passwd. 
-              for ( i = 0; i < ssidSize; ++i ){                     
-                EEPROM.write ( i + adminPasswordSize + (MAX_USERS*aUserSize) + ((k)*aWifiSize), ssid[i] );
-                config.wifi[k].ssid[i] = ssid[i];
-                if(ssid[i]==0)
-                  break;
-              } 
-              for ( i = 0; i < ssidPwdSize; ++i ){          
-                EEPROM.write ( i + adminPasswordSize + (MAX_USERS*aUserSize) + ((k)*aWifiSize) + ssidSize, ssid_password[i] );
-                config.wifi[k].ssid_passwd[i] = ssid_password[i];
-                if(ssid_password[i]==0)
-                  break;
-              } 
-            } else {                                     // new one then move it at first place.  
-              if (k<MAX_WIFI-1) {  // space left moving all so new fits in first place  
-                for (j=k;j<0;j--){
-                  memcpy(&config.wifi[j+1],&config.wifi[j],aWifiSize);
-                  for (i=0;i<aWifiSize;i++){
-                    EEPROM.write ( i + adminPasswordSize + (MAX_USERS*aUserSize) + ((j+1)*aWifiSize), EEPROM.read(i + adminPasswordSize + (MAX_USERS*aUserSize) + ((j)*aWifiSize)) );
-                  }
-                }   
-              }                     // replacing at the first place  
-              for ( i = 0; i < ssidSize; ++i ){                     
-                EEPROM.write ( i + adminPasswordSize + (MAX_USERS*aUserSize), ssid[i] );  
-                config.wifi[0].ssid[i] = ssid[i];
-                if(ssid[i]==0)
-                  break;
-              } 
-              for ( i = 0; i < ssidPwdSize; ++i ){            
-                EEPROM.write ( i + adminPasswordSize + (MAX_USERS*aUserSize) + ssidSize, ssid_password[i] ); 
-                config.wifi[0].ssid_passwd[i] = ssid_password[i];
-                if(ssid_password[i]==0)
-                  break;
-              } 
-            }
-          } 
-       }
-
-
-        Serial1.println(F("config is now :"));
-        Serial1.printf_P(PSTR("AdminPassword : %s\n"),config.adminPassword);
-        for ( j = 0; j < MAX_USERS; j++ ){
-          Serial1.printf_P(PSTR(" User%d : user name : %s, passwd : %s\n"),j,config.users[j].user,config.users[j].user_passwd);
-        }     
-        for ( j = 0; j < MAX_WIFI; j++ ){
-          Serial1.printf_P(PSTR(" SSID%d : SSID name : %s, SSID passwd : %s\n"),j,config.wifi[j].ssid,config.wifi[j].ssid_passwd);
-        }
-        if(firstTime)     
-          EEPROM.write(sizeof(config),0x75);    // not the first time anymore. 
-
-        EEPROM.commit();
-        EEPROM.end();
-        printConfiguration();
-    }
-
-/**
- * @brief Affiche le contenu de la config EEPROM sur Serial (admin, user, passwords, SSIDs) pour debug
- */
-    void printConfigurationEEprom() {
-      char buff[MAX_PW_HASH_SIZE + 1];
-      uint8_t i,j;
-      uint8_t adminPasswordSize = sizeof(config.adminPassword);
-      uint8_t aUserSize = sizeof(config.users[0]);
-      uint8_t userNameSize = sizeof(config.users[0].user);
-      uint8_t userPwdSize = sizeof(config.users[0].user_passwd);
-      uint8_t aWifiSize = sizeof(config.wifi[0]);
-      uint8_t ssidSize = sizeof(config.wifi[0].ssid);
-      uint8_t ssidPwdSize = sizeof(config.wifi[0].ssid_passwd);
-
-        Serial1.println(F("config from EEPROM is : "));
-        EEPROM.begin(sizeof(config)+1);
-
-        for ( i = 0; i < adminPasswordSize; i++ ){      // adm passwd
-          buff[i] = EEPROM.read ( i );
-        }
-        buff[adminPasswordSize] = '\0';
-        Serial1.printf_P(PSTR("AdminPassword : %s\n"),buff);
-
-        for ( j = 0; j < MAX_USERS; j++ ){              // users
-            Serial1.printf_P(PSTR(" User%d : "),j);              // user name
-            for ( i = 0; i < userNameSize; ++i ){
-                buff[i] = EEPROM.read ( i + adminPasswordSize + (j*aUserSize) );
-            }
-            buff[userNameSize] = '\0';
-            Serial1.printf_P(PSTR("user name : %s, "),buff);
-            for ( i = 0; i < userPwdSize; ++i ){       // user pwd
-                buff[i] = EEPROM.read ( i + adminPasswordSize + (j*aUserSize) + userNameSize );
-            }
-            buff[userPwdSize] = '\0';
-            Serial1.printf_P(PSTR("passwd : %s, "),buff);
-        } // end for each user
-
-        for ( j = 0; j < MAX_WIFI; j++ ){              // Wifi
-            Serial1.printf_P(PSTR(" ssid%d : "),j);              // ssid
-            for ( i = 0; i < ssidSize; ++i ){
-                buff[i] = EEPROM.read ( i + adminPasswordSize + (MAX_USERS*aUserSize) + (j*aWifiSize) );     
-            } 
-            Serial1.printf_P(PSTR("ssid name : %s, "),buff);
-            for ( i = 0; i < ssidPwdSize; ++i ){       // ssid pwd
-                buff[i] = EEPROM.read ( i + adminPasswordSize + (MAX_USERS*aUserSize) + (j*aWifiSize) + ssidSize );     
-            } 
-            Serial1.printf_P(PSTR("ssid passwd : %s\n"),buff);
-        } // end for each wifi
-
-        i = EEPROM.read(sizeof(config));
-        (i == 0x75) ? Serial1.println(F("this isnt the firstTime")) : Serial1.println(F("this is the firstTime"));
-
-        EEPROM.end();
-        Serial1.println();
-    } 
-
     // Loads the configuration from a file
 /**
- * @brief Charge la configuration admin/user depuis EEPROM (addresses 0-499). Structure : adminPassword(64), user(64), user_password(64), wifi[3].ssid(64), wifi[3].password(64)
+ * @brief Charge la configuration admin/user depuis le fichier JSON LittleFS (/cfg/piscine.cfg)
  */
     void loadConfiguration() {
         JsonDocument jsonConfig;  // Optimisation RAM #7 : config file
@@ -1168,7 +882,7 @@
 
     // Saves the configuration to a file
 /**
- * @brief Sauvegarde config admin/user dans EEPROM (5 entrées : adminPassword, user, user_password, 1er SSID/password). Appelle EEPROM.commit()
+ * @brief Sauvegarde la configuration admin/user/wifi dans le fichier JSON LittleFS (/cfg/piscine.cfg)
  */
     void saveConfiguration() {
           JsonDocument jsonConfig;  // Optimisation RAM #7 : config file
@@ -1273,7 +987,7 @@
     }
 
 /**
- * @brief Affiche le contenu de la config EEPROM sur Serial (admin, user, passwords, SSIDs) pour debug
+ * @brief Affiche le contenu de la config en mémoire sur Serial (admin, user, passwords, SSIDs) pour debug
  */
     void printConfiguration() {    // Prints the content of a file to the Serial1
       uint8_t i = 0;
@@ -1291,41 +1005,21 @@
     } 
 
 /**
- * @brief Efface les paramètres WiFi (config.wifi[] remis à zéro), sauve config sur SD, puis redémarre l'ESP8266
+ * @brief Efface les paramètres WiFi (config.wifi[] remis à zéro), sauve la config JSON (LittleFS), puis redémarre l'ESP8266
  */
     void resetWifiSettingsInConfig() {
-      uint8_t i,j;
-      uint8_t adminPasswordSize = sizeof(config.adminPassword);
-      uint8_t aUserSize = sizeof(config.users[0]);
-      uint8_t aWifiSize = sizeof(config.wifi[0]);
+      uint8_t j;
       uint8_t ssidSize = sizeof(config.wifi[0].ssid);
       uint8_t ssidPwdSize = sizeof(config.wifi[0].ssid_passwd);
-        
-        EEPROM.begin(sizeof(config)+1);
-        for ( j = 0; j < MAX_WIFI; j++ ){                                      
-          for ( i = 0; i < ssidSize; i++ ){
-            EEPROM.write ( i + adminPasswordSize + (MAX_USERS*aUserSize) + (j*aWifiSize), 0 );
-          } 
-          for ( i = 0; i < ssidPwdSize; i++ ){
-            EEPROM.write ( i + adminPasswordSize + (MAX_USERS*aUserSize) + (j*aWifiSize) + ssidSize, 0 );
-          } 
+
+        for ( j = 0; j < MAX_WIFI; j++ ){
           strncpy(config.wifi[j].ssid,"",ssidSize);
           strncpy(config.wifi[j].ssid_passwd,"",ssidPwdSize);
-        }  
-
-        Serial1.println(F("config is now :"));
-        Serial1.printf_P(PSTR("AdminPassword : %s\n"),config.adminPassword);
-        for ( j = 0; j < MAX_USERS; j++ ){
-          Serial1.printf_P(PSTR(" User%d : user name : %s, passwd : %s\n"),j,config.users[j].user,config.users[j].user_passwd);
-        }     
-        for ( j = 0; j < MAX_WIFI; j++ ){
-          Serial1.printf_P(PSTR(" SSID%d : SSID name : %s, SSID passwd : %s\n"),j,config.wifi[j].ssid,config.wifi[j].ssid_passwd);
         }
+        saveConfiguration();      // persiste le reset (sinon revient au reboot suivant)
 
-        EEPROM.commit();
-        EEPROM.end();
         printConfiguration();
-    }  
+    }
 /*_________________________________________HELPER_FUNCTIONS__________________________________________________*/
 
 /**
