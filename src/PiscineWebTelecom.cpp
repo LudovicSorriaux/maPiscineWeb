@@ -289,7 +289,7 @@
         }
 
         char nameBuf[MAX_KEY_LEN];  // Optimisation RAM #6 : Buffer pour PROGMEM
-        for (i=0; i<maxInd; i++){
+        for (i=0; i<=maxInd; i++){    // borne inclusive : IND_SYNC_CritVals/IND_SYNC_Web/IND_MAX_PISCINE désignent le dernier index inclus
           piscineParams[i].valeur = getint(*(data+1+(i*2)+1),*(data+1+(i*2))); // low, high
           piscineParams[i].changedControler = true;
           logger.printf("   ==> ind:%s, valeur:%d\n",getIndexName(i, nameBuf),piscineParams[i].valeur);
