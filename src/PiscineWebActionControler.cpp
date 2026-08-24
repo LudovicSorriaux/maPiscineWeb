@@ -122,9 +122,11 @@
               char nameBuf[MAX_KEY_LEN];  // Optimisation RAM #6 : Buffer pour PROGMEM
               if (debug) logger.printf(" Action is now processiong command %s with index=%d and value=%d\n",getIndexName(index, nameBuf),index,valeur);
               // indices "état/valeur" au-delà de IND_ClearAlert (volume, débit pompe principale,
-              // coefficients de dose appris) : à stocker comme les autres, pas des commandes d'action
+              // coefficients de dose appris, PAC autonome) : à stocker comme les autres, pas des
+              // commandes d'action
               bool isStoredAboveClearAlert = (index == IND_volume_piscine) || (index == IND_debitPompe_PP)
-                                           || (index == IND_coefCL) || (index == IND_coefPHm);
+                                           || (index == IND_coefCL) || (index == IND_coefPHm)
+                                           || (index == IND_PACAutonome);
               if((index < IND_ClearAlert) || isStoredAboveClearAlert){       // only store used parameters
                 piscineParams[index].valeur = valeur;
                 piscineParams[index].changedControler = true;
