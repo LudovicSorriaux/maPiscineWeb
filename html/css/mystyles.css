@@ -62,28 +62,57 @@ form .error {
     box-shadow: inset -2px -2px 2px #353535, inset 3px 3px 3px #000000, -2px -2px 4px #353535, 2px 2px 2px #000;
     font-size: 1.4em;
 }
-/* Label plein largeur + valeur/bouton alignés sur la ligne suivante (Paramètres divers : volume/débit/coef) */
-.stackedLabel {
+/* =====================================================================
+   .paramRow — composant unique pour tout champ "label + valeur + bouton"
+   (Paramètres divers, Pompes, Pompe 3, PH & CL). Auto-suffisant : n'utilise
+   ni .ui-field-contain ni le comportement responsive de .smallLabel, pour
+   rester identique quel que soit l'écran/orientation (évite les incohérences
+   d'alignement entre champs constatées lorsque certains héritaient des
+   media-queries "hors mobile portrait" et d'autres non).
+   ===================================================================== */
+.paramRow {
+    margin: 0.6em 0.7em;
+}
+.paramRow-label {
     display: block !important;
     width: 100%;
-    padding: 0 0 0.3em 0.7em !important;
+    font-size: 10px !important;
+    color: #00FBFF;
+    text-align: left;
+    margin: 0 0 0.35em !important;
+    padding: 0 !important;
 }
-.stackedRow {
+.paramRow-control {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     gap: 0.6em;
-    padding-left: 0.7em;
 }
-.valueBox {
-    display: inline-block;
-    min-width: 3em;
-    padding: 0.15em 0.6em;
+.paramRow-value, .paramRow-box {
+    box-sizing: border-box;
+    height: 2.4em;
+    min-width: 3.5em;
+    padding: 0 0.5em;
     background-color: #222;
-    color: #fff;
+    color: #00FBFF;
+    font-size: 1.1em;
     font-weight: bold;
     text-align: center;
+    border: none;
     border-radius: 4px;
-    box-shadow: inset -2px -2px 2px #353535, inset 3px 3px 3px #000000;
+    box-shadow: inset -2px -2px 2px #353535, inset 3px 3px 3px #000000, -2px -2px 4px #353535, 2px 2px 2px #000;
+}
+.paramRow-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.paramRow-btn.ui-btn {
+    box-sizing: border-box;
+    height: 2.4em;
+    line-height: 2.4em;
+    padding: 0 0.9em !important;
+    margin: 0 !important;
+    font-size: 1em !important;
 }
 .borderFeild {
     background-color: #222 !important;

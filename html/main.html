@@ -761,25 +761,25 @@
 								</div>
 							</div>
 						</div>
-						<div class="grid_4" style="margin-top:0.5em;">
-							<div class="ui-field-contain smallFillContent">
-								<label class="smallLabel" style="padding: 0 0 0 0.4em">Débit (ml/h)</label>
-								<input type="number" value="" id="debitPompePHInput" class="smallTextInput cyan" step="1" min="1" max="30000" placeholder="---" style="width:4.5em;">
-								<a href="#" id="debitPompePHValidate" data-role="button" data-mini="true" data-icon="check"></a>
+						<div class="prefix_1 grid_10 suffix_1 paramRow">
+							<label class="paramRow-label">Débit Pompe PH (ml/h)</label>
+							<div class="paramRow-control">
+								<input type="number" value="" id="debitPompePHInput" class="paramRow-value" step="1" min="1" max="30000" placeholder="---">
+								<a href="#" id="debitPompePHValidate" data-role="button" data-mini="true" data-icon="check" class="paramRow-btn">Valider</a>
 							</div>
 						</div>
-						<div class="grid_4" style="margin-top:0.5em;">
-							<div class="ui-field-contain smallFillContent">
-								<label class="smallLabel" style="padding: 0 0 0 1.2em">Débit (ml/h)</label>
-								<input type="number" value="" id="debitPompeCLInput" class="smallTextInput cyan" step="1" min="1" max="30000" placeholder="---" style="width:4.5em;">
-								<a href="#" id="debitPompeCLValidate" data-role="button" data-mini="true" data-icon="check"></a>
+						<div class="prefix_1 grid_10 suffix_1 paramRow">
+							<label class="paramRow-label">Débit Pompe CL (ml/h)</label>
+							<div class="paramRow-control">
+								<input type="number" value="" id="debitPompeCLInput" class="paramRow-value" step="1" min="1" max="30000" placeholder="---">
+								<a href="#" id="debitPompeCLValidate" data-role="button" data-mini="true" data-icon="check" class="paramRow-btn">Valider</a>
 							</div>
 						</div>
-						<div class="grid_4" style="margin-top:0.5em;">
-							<div class="ui-field-contain smallFillContent">
-								<label class="smallLabel" style="padding: 0 0 0 1.2em">Débit (ml/h)</label>
-								<input type="number" value="" id="debitPompeALGInput" class="smallTextInput cyan" step="1" min="1" max="30000" placeholder="---" style="width:4.5em;">
-								<a href="#" id="debitPompeALGValidate" data-role="button" data-mini="true" data-icon="check"></a>
+						<div class="prefix_1 grid_10 suffix_1 paramRow">
+							<label class="paramRow-label">Débit Pompe 3 (ml/h)</label>
+							<div class="paramRow-control">
+								<input type="number" value="" id="debitPompeALGInput" class="paramRow-value" step="1" min="1" max="30000" placeholder="---">
+								<a href="#" id="debitPompeALGValidate" data-role="button" data-mini="true" data-icon="check" class="paramRow-btn">Valider</a>
 							</div>
 						</div>
 					</fieldset>
@@ -824,40 +824,32 @@
 								</div>				
 							</div>
 						</div>
-						<div class="prefix_1 grid_10 suffix_1 stackedField" style="margin-top:0.5em;">
-							<div class="ui-field-contain smallFillContent">
-								<label class="smallLabel stackedLabel">Volume Piscine (m3)</label>
-								<div class="stackedRow">
-									<input type="number" value="" id="volumePiscineInput" class="smallTextInput cyan" step="1" min="1" max="200" placeholder="---" style="width:4em;">
-									<a href="#" id="volumePiscineValidate" data-role="button" data-mini="true" data-icon="check">Valider</a>
-								</div>
+						<div class="prefix_1 grid_10 suffix_1 paramRow">
+							<label class="paramRow-label">Volume Piscine (m3)</label>
+							<div class="paramRow-control">
+								<input type="number" value="" id="volumePiscineInput" class="paramRow-value" step="1" min="1" max="200" placeholder="---">
+								<a href="#" id="volumePiscineValidate" data-role="button" data-mini="true" data-icon="check" class="paramRow-btn">Valider</a>
 							</div>
 						</div>
-						<div class="prefix_1 grid_10 suffix_1 stackedField" style="margin-top:0.5em;">
-							<div class="ui-field-contain smallFillContent">
-								<label class="smallLabel stackedLabel">Debit Pompe (m3/h)</label>
-								<div class="stackedRow">
-									<input type="number" value="" id="debitPompePInput" class="smallTextInput cyan" step="0.1" min="1" max="30" placeholder="---" style="width:4em;">
-									<a href="#" id="debitPompePValidate" data-role="button" data-mini="true" data-icon="check">Valider</a>
-								</div>
+						<div class="prefix_1 grid_10 suffix_1 paramRow">
+							<label class="paramRow-label">Debit Pompe (m3/h)</label>
+							<div class="paramRow-control">
+								<input type="number" value="" id="debitPompePInput" class="paramRow-value" step="0.1" min="1" max="30" placeholder="---">
+								<a href="#" id="debitPompePValidate" data-role="button" data-mini="true" data-icon="check" class="paramRow-btn">Valider</a>
 							</div>
 						</div>
-						<div class="prefix_1 grid_10 suffix_1 stackedField" style="margin-top:0.5em;">
-							<div class="ui-field-contain smallFillContent">
-								<label class="smallLabel stackedLabel">Coef. dose CL</label>
-								<div class="stackedRow">
-									<span id="coefCLValue" class="valueBox">1.00</span>
-									<a href="#" id="resetCoefCL" data-role="button" data-mini="true" data-icon="refresh">Reset</a>
-								</div>
+						<div class="prefix_1 grid_10 suffix_1 paramRow">
+							<label class="paramRow-label">Coef. dose CL</label>
+							<div class="paramRow-control">
+								<span id="coefCLValue" class="paramRow-box">1.00</span>
+								<a href="#" id="resetCoefCL" data-role="button" data-mini="true" data-icon="refresh" class="paramRow-btn">Reset</a>
 							</div>
 						</div>
-						<div class="prefix_1 grid_10 suffix_1 stackedField" style="margin-top:0.5em;">
-							<div class="ui-field-contain smallFillContent">
-								<label class="smallLabel stackedLabel">Coef. dose PH-</label>
-								<div class="stackedRow">
-									<span id="coefPHmValue" class="valueBox">1.00</span>
-									<a href="#" id="resetCoefPHm" data-role="button" data-mini="true" data-icon="refresh">Reset</a>
-								</div>
+						<div class="prefix_1 grid_10 suffix_1 paramRow">
+							<label class="paramRow-label">Coef. dose PH-</label>
+							<div class="paramRow-control">
+								<span id="coefPHmValue" class="paramRow-box">1.00</span>
+								<a href="#" id="resetCoefPHm" data-role="button" data-mini="true" data-icon="refresh" class="paramRow-btn">Reset</a>
 							</div>
 						</div>
  					</fieldset>
@@ -1072,11 +1064,11 @@
 									<label for="P3FrqMensuel">Mensuel</label>
 								</fieldset>
 							</div>
-							<div id="P3DosePHDiv">
-								<div class="ui-field-contain smallFillContent" style="padding-top:1em;">
-									<label class="smallLabel" style="padding: 0 0 0 0.5em">Dose PH+ (ml / 0.1pH)</label>
-									<input type="number" value="" id="dosePHInput" class="smallTextInput cyan" step="1" min="1" max="500" placeholder="---" style="width:4.5em;">
-									<a href="#" id="dosePHValidate" data-role="button" data-mini="true" data-icon="check">Valider</a>
+							<div id="P3DosePHDiv" class="paramRow" style="margin-top:1em;">
+								<label class="paramRow-label">Dose PH+ (ml / 0.1pH)</label>
+								<div class="paramRow-control">
+									<input type="number" value="" id="dosePHInput" class="paramRow-value" step="1" min="1" max="500" placeholder="---">
+									<a href="#" id="dosePHValidate" data-role="button" data-mini="true" data-icon="check" class="paramRow-btn">Valider</a>
 								</div>
 							</div>
 						</div>
@@ -1092,11 +1084,11 @@
 								<input type="range" name="PHRef" id="PHRef" value="7.2" min="6" max="8" step="0.1" data-mini="false" data-popup-enabled="true">
 							</div>
 						</div>
-						<div class="prefix_1 grid_10 suffix_1" style="margin-top:0.5em;">
-							<div class="ui-field-contain smallFillContent">
-								<label class="smallLabel" style="padding: 0 0 0 0.5em">Dose PH- (ml / 0.1pH)</label>
-								<input type="number" value="" id="dosePHmInput" class="smallTextInput cyan" step="1" min="1" max="500" placeholder="---" style="width:4.5em;">
-								<a href="#" id="dosePHmValidate" data-role="button" data-mini="true" data-icon="check">Valider</a>
+						<div class="prefix_1 grid_10 suffix_1 paramRow">
+							<label class="paramRow-label">Dose PH- (ml / 0.1pH)</label>
+							<div class="paramRow-control">
+								<input type="number" value="" id="dosePHmInput" class="paramRow-value" step="1" min="1" max="500" placeholder="---">
+								<a href="#" id="dosePHmValidate" data-role="button" data-mini="true" data-icon="check" class="paramRow-btn">Valider</a>
 							</div>
 						</div>
 						<div class="prefix_1 grid_10 suffix_1" style="margin-top:1em;">
@@ -1105,11 +1097,11 @@
 								<input type="range" name="redoxRef" id="redoxRef" value="700" min="550" max="850" step="10" data-mini="false" data-popup-enabled="true">
 							</div>
 						</div>
-						<div class="prefix_1 grid_10 suffix_1" style="margin-top:0.5em;">
-							<div class="ui-field-contain smallFillContent">
-								<label class="smallLabel" style="padding: 0 0 0 0.5em">Dose CL (ml / 0.1 unité)</label>
-								<input type="number" value="" id="doseCLInput" class="smallTextInput cyan" step="1" min="1" max="500" placeholder="---" style="width:4.5em;">
-								<a href="#" id="doseCLValidate" data-role="button" data-mini="true" data-icon="check">Valider</a>
+						<div class="prefix_1 grid_10 suffix_1 paramRow">
+							<label class="paramRow-label">Dose CL (ml / 0.1 unité)</label>
+							<div class="paramRow-control">
+								<input type="number" value="" id="doseCLInput" class="paramRow-value" step="1" min="1" max="500" placeholder="---">
+								<a href="#" id="doseCLValidate" data-role="button" data-mini="true" data-icon="check" class="paramRow-btn">Valider</a>
 							</div>
 						</div>
 					</fieldset>
