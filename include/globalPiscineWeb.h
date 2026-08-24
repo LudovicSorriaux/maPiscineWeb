@@ -37,7 +37,6 @@
     #define WEB 3
     #define CONTROLEUR 4
 
-    #define NONE 0
     #define PHp 1
     #define ALG 2
         
