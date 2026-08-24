@@ -1283,6 +1283,23 @@
 			});
 		}
 
+		// Applique directement l'état visuel + checked d'un switch (label/span/i + input), sans passer
+		// par .click() : la simulation de clic laissait parfois checked=true mais les classes CSS
+		// switchChecked/switchUnchecked désynchronisées (constaté en direct sur pacAutonome/localAutoLogin).
+		function setSwitchState(switchDivId, checked){
+			var $sw = $('#' + switchDivId);
+			if(checked){
+				$sw.find("label").removeClass('switchUnchecked').addClass('switchChecked');
+				$sw.find("span").removeClass('switchUnchecked').addClass('switchChecked');
+				$sw.find("i").removeClass('switchUnchecked').addClass('switchChecked');
+			} else {
+				$sw.find("label").removeClass('switchChecked').addClass('switchUnchecked');
+				$sw.find("span").removeClass('switchChecked').addClass('switchUnchecked');
+				$sw.find("i").removeClass('switchChecked').addClass('switchUnchecked');
+			}
+			$sw.find("input").prop('checked', checked);
+		}
+
 		function piscineParamsDataServer(evt){
 			var today = new Date();
 			var timeLeft;
@@ -1495,17 +1512,7 @@
 					}
 				}
 				if(returnedData.hasOwnProperty('pacAutonome')){
-					if(returnedData.pacAutonome == 0) {
-						if ($('#pacAutonomeSWitch').prop("checked")){
-							pacAutonomeToServer = false;
-							$('#pacAutonomeSW').click();
-						}
-					} else if(returnedData.pacAutonome == 1) {
-						if (!$('#pacAutonomeSWitch').prop("checked")){
-							pacAutonomeToServer = false;
-							$('#pacAutonomeSW').click();
-						}
-					}
+					setSwitchState('pacAutonomeSW', returnedData.pacAutonome == 1);
 				}
 				if(returnedData.hasOwnProperty('coefCL')){
 					$('#coefCLValue').text((returnedData.coefCL / 100).toFixed(2));
@@ -1538,17 +1545,7 @@
 					$('#doseCLInput').val(returnedData.doseCL);
 				}
 				if(returnedData.hasOwnProperty('localAutoLogin')){
-					if(returnedData.localAutoLogin == 0) {
-						if ($('#localAutoLoginSWitch').prop("checked")){ 
-							localAutoLoginToServer = false;
-							$('#localAutoLoginSW').click();
-						}
-					} else if(returnedData.localAutoLogin == 1) {	
-						if (!$('#localAutoLoginSWitch').prop("checked")){ 
-							localAutoLoginToServer = false;
-							$('#localAutoLoginSW').click();
-						}
-					}	
+					setSwitchState('localAutoLoginSW', returnedData.localAutoLogin == 1);
 				}
 				if(returnedData.hasOwnProperty('lampeAuto')){
 					if(returnedData.lampeAuto == 0) {

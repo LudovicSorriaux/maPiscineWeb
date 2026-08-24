@@ -288,6 +288,12 @@ void PiscineWebClass::_migratePasswords() {
                 }
             }
         }
+        // localAutoLogin n'est pas un IND_* (config web locale, pas d'index ICSC) donc jamais couvert
+        // par la boucle ci-dessus : sans ça il n'était envoyé qu'une fois, au "hello" de connexion SSE
+        if(doItFull && currentPage == PAGE_PARAMETRES){
+            piscineParamsEventsJson["localAutoLogin"] = config.enableLocalAutoLogin ? 1 : 0;
+            newValPParams = true;
+        }
         nbAppels--;
         if(newValPP){
             serializeJson(piscineEventsJson, jsonBuff, sizeof(jsonBuff));
