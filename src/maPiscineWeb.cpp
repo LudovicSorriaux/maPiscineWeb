@@ -898,6 +898,7 @@
             return;
           }  
           jsonConfig["adminPassword"] = config.adminPassword;
+          jsonConfig["enableLocalAutoLogin"] = config.enableLocalAutoLogin;
 
           JsonArray users = jsonConfig["users"].to<JsonArray>();
           for(i=0;i<MAX_USERS;i++){
