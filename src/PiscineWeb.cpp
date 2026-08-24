@@ -1681,11 +1681,13 @@ void PiscineWebClass::_migratePasswords() {
                         changed = true;
                     }
                 } else if (strcmp(param, "typeP3") == 0){
-                    if (piscineParams[IND_TypePompe3].valeur != valParam){
-                        piscineParams[IND_TypePompe3].valeur = valParam;
-                        piscineParams[IND_TypePompe3].changedWeb = true;
-                        changed = true;
-                    }
+                    // toujours forwardé, jamais de comparaison d'égalité : le contrôleur renvoie
+                    // désormais systématiquement le type réel (jamais 0) après une invalidation, donc
+                    // revalider en renvoyant le même type (ex: PHp après un cycle off/on) ne semble
+                    // "pas changé" pour ce cache web alors que l'action (revalider) doit bien repartir
+                    piscineParams[IND_TypePompe3].valeur = valParam;
+                    piscineParams[IND_TypePompe3].changedWeb = true;
+                    changed = true;
                 } else if (strcmp(param, "p3Qty") == 0){
                     if (piscineParams[IND_ALGQuantite].valeur != valParam){
                         piscineParams[IND_ALGQuantite].valeur = valParam;
