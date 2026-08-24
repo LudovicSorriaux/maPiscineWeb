@@ -107,12 +107,11 @@ form .error {
     justify-content: center;
 }
 .paramRow-btn.ui-btn {
-    box-sizing: border-box;
-    height: 2.4em;
-    line-height: 2.4em;
-    padding: 0 0.9em !important;
+    align-self: center;
     margin: 0 !important;
     font-size: 1em !important;
+    /* padding/hauteur laissés au style jQuery Mobile natif : le forcer écrase
+       l'espace réservé à l'icône (data-icon) et fait chevaucher icône/texte */
 }
 .borderFeild {
     background-color: #222 !important;
