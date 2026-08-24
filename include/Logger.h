@@ -73,6 +73,7 @@ class LoggerClass : public Print {
         File alertFile;
         bool printStarted = false;
         uint8_t today=0;        // init to sunday
+        bool todaySeeded = false;   // vrai dès que today a été initialisé depuis une heure NTP valide
         int lastMonth=0;
         bool logInited = false;
         time_t tStart, tEnd, tCurr;

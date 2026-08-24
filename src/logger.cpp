@@ -151,7 +151,16 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
           printf("[LOGGER] New AlertFileName : %s\n",alertFileName.c_str());
         }
 
-        if(dayOfWeek(now()) != today){
+        if(!todaySeeded){
+          // today=0 par défaut ne correspond à aucun jour réel (dayOfWeek renvoie 1-7) : sans ce garde-fou,
+          // le tout premier passage après CHAQUE redémarrage (pas seulement un vrai changement de jour)
+          // déclenchait la ré-écriture d'un en-tête CSV dans le fichier du jour, le polluant à chaque reboot.
+          // On attend une heure NTP valide pour figer la référence, sans déclencher les effets de bord.
+          if(NTPok){
+            today = dayOfWeek(now());
+            todaySeeded = true;
+          }
+        } else if(dayOfWeek(now()) != today){
           // RAM monitoring : Nouveau jour (création fichiers log - opération mémoire intensive)
           Serial1.printf("[RAM] Nouveau jour détecté - Free heap avant création logs: %d bytes\n", ESP.getFreeHeap());
           flushLogsToSD();                // vider buffer LittleFS vers SD avant changement de fichier
