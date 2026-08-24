@@ -70,6 +70,28 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
     };
 
 /**
+ * @brief S'assure que path est un dossier SD existant : le crée si absent, et si un
+ *        fichier (pas un dossier) occupe déjà cet emplacement — artefact corrompu qui
+ *        bloquait silencieusement toute l'arborescence /log en cascade — le supprime
+ *        avant de recréer le dossier. Retourne true si path est (devient) un dossier.
+ */
+    static bool ensureDir(const char* path) {
+        if (SD.exists(path)) {
+            File f = SD.open(path);
+            bool isDir = f && f.isDirectory();
+            if (f) f.close();
+            if (isDir) return true;
+            logger.printf("[LOGGER] ⚠️ %s existe mais n'est pas un dossier (artefact corrompu), suppression\n", path);
+            SD.remove(path);
+        }
+        if (!SD.mkdir(path)) {
+            logger.printf("[LOGGER] ❌ Échec création dossier %s\n", path);
+            return false;
+        }
+        return true;
+    }
+
+/**
  * @brief Crée l'arborescence SD /Log/YYYY/Alerts et /Log/YYYY/Logs/MONTH si absente. Retourne true si succès
  */
     bool LoggerClass::initDirs() {
@@ -82,29 +104,19 @@ time_t parseDateDDMMYYYY(const char* dateStr) {
         }
 
         if( cardPresent){
-          if (!SD.exists("/log")) {
-            SD.mkdir("/log");
-          }
+          if(!ensureDir("/log")) return false;
           snprintf(directory, 50, "/log/%d", year());
-          if (!SD.exists(directory)) {
-            SD.mkdir(directory);
-          }
+          if(!ensureDir(directory)) return false;
           snprintf(directory, 50, "/log/%d/alerts", year());
-          if (!SD.exists(directory)) {
-            SD.mkdir(directory);
-          }
+          if(!ensureDir(directory)) return false;
           snprintf(directory, 50, "/log/%d/logs", year());
-          if (!SD.exists(directory)) {
-            SD.mkdir(directory);
-          }
+          if(!ensureDir(directory)) return false;
           // FIX PROGMEM: snprintf() ESP8266 NE lit PAS Flash → copie RAM obligatoire
           char monthBuf[16];
           strncpy(monthBuf, monthStr(month()), sizeof(monthBuf) - 1);
           monthBuf[sizeof(monthBuf) - 1] = '\0';
           snprintf(directory, 50, "/log/%d/logs/%s", year(), monthBuf);
-          if (!SD.exists(directory)) {
-            SD.mkdir(directory);
-          }
+          if(!ensureDir(directory)) return false;
           rtn = true;
         }
       return rtn;
