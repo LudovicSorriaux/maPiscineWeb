@@ -758,10 +758,31 @@
 										<i class="switchChecked"></i>
 									</label>
 									<span class="switchChecked"></span>
-								</div>				
+								</div>
 							</div>
 						</div>
-					</fieldset> 
+						<div class="grid_4" style="margin-top:0.5em;">
+							<div class="ui-field-contain smallFillContent">
+								<label class="smallLabel" style="padding: 0 0 0 0.4em">Débit (ml/h)</label>
+								<input type="number" value="" id="debitPompePHInput" class="smallTextInput cyan" step="1" min="1" max="30000" placeholder="---" style="width:4.5em;">
+								<a href="#" id="debitPompePHValidate" data-role="button" data-mini="true" data-icon="check"></a>
+							</div>
+						</div>
+						<div class="grid_4" style="margin-top:0.5em;">
+							<div class="ui-field-contain smallFillContent">
+								<label class="smallLabel" style="padding: 0 0 0 1.2em">Débit (ml/h)</label>
+								<input type="number" value="" id="debitPompeCLInput" class="smallTextInput cyan" step="1" min="1" max="30000" placeholder="---" style="width:4.5em;">
+								<a href="#" id="debitPompeCLValidate" data-role="button" data-mini="true" data-icon="check"></a>
+							</div>
+						</div>
+						<div class="grid_4" style="margin-top:0.5em;">
+							<div class="ui-field-contain smallFillContent">
+								<label class="smallLabel" style="padding: 0 0 0 1.2em">Débit (ml/h)</label>
+								<input type="number" value="" id="debitPompeALGInput" class="smallTextInput cyan" step="1" min="1" max="30000" placeholder="---" style="width:4.5em;">
+								<a href="#" id="debitPompeALGValidate" data-role="button" data-mini="true" data-icon="check"></a>
+							</div>
+						</div>
+					</fieldset>
 				</div>
 					<!-- Parametes Divers -->
 				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
@@ -1035,7 +1056,7 @@
 								<div id="P3FrqSlider">
 									<label for="P3Frq" class="smallLabel" id="P3FrqLabel" style="padding: 1em 0 0 8.5em">Frequence (heures)</label>
 									<input type="range" name="P3Frq" id="P3Frq" value="0" min="0" max="31" step="1" data-mini="false" data-popup-enabled="true">
-								</div>	
+								</div>
 								<fieldset data-role="controlgroup" data-type="horizontal">
 									<input type="checkbox" name="P3FrqHebdo" id="P3FrqHebdo" value="off">
 									<label for="P3FrqHebdo">Hebdo</label>
@@ -1043,26 +1064,47 @@
 									<label for="P3FrqMensuel">Mensuel</label>
 								</fieldset>
 							</div>
+							<div id="P3DosePHDiv">
+								<div class="ui-field-contain smallFillContent" style="padding-top:1em;">
+									<label class="smallLabel" style="padding: 0 0 0 0.5em">Dose PH+ (ml / 0.1pH)</label>
+									<input type="number" value="" id="dosePHInput" class="smallTextInput cyan" step="1" min="1" max="500" placeholder="---" style="width:4.5em;">
+									<a href="#" id="dosePHValidate" data-role="button" data-mini="true" data-icon="check">Valider</a>
+								</div>
+							</div>
 						</div>
-					</fieldset> 
+					</fieldset>
 				</div>
-					<!-- PH et CL Reference -->
+					<!-- PH et CL -->
 				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
-				<h4>PH ref & CL ref</h4>
-					<fieldset class="container_12 mypanel"> 
+				<h4>PH & CL</h4>
+					<fieldset class="container_12 mypanel">
 						<div class="prefix_1 grid_10 suffix_1">
 							<div id="PHRefSlider">
 								<label for="PHRef" class="smallLabel" style="padding: 1em 0 0 0.5em">Reference PH</label>
 								<input type="range" name="PHRef" id="PHRef" value="7.2" min="6" max="8" step="0.1" data-mini="false" data-popup-enabled="true">
 							</div>
 						</div>
-						<div class="prefix_1 grid_10 suffix_1">
+						<div class="prefix_1 grid_10 suffix_1" style="margin-top:0.5em;">
+							<div class="ui-field-contain smallFillContent">
+								<label class="smallLabel" style="padding: 0 0 0 0.5em">Dose PH- (ml / 0.1pH)</label>
+								<input type="number" value="" id="dosePHmInput" class="smallTextInput cyan" step="1" min="1" max="500" placeholder="---" style="width:4.5em;">
+								<a href="#" id="dosePHmValidate" data-role="button" data-mini="true" data-icon="check">Valider</a>
+							</div>
+						</div>
+						<div class="prefix_1 grid_10 suffix_1" style="margin-top:1em;">
 							<div id="redoxRefSlider">
 								<label for="redoxRef" class="smallLabel" id="TempFixRelLabel" style="padding: 1em 0 0 0.5em">Reference Redox</label>
 								<input type="range" name="redoxRef" id="redoxRef" value="700" min="550" max="850" step="10" data-mini="false" data-popup-enabled="true">
 							</div>
-						</div>	
-					</fieldset> 
+						</div>
+						<div class="prefix_1 grid_10 suffix_1" style="margin-top:0.5em;">
+							<div class="ui-field-contain smallFillContent">
+								<label class="smallLabel" style="padding: 0 0 0 0.5em">Dose CL (ml / 0.1 unité)</label>
+								<input type="number" value="" id="doseCLInput" class="smallTextInput cyan" step="1" min="1" max="500" placeholder="---" style="width:4.5em;">
+								<a href="#" id="doseCLValidate" data-role="button" data-mini="true" data-icon="check">Valider</a>
+							</div>
+						</div>
+					</fieldset>
 				</div>
 					<!-- Pompe Principale -->
 				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">

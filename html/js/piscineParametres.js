@@ -509,6 +509,12 @@
 		}
 		$('#volumePiscineValidate').click(function(){ setInstallationParam('volumePiscineInput', 'volumePiscine', 'Volume Piscine', 1); });
 		$('#debitPompePValidate').click(function(){ setInstallationParam('debitPompePInput', 'debitPompeP', 'Débit Pompe', 10); });
+		$('#debitPompePHValidate').click(function(){ setInstallationParam('debitPompePHInput', 'debitPompePH', 'Débit Pompe PH', 1); });
+		$('#debitPompeCLValidate').click(function(){ setInstallationParam('debitPompeCLInput', 'debitPompeCL', 'Débit Pompe CL', 1); });
+		$('#debitPompeALGValidate').click(function(){ setInstallationParam('debitPompeALGInput', 'debitPompeALG', 'Débit Pompe 3', 1); });
+		$('#dosePHValidate').click(function(){ setInstallationParam('dosePHInput', 'dosePH', 'Dose PH+', 1); });
+		$('#dosePHmValidate').click(function(){ setInstallationParam('dosePHmInput', 'dosePHm', 'Dose PH-', 1); });
+		$('#doseCLValidate').click(function(){ setInstallationParam('doseCLInput', 'doseCL', 'Dose CL', 1); });
 
 		// --- Reset coefficients asservissement adaptatif (dosage CL / PH-) ---
 		function resetDoseCoef(command, label){
@@ -745,13 +751,15 @@
 
 		// --- P3TYPE Switch ---
 		$('#TypeP3SW').click( function () {									// type pompe 3 : 0=off, 1=PH-, 2=ALG -1:INV
-			if (!$('#TypeP3SWitch').prop("checked")){						// switch P3 PH-
+			if (!$('#TypeP3SWitch').prop("checked")){						// switch P3 PH+
 				$("#P3QtyDiv").hide();
 				$("#P3FrqDiv").hide();
+				$("#P3DosePHDiv").show();
 				typeP3 = 1;
 			} else {														// switch P3 Other
 				$("#P3QtyDiv").show();
 				$("#P3FrqDiv").show();
+				$("#P3DosePHDiv").hide();
 				typeP3 = 2;
 			}
 			if (typeP3ToServer){
@@ -780,6 +788,7 @@
 				$("#TypeP3Div").hide();
 				$("#P3QtyDiv").hide();
 				$("#P3FrqDiv").hide();
+				$("#P3DosePHDiv").hide();
 				if (typeP3ToServer){
 					$.ajax({
 						type: 'POST',
@@ -803,6 +812,8 @@
 				if ($('#TypeP3SWitch').prop("checked")){					// switch P3 Other
 					$("#P3QtyDiv").show();
 					$("#P3FrqDiv").show();
+				} else {													// switch P3 PH+
+					$("#P3DosePHDiv").show();
 				}
 				if (typeP3ToServer){
 					$.ajax({
@@ -1507,6 +1518,24 @@
 				}
 				if(returnedData.hasOwnProperty('debitPompeP') && $('#debitPompePInput').val() === ""){
 					$('#debitPompePInput').val((returnedData.debitPompeP / 10).toFixed(1));
+				}
+				if(returnedData.hasOwnProperty('debitPompePH') && $('#debitPompePHInput').val() === ""){
+					$('#debitPompePHInput').val(returnedData.debitPompePH);
+				}
+				if(returnedData.hasOwnProperty('debitPompeCL') && $('#debitPompeCLInput').val() === ""){
+					$('#debitPompeCLInput').val(returnedData.debitPompeCL);
+				}
+				if(returnedData.hasOwnProperty('debitPompeALG') && $('#debitPompeALGInput').val() === ""){
+					$('#debitPompeALGInput').val(returnedData.debitPompeALG);
+				}
+				if(returnedData.hasOwnProperty('dosePH') && $('#dosePHInput').val() === ""){
+					$('#dosePHInput').val(returnedData.dosePH);
+				}
+				if(returnedData.hasOwnProperty('dosePHm') && $('#dosePHmInput').val() === ""){
+					$('#dosePHmInput').val(returnedData.dosePHm);
+				}
+				if(returnedData.hasOwnProperty('doseCL') && $('#doseCLInput').val() === ""){
+					$('#doseCLInput').val(returnedData.doseCL);
 				}
 				if(returnedData.hasOwnProperty('localAutoLogin')){
 					if(returnedData.localAutoLogin == 0) {

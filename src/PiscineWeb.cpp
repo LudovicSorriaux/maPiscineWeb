@@ -1562,6 +1562,42 @@ void PiscineWebClass::_migratePasswords() {
                         piscineParams[IND_debitPompe_PP].changedWeb = true;
                         changed = true;
                     }
+                } else if (strcmp(param, "debitPompePH") == 0){
+                    if (piscineParams[IND_debitPompe_PH].valeur != valParam){
+                        piscineParams[IND_debitPompe_PH].valeur = valParam;
+                        piscineParams[IND_debitPompe_PH].changedWeb = true;
+                        changed = true;
+                    }
+                } else if (strcmp(param, "debitPompeCL") == 0){
+                    if (piscineParams[IND_debitPompe_CL].valeur != valParam){
+                        piscineParams[IND_debitPompe_CL].valeur = valParam;
+                        piscineParams[IND_debitPompe_CL].changedWeb = true;
+                        changed = true;
+                    }
+                } else if (strcmp(param, "debitPompeALG") == 0){
+                    if (piscineParams[IND_debitPompe_ALG].valeur != valParam){
+                        piscineParams[IND_debitPompe_ALG].valeur = valParam;
+                        piscineParams[IND_debitPompe_ALG].changedWeb = true;
+                        changed = true;
+                    }
+                } else if (strcmp(param, "dosePH") == 0){
+                    if (piscineParams[IND_dose_PH].valeur != valParam){
+                        piscineParams[IND_dose_PH].valeur = valParam;
+                        piscineParams[IND_dose_PH].changedWeb = true;
+                        changed = true;
+                    }
+                } else if (strcmp(param, "dosePHm") == 0){
+                    if (piscineParams[IND_dose_PHm].valeur != valParam){
+                        piscineParams[IND_dose_PHm].valeur = valParam;
+                        piscineParams[IND_dose_PHm].changedWeb = true;
+                        changed = true;
+                    }
+                } else if (strcmp(param, "doseCL") == 0){
+                    if (piscineParams[IND_dose_CL].valeur != valParam){
+                        piscineParams[IND_dose_CL].valeur = valParam;
+                        piscineParams[IND_dose_CL].changedWeb = true;
+                        changed = true;
+                    }
                 } else if (strcmp(param, "localAutoLogin") == 0){
                     if (config.enableLocalAutoLogin != (valParam != 0)){
                         config.enableLocalAutoLogin = (valParam != 0);

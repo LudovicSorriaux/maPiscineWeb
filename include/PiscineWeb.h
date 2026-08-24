@@ -83,6 +83,8 @@ class PiscineWebClass {
                                             IND_PlageLampe, IND_PlageOnLampe, IND_PlageOffLampe, IND_PlageVolet, IND_PlageOuvVolet, IND_PlageFermVolet,
                                             IND_coefCL, IND_coefPHm,
                                             IND_volume_piscine, IND_debitPompe_PP,
+                                            IND_dose_PH, IND_dose_CL, IND_dose_PHm,
+                                            IND_debitPompe_PH, IND_debitPompe_CL, IND_debitPompe_ALG,
                                             };
 
             typedef struct sessions {
