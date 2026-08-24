@@ -1536,23 +1536,23 @@
 				if(returnedData.hasOwnProperty('debitPompeP') && $('#debitPompePInput').val() === ""){
 					$('#debitPompePInput').val((returnedData.debitPompeP / 10).toFixed(1));
 				}
-				if(returnedData.hasOwnProperty('debitPompePH') && $('#debitPompePHInput').val() === ""){
-					$('#debitPompePHInput').val(returnedData.debitPompePH);
+				if(returnedData.hasOwnProperty('debitPompe_PH') && $('#debitPompePHInput').val() === ""){
+					$('#debitPompePHInput').val(returnedData.debitPompe_PH);
 				}
-				if(returnedData.hasOwnProperty('debitPompeCL') && $('#debitPompeCLInput').val() === ""){
-					$('#debitPompeCLInput').val(returnedData.debitPompeCL);
+				if(returnedData.hasOwnProperty('debitPompe_CL') && $('#debitPompeCLInput').val() === ""){
+					$('#debitPompeCLInput').val(returnedData.debitPompe_CL);
 				}
-				if(returnedData.hasOwnProperty('debitPompeALG') && $('#debitPompeALGInput').val() === ""){
-					$('#debitPompeALGInput').val(returnedData.debitPompeALG);
+				if(returnedData.hasOwnProperty('debitPompe_ALG') && $('#debitPompeALGInput').val() === ""){
+					$('#debitPompeALGInput').val(returnedData.debitPompe_ALG);
 				}
-				if(returnedData.hasOwnProperty('dosePH') && $('#dosePHInput').val() === ""){
-					$('#dosePHInput').val(returnedData.dosePH);
+				if(returnedData.hasOwnProperty('dose_PH') && $('#dosePHInput').val() === ""){
+					$('#dosePHInput').val(returnedData.dose_PH);
 				}
-				if(returnedData.hasOwnProperty('dosePHm') && $('#dosePHmInput').val() === ""){
-					$('#dosePHmInput').val(returnedData.dosePHm);
+				if(returnedData.hasOwnProperty('dose_PHm') && $('#dosePHmInput').val() === ""){
+					$('#dosePHmInput').val(returnedData.dose_PHm);
 				}
-				if(returnedData.hasOwnProperty('doseCL') && $('#doseCLInput').val() === ""){
-					$('#doseCLInput').val(returnedData.doseCL);
+				if(returnedData.hasOwnProperty('dose_CL') && $('#doseCLInput').val() === ""){
+					$('#doseCLInput').val(returnedData.dose_CL);
 				}
 				if(returnedData.hasOwnProperty('localAutoLogin')){
 					setSwitchState('localAutoLoginSW', returnedData.localAutoLogin == 1);
