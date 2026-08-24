@@ -62,6 +62,29 @@ form .error {
     box-shadow: inset -2px -2px 2px #353535, inset 3px 3px 3px #000000, -2px -2px 4px #353535, 2px 2px 2px #000;
     font-size: 1.4em;
 }
+/* Label plein largeur + valeur/bouton alignés sur la ligne suivante (Paramètres divers : volume/débit/coef) */
+.stackedLabel {
+    display: block !important;
+    width: 100%;
+    padding: 0 0 0.3em 0.7em !important;
+}
+.stackedRow {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    padding-left: 0.7em;
+}
+.valueBox {
+    display: inline-block;
+    min-width: 3em;
+    padding: 0.15em 0.6em;
+    background-color: #222;
+    color: #fff;
+    font-weight: bold;
+    text-align: center;
+    border-radius: 4px;
+    box-shadow: inset -2px -2px 2px #353535, inset 3px 3px 3px #000000;
+}
 .borderFeild {
     background-color: #222 !important;
     box-shadow: inset -2px -2px 2px #353535, inset 3px 3px 3px #000000, -2px -2px 4px #353535, 2px 2px 2px #000;
