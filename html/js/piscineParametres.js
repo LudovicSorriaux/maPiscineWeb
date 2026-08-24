@@ -1436,20 +1436,22 @@
 					// invPmp3SWitch/P3ONOFFSWitch reflètent l'état de validité réel (invalide=off, tout le
 					// reste=on), indépendamment de typeP3 (qui ne représente que le type PH+/Algicide) —
 					// seule source de vérité pour ces deux switches, pour éviter tout conflit avec typeP3.
+					// setSwitchState() (pas de .click() simulé) : un clic simulé sur P3ONOFFSW pouvait
+					// laisser typeP3ToServer bloqué à false et avaler silencieusement le prochain vrai
+					// clic utilisateur (constaté sur le terrain : le "on" depuis l'onglet Pompe3 n'envoyait
+					// plus jamais rien au contrôleur après un cycle off/on).
 					if(returnedData.P3 == -2){			// pmp invalidée
 						$('#P3LedParam').removeClass('ledOn').addClass('ledOff');
 						if ($('#PmpALGSWitch').prop("checked")){
 							PmpALGSWToServer = false;
 							$('#PmpALGSW').click();
 						}
-						if ($('#invPmp3SWitch').prop("checked")){
-							PmpALGSWToServer = false;
-							$('#invPmp3SW').click();
-						}
-						if ($('#P3ONOFFSWitch').is(":checked")){ 					// if ON set to OFF
-							typeP3ToServer = false;
-							$('#P3ONOFFSW').click();
-						}
+						setSwitchState('invPmp3SW', false);
+						setSwitchState('P3ONOFFSW', false);
+						$("#TypeP3Div").hide();
+						$("#P3QtyDiv").hide();
+						$("#P3FrqDiv").hide();
+						$("#P3DosePHDiv").hide();
 					} else {
 						if(returnedData.P3 == 0){		// valide mais inactive
 							$('#P3LedParam').removeClass('ledOn').addClass('ledOff');
@@ -1464,14 +1466,9 @@
 								$('#PmpALGSW').click();
 							}
 						}
-						if (!$('#invPmp3SWitch').prop("checked")){
-							PmpALGSWToServer = false;
-							$('#invPmp3SW').click();
-						}
-						if (!$('#P3ONOFFSWitch').is(":checked")){ 					// if OFF set to on
-							typeP3ToServer = false;
-							$('#P3ONOFFSW').click();
-						}
+						setSwitchState('invPmp3SW', true);
+						setSwitchState('P3ONOFFSW', true);
+						$("#TypeP3Div").show();
 					}
 				}
 				if(returnedData.hasOwnProperty('autoMode')){
