@@ -47,7 +47,7 @@
 #define MAX_WIFI 3                       // max nb of wifi configs
 
 #define MAX_KEY_LEN 15
-#define IND_MAX_PISCINE 56    // last index !!
+#define IND_MAX_PISCINE 59    // last index !! (borne aussi piscineParams[] et le sync complet — doit matcher le contrôleur)
 #define IND_TOTAL 83          // all indexes
 
 #define MAX_USERNAME_SIZE 11

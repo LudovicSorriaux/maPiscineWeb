@@ -104,6 +104,7 @@
     #define IND_PACAutonome 56
     #define IND_coefCL 57          // ratio doseCL/baselineDoseCL x100 (info, 100 = coefficient neutre)
     #define IND_coefPHm 58         // ratio dosePHm/baselineDosePHm x100 (info, 100 = coefficient neutre)
+    #define IND_debitPompe_PP 59   // débit pompe principale (m3/h x10, ex: 85 = 8.5 m3/h)
     //        #define IND_MAX_PISCINE 55
 
         // indexes d'info pas besoin de les stocker

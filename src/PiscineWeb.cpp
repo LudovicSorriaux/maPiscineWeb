@@ -271,7 +271,7 @@ void PiscineWebClass::_migratePasswords() {
             nbAppels = 20;                  // 10 sec env
         }
 
-        for(int i=0;i<=IND_coefPHm;i++){              // borne haute = dernier index "config" utilisé (58) ; ClearAlert(52)/PACAutonome(56)/coefCL(57)/coefPHm(58) étaient auparavant exclus par erreur (i<IND_ClearAlert=52)
+        for(int i=0;i<=IND_MAX_PISCINE;i++){          // borne inclusive : couvre tout l'espace persisté/synchronisé (ClearAlert/PACAutonome/coefCL/coefPHm/debitPompe_PP inclus)
             if( (doItFull) || (piscineParams[i].changedControler)) {
                 if (currentPage == PAGE_PRICIPALE) {          // in page principal
                     if(piscinePPSet.find(i) != piscinePPSet.end()){
@@ -1548,6 +1548,18 @@ void PiscineWebClass::_migratePasswords() {
                     if (piscineParams[IND_PACAutonome].valeur != valParam){
                         piscineParams[IND_PACAutonome].valeur = valParam;
                         piscineParams[IND_PACAutonome].changedWeb = true;
+                        changed = true;
+                    }
+                } else if (strcmp(param, "volumePiscine") == 0){
+                    if (piscineParams[IND_volume_piscine].valeur != valParam){
+                        piscineParams[IND_volume_piscine].valeur = valParam;
+                        piscineParams[IND_volume_piscine].changedWeb = true;
+                        changed = true;
+                    }
+                } else if (strcmp(param, "debitPompeP") == 0){
+                    if (piscineParams[IND_debitPompe_PP].valeur != valParam){
+                        piscineParams[IND_debitPompe_PP].valeur = valParam;
+                        piscineParams[IND_debitPompe_PP].changedWeb = true;
                         changed = true;
                     }
                 } else if (strcmp(param, "localAutoLogin") == 0){

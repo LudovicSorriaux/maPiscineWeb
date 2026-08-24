@@ -82,6 +82,7 @@ class PiscineWebClass {
                                             IND_InvNivPHAlert, IND_InvNivCLAlert, IND_InvNivALGAlert,
                                             IND_PlageLampe, IND_PlageOnLampe, IND_PlageOffLampe, IND_PlageVolet, IND_PlageOuvVolet, IND_PlageFermVolet,
                                             IND_coefCL, IND_coefPHm,
+                                            IND_volume_piscine, IND_debitPompe_PP,
                                             };
 
             typedef struct sessions {

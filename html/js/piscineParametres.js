@@ -482,6 +482,34 @@
 			} else localAutoLoginToServer = true;
 		});
 
+		// --- Volume piscine / débit pompe principale (entrée libre) ---
+		function setInstallationParam(inputId, param, label, scale){
+			var raw = $('#' + inputId).val();
+			if(raw === "" || isNaN(raw)){
+				showToast("Valeur invalide pour " + label, 'warning');
+				return;
+			}
+			var theVal = Math.round(parseFloat(raw) * scale);
+			$.ajax({
+				type: 'POST',
+				url: '/setPiscine?action=Parametres',
+				data: 'sess=' + sessID + '&param=' + param + '&val=' + theVal,
+				dataType: "text",
+				success: function(data){
+					console.log("Call to /setPiscine?action=Parametres with param=" + param + " is success");
+				},
+				error: function (xhr, status, errorThrown) {
+					console.log('An error occurred while calling /setPiscine?action=Parametres param=' + param + ', data is: ' + xhr.status + ' and exception is : ' + xhr.responseText);
+					if ((xhr.status == "400") && (xhr.responseText.indexOf("Invalid Session") !== -1)){				//400: Invalid Session
+						console.log('THE SESSIONID EXPIRED NEXT CHANGE PAGE WILL GO TO LOGIN');
+						showSessionExpiredDialog("Action utilisateur");
+					}
+				}
+			});
+		}
+		$('#volumePiscineValidate').click(function(){ setInstallationParam('volumePiscineInput', 'volumePiscine', 'Volume Piscine', 1); });
+		$('#debitPompePValidate').click(function(){ setInstallationParam('debitPompePInput', 'debitPompeP', 'Débit Pompe', 10); });
+
 		// --- Reset coefficients asservissement adaptatif (dosage CL / PH-) ---
 		function resetDoseCoef(command, label){
 			if(!confirm("Réinitialiser le coefficient de dosage " + label + " appris à sa valeur de référence ?")) return;
@@ -1473,6 +1501,12 @@
 				}
 				if(returnedData.hasOwnProperty('coefPHm')){
 					$('#coefPHmValue').text((returnedData.coefPHm / 100).toFixed(2));
+				}
+				if(returnedData.hasOwnProperty('volumePiscine') && $('#volumePiscineInput').val() === ""){
+					$('#volumePiscineInput').val(returnedData.volumePiscine);
+				}
+				if(returnedData.hasOwnProperty('debitPompeP') && $('#debitPompePInput').val() === ""){
+					$('#debitPompePInput').val((returnedData.debitPompeP / 10).toFixed(1));
 				}
 				if(returnedData.hasOwnProperty('localAutoLogin')){
 					if(returnedData.localAutoLogin == 0) {

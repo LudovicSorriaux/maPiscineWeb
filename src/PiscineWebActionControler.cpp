@@ -196,7 +196,7 @@
    * Sortie : valeur de retour ou effet sur l'état interne
    */
     void PiscineWebActionControlerClass::sendWebValuesToControler(){
-      for(int i=0;i<IND_MAX_PISCINE;i++){  
+      for(int i=0;i<=IND_MAX_PISCINE;i++){   // borne inclusive : bornée exclusive, IND_MAX_PISCINE lui-même (ex: PACAutonome) n'était jamais transmis au contrôleur
         if(piscineParams[i].changedWeb) {  
           webTelecom.setWriteData(i, piscineParams[i].valeur);
           piscineParams[i].changedWeb = false;
