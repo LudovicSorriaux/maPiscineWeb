@@ -1433,33 +1433,46 @@
 					}	
 				}
 				if(returnedData.hasOwnProperty('P3')){					//valeur: -2=invalid,-1=manu,0=off,X=on duree en mn
-					if((returnedData.P3 == 0) || (returnedData.P3 == -2)){
+					// invPmp3SWitch/P3ONOFFSWitch reflètent l'état de validité réel (invalide=off, tout le
+					// reste=on), indépendamment de typeP3 (qui ne représente que le type PH+/Algicide) —
+					// seule source de vérité pour ces deux switches, pour éviter tout conflit avec typeP3.
+					if(returnedData.P3 == -2){			// pmp invalidée
 						$('#P3LedParam').removeClass('ledOn').addClass('ledOff');
-						if ($('#PmpALGSWitch').prop("checked")){ 
+						if ($('#PmpALGSWitch').prop("checked")){
 							PmpALGSWToServer = false;
 							$('#PmpALGSW').click();
 						}
-						if(returnedData.P3 == -2) {			// pmp is invalidated
-							if ($('#invPmp3SWitch').prop("checked")){ 
-								PmpALGSWToServer = false;
-								$('#invPmp3SW').click();
-							}
-							if ($('#P3ONOFFSWitch').is(":checked")){ 					// if ON set to OFF 
-								typeP3ToServer = false;
-								$('#P3ONOFFSW').click();
-							}
-						}
-					} else {	
-						$('#P3LedParam').removeClass('ledOff').addClass('ledOn');
-						if (!$('#PmpALGSWitch').prop("checked")){ 
-							PmpALGSWToServer = false;
-							$('#PmpALGSW').click();
-						}
-						if (!$('#invPmp3SWitch').prop("checked")){ 
+						if ($('#invPmp3SWitch').prop("checked")){
 							PmpALGSWToServer = false;
 							$('#invPmp3SW').click();
 						}
-					}	
+						if ($('#P3ONOFFSWitch').is(":checked")){ 					// if ON set to OFF
+							typeP3ToServer = false;
+							$('#P3ONOFFSW').click();
+						}
+					} else {
+						if(returnedData.P3 == 0){		// valide mais inactive
+							$('#P3LedParam').removeClass('ledOn').addClass('ledOff');
+							if ($('#PmpALGSWitch').prop("checked")){
+								PmpALGSWToServer = false;
+								$('#PmpALGSW').click();
+							}
+						} else {						// valide et en cours de dosage
+							$('#P3LedParam').removeClass('ledOff').addClass('ledOn');
+							if (!$('#PmpALGSWitch').prop("checked")){
+								PmpALGSWToServer = false;
+								$('#PmpALGSW').click();
+							}
+						}
+						if (!$('#invPmp3SWitch').prop("checked")){
+							PmpALGSWToServer = false;
+							$('#invPmp3SW').click();
+						}
+						if (!$('#P3ONOFFSWitch').is(":checked")){ 					// if OFF set to on
+							typeP3ToServer = false;
+							$('#P3ONOFFSW').click();
+						}
+					}
 				}
 				if(returnedData.hasOwnProperty('autoMode')){
 					if(returnedData.autoMode == 0) {									// if auto is 0 then manu is on 
@@ -1634,30 +1647,18 @@
 				}
 				if(returnedData.hasOwnProperty('typeP3')){						// type pompe 3 : 0=off, 1=PH-, 2=ALG -1:INV
 					if(returnedData.typeP3 == 1) {								// move to PH-
-						if (!$('#P3ONOFFSWitch').is(":checked")){ 					// if OFF set to on 
-							typeP3ToServer = false;
-							$('#P3ONOFFSW').click();
-						}
-						if ($('#TypeP3SWitch').is(":checked")){ 					// if set to Other then click to move to PH- 
+						// invPmp3SW/P3ONOFFSW ne sont plus forcés ici : leur état (validé/invalidé) est
+						// piloté exclusivement par le sync 'P3' (état réel de la pompe), sinon un typeP3
+						// inchangé (toujours PH+/ALG) réactivait le switch à chaque sync même après une
+						// invalidation volontaire depuis l'onglet Pompes.
+						if ($('#TypeP3SWitch').is(":checked")){ 					// if set to Other then click to move to PH-
 							typeP3ToServer = false;
 							$('#TypeP3SW').click();
 						}
-						if (!$('#invPmp3SWitch').prop("checked")){ 
-							PmpALGSWToServer = false;
-							$('#invPmp3SW').click();
-						}
 					} else if(returnedData.typeP3 == 2) {						// move to Other
-						if (!$('#P3ONOFFSWitch').is(":checked")){ 					// if OFF set to on 
-							typeP3ToServer = false;
-							$('#P3ONOFFSW').click();
-						}
 						if (!$('#TypeP3SWitch').is(":checked")){ 					// if set to PH- then click to move to Other
 							typeP3ToServer = false;
 							$('#TypeP3SW').click();
-						}
-						if (!$('#invPmp3SWitch').prop("checked")){ 
-							PmpALGSWToServer = false;
-							$('#invPmp3SW').click();
 						}
 					} else if(returnedData.typeP3 == -1){							// move to invalid
 						if ($('#P3ONOFFSWitch').is(":checked")){ 					// if ON set to OFF 
