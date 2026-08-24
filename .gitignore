@@ -9,3 +9,8 @@
 # Node.js
 node_modules/
 package-lock.json
+
+# Config réelle (identifiants WiFi/admin) : garder en local uniquement.
+# Voir cfg/piscine.cfg.example pour le template à copier vers cfg/piscine.cfg.
+cfg/piscine.cfg
+data/cfg/piscine.cfg
