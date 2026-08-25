@@ -393,14 +393,21 @@
 							voletSWVal = 1;
 						}	
 					}
-					// PP/PH/CL/P3 : -2=invalidée (OFF), -1=manuel forcé (ON), 0=off, >0=durée en cours (ON).
-					// Un simple test "!= 0" allumait la LED pour -2 (invalidée) — corrigé ici.
-					if(returnedData.hasOwnProperty('PP')){
-						if(returnedData.PP == 0 || returnedData.PP == -2) {
-							$('#PPLed').removeClass('ledOn').addClass('ledOff');
+					// PP/PH/CL/P3 : -2=invalidée (OFF + croix), -1=manuel forcé (ON), 0=off, >0=durée en cours (ON).
+					// Un simple test "!= 0" allumait la LED pour -2 (invalidée) — corrigé, et la LED distingue
+					// maintenant visuellement "invalidée" (croix rouge) d'un simple "off" normal.
+					function setPumpLed(led, value){
+						var $led = $(led);
+						if(value == -2){
+							$led.removeClass('ledOn').addClass('ledOff ledInvalid');
+						} else if(value == 0){
+							$led.removeClass('ledOn ledInvalid').addClass('ledOff');
 						} else {
-							$('#PPLed').removeClass('ledOff').addClass('ledOn');
+							$led.removeClass('ledOff ledInvalid').addClass('ledOn');
 						}
+					}
+					if(returnedData.hasOwnProperty('PP')){
+						setPumpLed('#PPLed', returnedData.PP);
 					}
 					if(returnedData.hasOwnProperty('PAC')){
 						if(returnedData.PAC == 0) {
@@ -410,25 +417,13 @@
 						}
 					}
 					if(returnedData.hasOwnProperty('PH')){
-						if(returnedData.PH == 0 || returnedData.PH == -2) {
-							$('#PHLed').removeClass('ledOn').addClass('ledOff');
-						} else {
-							$('#PHLed').removeClass('ledOff').addClass('ledOn');
-						}
+						setPumpLed('#PHLed', returnedData.PH);
 					}
 					if(returnedData.hasOwnProperty('CL')){
-						if(returnedData.CL == 0 || returnedData.CL == -2) {
-							$('#CLLed').removeClass('ledOn').addClass('ledOff');
-						} else {
-							$('#CLLed').removeClass('ledOff').addClass('ledOn');
-						}
+						setPumpLed('#CLLed', returnedData.CL);
 					}
 					if(returnedData.hasOwnProperty('P3')){
-						if(returnedData.P3 == 0 || returnedData.P3 == -2) {
-							$('#P3Led').removeClass('ledOn').addClass('ledOff');
-						} else {
-							$('#P3Led').removeClass('ledOff').addClass('ledOn');
-						}
+						setPumpLed('#P3Led', returnedData.P3);
 					}
 					if(returnedData.hasOwnProperty('Alerte')){
 						updateAlertBanner(parseInt(returnedData.Alerte));

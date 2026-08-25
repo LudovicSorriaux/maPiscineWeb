@@ -156,7 +156,26 @@
       -o-animation:      blink .5s infinite;
       animation:         blink .5s infinite;
 }
-	
+
+/* Croix rouge par-dessus une LED invalidée (pompe désactivée/invalide, distincte d'un simple "off") */
+.ledInvalid::after {
+    content: '✕';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .7em;
+    font-weight: bold;
+    line-height: 1em;
+    color: #ef4655;
+    text-shadow: 0 0 3px rgba(0,0,0,.85), 0 0 1px #fff;
+    pointer-events: none;
+}
+
 .ledVert {
     background:SpringGreen;
     color:SpringGreen;
