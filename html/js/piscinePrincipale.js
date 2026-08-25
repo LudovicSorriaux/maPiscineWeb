@@ -393,36 +393,38 @@
 							voletSWVal = 1;
 						}	
 					}
+					// PP/PH/CL/P3 : -2=invalidée (OFF), -1=manuel forcé (ON), 0=off, >0=durée en cours (ON).
+					// Un simple test "!= 0" allumait la LED pour -2 (invalidée) — corrigé ici.
 					if(returnedData.hasOwnProperty('PP')){
-						if(returnedData.PP == 0) {
+						if(returnedData.PP == 0 || returnedData.PP == -2) {
 							$('#PPLed').removeClass('ledOn').addClass('ledOff');
-						} else {	
+						} else {
 							$('#PPLed').removeClass('ledOff').addClass('ledOn');
-						}	
+						}
 					}
 					if(returnedData.hasOwnProperty('PAC')){
 						if(returnedData.PAC == 0) {
 							$('#PACLed').removeClass('ledOn').addClass('ledOff');
-						} else {	
+						} else {
 							$('#PACLed').removeClass('ledOff').addClass('ledOn');
-						}	
+						}
 					}
 					if(returnedData.hasOwnProperty('PH')){
-						if(returnedData.PH == 0) {
+						if(returnedData.PH == 0 || returnedData.PH == -2) {
 							$('#PHLed').removeClass('ledOn').addClass('ledOff');
-						} else {	
+						} else {
 							$('#PHLed').removeClass('ledOff').addClass('ledOn');
-						}	
+						}
 					}
 					if(returnedData.hasOwnProperty('CL')){
-						if(returnedData.CL == 0) {
+						if(returnedData.CL == 0 || returnedData.CL == -2) {
 							$('#CLLed').removeClass('ledOn').addClass('ledOff');
-						} else {	
+						} else {
 							$('#CLLed').removeClass('ledOff').addClass('ledOn');
-						}	
+						}
 					}
 					if(returnedData.hasOwnProperty('P3')){
-						if(returnedData.P3 == 0) {
+						if(returnedData.P3 == 0 || returnedData.P3 == -2) {
 							$('#P3Led').removeClass('ledOn').addClass('ledOff');
 						} else {
 							$('#P3Led').removeClass('ledOff').addClass('ledOn');

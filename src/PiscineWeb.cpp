@@ -328,25 +328,29 @@ void PiscineWebClass::_migratePasswords() {
                 getDateFormated(strTempo,20,1);   // medium date
                 snprintf(strTempo2, sizeof(strTempo2), "%s, %d h %02d", strTempo, hour(), minute()); 
                 jsonRoot["ligne2"] = strTempo2;
-                if (piscineParams[IND_PP].valeur != 0) {
+                // > 0 uniquement : -2 (invalidée) et -1 (manuel, pas de durée fixe) n'ont pas de durée
+                // réelle à afficher — un simple "!= 0" les traitait comme des cycles en cours et
+                // affichait des durées calculées à partir de ces codes spéciaux (ex: -2 secondes
+                // rendu "254sec" par débordement d'entier non signé dans secondsToMinuteSeconds()).
+                if (piscineParams[IND_PP].valeur > 0) {
                     char heureMinPP[16];
                     minuteToHeureMinute(piscineParams[IND_PP].valeur, heureMinPP, sizeof(heureMinPP));
                     snprintf(strTempo3, sizeof(strTempo3), "%s%s", (const char*)FPSTR(STR_PP_FOR), heureMinPP);
-                    if(piscineParams[IND_PompePH].valeur != 0) {
+                    if(piscineParams[IND_PompePH].valeur > 0) {
                         char minSecPH[24];
                         secondsToMinuteSeconds(piscineParams[IND_PompePH].valeur, minSecPH, sizeof(minSecPH));
                         char temp[64];
                         snprintf(temp, sizeof(temp), "%s%s", (const char*)FPSTR(STR_PH_MINUS_FOR), minSecPH);
                         strcat(strTempo3, temp);
                     }
-                    if( (piscineParams[IND_TypePompe3].valeur == PHp) && (piscineParams[IND_PompeALG].valeur != 0) ){
+                    if( (piscineParams[IND_TypePompe3].valeur == PHp) && (piscineParams[IND_PompeALG].valeur > 0) ){
                         char minSecALG[24];
                         secondsToMinuteSeconds(piscineParams[IND_PompeALG].valeur, minSecALG, sizeof(minSecALG));
                         char temp[64];
                         snprintf(temp, sizeof(temp), "%s%s", (const char*)FPSTR(STR_PH_PLUS_FOR), minSecALG);
                         strcat(strTempo3, temp);
                     }
-                    if (piscineParams[IND_PompeCL].valeur != 0) {
+                    if (piscineParams[IND_PompeCL].valeur > 0) {
                         char minSecCL[24];
                         secondsToMinuteSeconds(piscineParams[IND_PompeCL].valeur, minSecCL, sizeof(minSecCL));
                         char temp[64];
@@ -2760,6 +2764,7 @@ h1{font-size:4em;color:#5AC8FA;margin:0}p{color:#aaa}a{color:#5AC8FA;text-decora
         uint8_t heures = 0;
         uint8_t minutes = 0;
 
+        if(mn < 0) mn = 0;   // garde-fou : un code spécial négatif (-1 manuel, -2 invalide) déborderait en uint8_t
         heures = mn / 60;
         minutes = mn % 60;
         snprintf(output, outputSize, "%02dh%02d", heures, minutes);
@@ -2778,6 +2783,7 @@ h1{font-size:4em;color:#5AC8FA;margin:0}p{color:#aaa}a{color:#5AC8FA;text-decora
         uint8_t secondes = 0;
         char temp[32];
 
+        if(sec < 0) sec = 0;   // garde-fou : un code spécial négatif (-1 manuel, -2 invalide) déborderait en uint8_t
         mn = (float)sec/60;
         if(mn>=60.0f){
             heures = mn / 60;
