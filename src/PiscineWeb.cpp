@@ -2742,10 +2742,10 @@ h1{font-size:4em;color:#5AC8FA;margin:0}p{color:#aaa}a{color:#5AC8FA;text-decora
         char mois[12][10] = {"Janvier","Fevrier","Mars","Avril","Mai","Juin","Juillet","Aout","Septembre","Octobre","Novembre","Decembre"};   // 9 caract max
         switch (mode) {
         case 0:   // mode full
-            dateString += String(jours[weekday()-1]) + ", le " + day() + " " + mois[month()] + " " + year();
+            dateString += String(jours[weekday()-1]) + ", le " + day() + " " + mois[month()-1] + " " + year();
             break;
         case 1:   // mode medium
-            dateString += String("Le ") + day() + " " + mois[month()] + " " + year();
+            dateString += String("Le ") + day() + " " + mois[month()-1] + " " + year();
             break;
         case 2:   // mode short
             dateString += String(day()) + "/" + month() + "/" + year();
