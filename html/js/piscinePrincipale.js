@@ -26,16 +26,16 @@
 			// PHgauge.setValue(75);
 
 		var PHgauge = Gauge(document.getElementById("PHGauge"), {
-			min: 4,
-			max: 10.4,			// 7.2 centré
+			min: 0,
+			max: 14,			// plage complète : affiche toute valeur reçue même hors plage
 			value: 7.2,
-			label: function(value) {				// label is the center digits
-				if(value <= 4){
+			label: function(value) {				// label is the center digits ; "---" seulement si jamais lu (0 strict)
+				if(value <= 0){
 					return "---"
 				} else {
 					return Number.parseFloat(value).toFixed(1);
 				}
-			},  				
+			},
 			color: function(value) {
 			if(value < 5) {
 					return "#ef4655"; // red
@@ -78,16 +78,16 @@
 		});
 
 		var RedoxGauge = Gauge(document.getElementById("RedoxGauge"), {
-			min: 500,
-			max: 900,		// 700 centré
+			min: 0,
+			max: 1000,		// plage complète : affiche toute valeur reçue même hors plage
 			value: 700,
-			label: function(value) {				// label is the center digits
-				if(value <= 500){
+			label: function(value) {				// label is the center digits ; "---" seulement si jamais lu (0 strict)
+				if(value <= 0){
 					return "---"
 				} else {
 					return Number.parseInt(value).toFixed(0);
 				}
-			},  				
+			},
 			color: function(value) {
 			if(value < 600) {
 				return "#ef4655"; // red
