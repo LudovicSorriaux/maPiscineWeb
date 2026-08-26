@@ -521,6 +521,152 @@
 		</div>
 	</div> <!-- page -->
 
+<!-- Page Piscine Alertes -->
+
+	<div data-role="page" id="pagePiscineAlertes" data-theme="b" nextLeft="#pagePiscineParametres" nextRight="#pagePiscinePrincipale">
+
+		<!-- Menu Panel (profile, about, logoff -->
+		<div data-role="panel" id="optionsPiscineManager" data-display="reveal" data-position="right" data-theme="b">
+			<ul data-role="listview">
+				<li><a href="#about-dlg" class="ui-btn ui-shadow ui-corner-all ui-icon-info ui-btn-icon-right">About maPiscine</a></li>
+				<hr class="inset">
+				<li><a href="#logoff-dlg" id="logoff" class="ui-btn ui-shadow ui-corner-all ui-icon-action ui-btn-icon-right">Logoff</a></li>
+				<li><a href="#pageUserProfile" id="profile" class="ui-btn ui-shadow ui-corner-all ui-icon-user ui-btn-icon-right">User Profile</a></li>
+				<hr class="inset">
+				<li><a href="#pageRegisterLogin" id="addUsr" class="ui-btn ui-shadow ui-corner-all ui-icon-plus ui-btn-icon-right">Add User</a></li>
+				<li><a href="#pageDeleteUser" id="deleteUsr" class="ui-btn ui-shadow ui-corner-all ui-icon-delete ui-btn-icon-right">Delete Users</a></li>
+				<li><a href="#pageChangeAdminPW" id="adminUsrPasswd" class="ui-btn ui-shadow ui-corner-all ui-icon-lock ui-btn-icon-right">Admin Passwd</a></li>
+				<hr class="inset">
+				<li><a href="#" data-rel="close" class="ui-btn ui-shadow ui-corner-all ui-icon-back ui-btn-icon-right">Close panel</a></li>
+				</ul>
+		</div> <!-- Menu panel -->
+
+		<div data-role="header" data-position="fixed" data-theme="b">
+			<a href="#leftpanel" data-icon="bars" class="ui-btn-left">Pages</a>
+			<h1 class="myh1">Piscine Manager</h1>
+			<a href="#optionsPiscineManager" data-icon="gear" class="ui-btn-right">Options</a>
+		</div>
+		
+		<div role="main" class="ui-content" data-inset="false">
+
+			<div id="alertesGlobalBanner" class="alertBanner" style="display:none">
+				<span id="alertesGlobalText"></span>
+				<a href="#" id="alertesAckAll" data-role="button" data-mini="true" data-inline="true">Acquitter tout</a>
+			</div>
+
+			<div class="ledpanel" style="margin:0.8em 0.5em;">
+
+				<div class="alertRow">
+					<div class="alertRow-top">
+						<i class="led ledRouge ledOff" id="alertLed0"></i>
+						<span class="alertRow-label">Inondation</span>
+						<span class="alertRow-badge ok" id="alertBadge0">OK</span>
+					</div>
+					<div class="alertRow-bottom">
+						<span class="arow-switchlabel alertRow-switchlabel">Surveillée</span>
+						<div class="switch" id="invInnondSW">
+							<input type="checkbox" name="invInnond" id="invInnondSWitch" checked="true">
+							<label for="invInnond" class="switchLabel switchChecked"><i class="switchChecked"></i></label>
+							<span class="switchChecked"></span>
+						</div>
+					</div>
+				</div>
+
+				<div class="alertRow">
+					<div class="alertRow-top">
+						<i class="led ledRouge ledOff" id="alertLed1"></i>
+						<span class="alertRow-label">Absence de flux d'eau</span>
+						<span class="alertRow-badge ok" id="alertBadge1">OK</span>
+					</div>
+					<div class="alertRow-bottom">
+						<span class="alertRow-switchlabel">Surveillée</span>
+						<div class="switch" id="invFlowSW">
+							<input type="checkbox" name="invFlow" id="invFlowSWitch" checked="true">
+							<label for="invFlow" class="switchLabel switchChecked"><i class="switchChecked"></i></label>
+							<span class="switchChecked"></span>
+						</div>
+					</div>
+				</div>
+
+				<div class="alertRow">
+					<div class="alertRow-top">
+						<i class="led ledRouge ledOff" id="alertLed2"></i>
+						<span class="alertRow-label">Problème PAC</span>
+						<span class="alertRow-badge ok" id="alertBadge2">OK</span>
+					</div>
+					<div class="alertRow-bottom">
+						<span class="alertRow-switchlabel">Surveillée</span>
+						<div class="switch" id="invPacSW">
+							<input type="checkbox" name="invPac" id="invPacSWitch" checked="true">
+							<label for="invPac" class="switchLabel switchChecked"><i class="switchChecked"></i></label>
+							<span class="switchChecked"></span>
+						</div>
+					</div>
+				</div>
+
+				<div class="alertRow">
+					<div class="alertRow-top">
+						<i class="led ledRouge ledOff" id="alertLed3"></i>
+						<span class="alertRow-label">Plus de pH+</span>
+						<span class="alertRow-badge ok" id="alertBadge3">OK</span>
+					</div>
+					<div class="alertRow-bottom">
+						<span class="alertRow-switchlabel">Surveillée</span>
+						<div class="switch" id="invNivPHSW">
+							<input type="checkbox" name="invNivPH" id="invNivPHSWitch" checked="true">
+							<label for="invNivPH" class="switchLabel switchChecked"><i class="switchChecked"></i></label>
+							<span class="switchChecked"></span>
+						</div>
+					</div>
+				</div>
+
+				<div class="alertRow">
+					<div class="alertRow-top">
+						<i class="led ledRouge ledOff" id="alertLed4"></i>
+						<span class="alertRow-label">Plus de chlore</span>
+						<span class="alertRow-badge ok" id="alertBadge4">OK</span>
+					</div>
+					<div class="alertRow-bottom">
+						<span class="alertRow-switchlabel">Surveillée</span>
+						<div class="switch" id="invNivCLSW">
+							<input type="checkbox" name="invNivCL" id="invNivCLSWitch" checked="true">
+							<label for="invNivCL" class="switchLabel switchChecked"><i class="switchChecked"></i></label>
+							<span class="switchChecked"></span>
+						</div>
+					</div>
+				</div>
+
+				<div class="alertRow">
+					<div class="alertRow-top">
+						<i class="led ledRouge ledOff" id="alertLed5"></i>
+						<span class="alertRow-label">Plus de produit pompe 3</span>
+						<span class="alertRow-badge ok" id="alertBadge5">OK</span>
+					</div>
+					<div class="alertRow-bottom">
+						<span class="alertRow-switchlabel">Surveillée</span>
+						<div class="switch" id="invNivALGSW">
+							<input type="checkbox" name="invNivALG" id="invNivALGSWitch" checked="true">
+							<label for="invNivALG" class="switchLabel switchChecked"><i class="switchChecked"></i></label>
+							<span class="switchChecked"></span>
+						</div>
+					</div>
+				</div>
+
+				<div class="alertRow">
+					<div class="alertRow-top">
+						<i class="led ledRouge ledOff" id="alertLed6"></i>
+						<span class="alertRow-label">Fenêtre de filtration trop courte</span>
+						<span class="alertRow-badge ok" id="alertBadge6">OK</span>
+					</div>
+					<div class="alertRow-bottom">
+						<span class="alertRow-switchlabel" style="opacity:.6;">Information seule</span>
+					</div>
+				</div>
+
+			</div>
+		</div>
+	</div> <!-- page -->
+
 <!-- Page Piscine Paramètres -->
 
 	<div data-role="page" id="pagePiscineParametres" data-theme="b" nextLeft="#pagePiscineMaintenance" nextRight="#pagePiscineAlertes">
@@ -1377,213 +1523,6 @@
 		</div>
 	</div>	<!-- page -->
 
-<!-- Page Piscine Alertes -->
-
-	<div data-role="page" id="pagePiscineAlertes" data-theme="b" nextLeft="#pagePiscineParametres" nextRight="#pagePiscinePrincipale">
-
-		<!-- Menu Panel (profile, about, logoff -->
-		<div data-role="panel" id="optionsPiscineManager" data-display="reveal" data-position="right" data-theme="b">
-			<ul data-role="listview">
-				<li><a href="#about-dlg" class="ui-btn ui-shadow ui-corner-all ui-icon-info ui-btn-icon-right">About maPiscine</a></li>
-				<hr class="inset">
-				<li><a href="#logoff-dlg" id="logoff" class="ui-btn ui-shadow ui-corner-all ui-icon-action ui-btn-icon-right">Logoff</a></li>
-				<li><a href="#pageUserProfile" id="profile" class="ui-btn ui-shadow ui-corner-all ui-icon-user ui-btn-icon-right">User Profile</a></li>
-				<hr class="inset">
-				<li><a href="#pageRegisterLogin" id="addUsr" class="ui-btn ui-shadow ui-corner-all ui-icon-plus ui-btn-icon-right">Add User</a></li>
-				<li><a href="#pageDeleteUser" id="deleteUsr" class="ui-btn ui-shadow ui-corner-all ui-icon-delete ui-btn-icon-right">Delete Users</a></li>
-				<li><a href="#pageChangeAdminPW" id="adminUsrPasswd" class="ui-btn ui-shadow ui-corner-all ui-icon-lock ui-btn-icon-right">Admin Passwd</a></li>
-				<hr class="inset">
-				<li><a href="#" data-rel="close" class="ui-btn ui-shadow ui-corner-all ui-icon-back ui-btn-icon-right">Close panel</a></li>
-				</ul>
-		</div> <!-- Menu panel -->
-
-		<div data-role="header" data-position="fixed" data-theme="b">
-			<a href="#leftpanel" data-icon="bars" class="ui-btn-left">Pages</a>
-			<h1 class="myh1">Piscine Manager</h1>
-			<a href="#optionsPiscineManager" data-icon="gear" class="ui-btn-right">Options</a>
-		</div>
-		
-		<div role="main" class="ui-content" data-inset="false">
-
-			<div id="alertesGlobalBanner" class="alertBanner" style="display:none">
-				<span id="alertesGlobalText"></span>
-				<a href="#" id="alertesAckAll" data-role="button" data-mini="true" data-inline="true">Acquitter tout</a>
-			</div>
-
-			<div class="ledpanel" style="margin:0.8em 0.5em;">
-
-				<div class="alertRow">
-					<div class="alertRow-top">
-						<i class="led ledRouge ledOff" id="alertLed0"></i>
-						<span class="alertRow-label">Inondation</span>
-						<span class="alertRow-badge ok" id="alertBadge0">OK</span>
-					</div>
-					<div class="alertRow-bottom">
-						<span class="arow-switchlabel alertRow-switchlabel">Surveillée</span>
-						<div class="switch" id="invInnondSW">
-							<input type="checkbox" name="invInnond" id="invInnondSWitch" checked="true">
-							<label for="invInnond" class="switchLabel switchChecked"><i class="switchChecked"></i></label>
-							<span class="switchChecked"></span>
-						</div>
-					</div>
-				</div>
-
-				<div class="alertRow">
-					<div class="alertRow-top">
-						<i class="led ledRouge ledOff" id="alertLed1"></i>
-						<span class="alertRow-label">Absence de flux d'eau</span>
-						<span class="alertRow-badge ok" id="alertBadge1">OK</span>
-					</div>
-					<div class="alertRow-bottom">
-						<span class="alertRow-switchlabel">Surveillée</span>
-						<div class="switch" id="invFlowSW">
-							<input type="checkbox" name="invFlow" id="invFlowSWitch" checked="true">
-							<label for="invFlow" class="switchLabel switchChecked"><i class="switchChecked"></i></label>
-							<span class="switchChecked"></span>
-						</div>
-					</div>
-				</div>
-
-				<div class="alertRow">
-					<div class="alertRow-top">
-						<i class="led ledRouge ledOff" id="alertLed2"></i>
-						<span class="alertRow-label">Problème PAC</span>
-						<span class="alertRow-badge ok" id="alertBadge2">OK</span>
-					</div>
-					<div class="alertRow-bottom">
-						<span class="alertRow-switchlabel">Surveillée</span>
-						<div class="switch" id="invPacSW">
-							<input type="checkbox" name="invPac" id="invPacSWitch" checked="true">
-							<label for="invPac" class="switchLabel switchChecked"><i class="switchChecked"></i></label>
-							<span class="switchChecked"></span>
-						</div>
-					</div>
-				</div>
-
-				<div class="alertRow">
-					<div class="alertRow-top">
-						<i class="led ledRouge ledOff" id="alertLed3"></i>
-						<span class="alertRow-label">Plus de pH+</span>
-						<span class="alertRow-badge ok" id="alertBadge3">OK</span>
-					</div>
-					<div class="alertRow-bottom">
-						<span class="alertRow-switchlabel">Surveillée</span>
-						<div class="switch" id="invNivPHSW">
-							<input type="checkbox" name="invNivPH" id="invNivPHSWitch" checked="true">
-							<label for="invNivPH" class="switchLabel switchChecked"><i class="switchChecked"></i></label>
-							<span class="switchChecked"></span>
-						</div>
-					</div>
-				</div>
-
-				<div class="alertRow">
-					<div class="alertRow-top">
-						<i class="led ledRouge ledOff" id="alertLed4"></i>
-						<span class="alertRow-label">Plus de chlore</span>
-						<span class="alertRow-badge ok" id="alertBadge4">OK</span>
-					</div>
-					<div class="alertRow-bottom">
-						<span class="alertRow-switchlabel">Surveillée</span>
-						<div class="switch" id="invNivCLSW">
-							<input type="checkbox" name="invNivCL" id="invNivCLSWitch" checked="true">
-							<label for="invNivCL" class="switchLabel switchChecked"><i class="switchChecked"></i></label>
-							<span class="switchChecked"></span>
-						</div>
-					</div>
-				</div>
-
-				<div class="alertRow">
-					<div class="alertRow-top">
-						<i class="led ledRouge ledOff" id="alertLed5"></i>
-						<span class="alertRow-label">Plus de produit pompe 3</span>
-						<span class="alertRow-badge ok" id="alertBadge5">OK</span>
-					</div>
-					<div class="alertRow-bottom">
-						<span class="alertRow-switchlabel">Surveillée</span>
-						<div class="switch" id="invNivALGSW">
-							<input type="checkbox" name="invNivALG" id="invNivALGSWitch" checked="true">
-							<label for="invNivALG" class="switchLabel switchChecked"><i class="switchChecked"></i></label>
-							<span class="switchChecked"></span>
-						</div>
-					</div>
-				</div>
-
-				<div class="alertRow">
-					<div class="alertRow-top">
-						<i class="led ledRouge ledOff" id="alertLed6"></i>
-						<span class="alertRow-label">Fenêtre de filtration trop courte</span>
-						<span class="alertRow-badge ok" id="alertBadge6">OK</span>
-					</div>
-					<div class="alertRow-bottom">
-						<span class="alertRow-switchlabel" style="opacity:.6;">Information seule</span>
-					</div>
-				</div>
-
-			</div>
-		</div>
-	</div> <!-- page -->
-
-<!-- Page Piscine Debug -->
-
-	<div data-role="page" id="pagePiscineDebug" data-theme="b" nextLeft="#pagePiscinePrincipale" nextRight="#pagePiscineGraphs">
-
-		<!-- Menu Panel (profile, about, logoff -->
-		<div data-role="panel" id="optionsPiscineManager" data-display="reveal" data-position="right" data-theme="b">
-			<ul data-role="listview">
-				<li><a href="#about-dlg" class="ui-btn ui-shadow ui-corner-all ui-icon-info ui-btn-icon-right">About maPiscine</a></li>
-				<hr class="inset">
-				<li><a href="#logoff-dlg" id="logoff" class="ui-btn ui-shadow ui-corner-all ui-icon-action ui-btn-icon-right">Logoff</a></li>
-				<li><a href="#pageUserProfile" id="profile" class="ui-btn ui-shadow ui-corner-all ui-icon-user ui-btn-icon-right">User Profile</a></li>
-				<hr class="inset">
-				<li><a href="#pageRegisterLogin" id="addUsr" class="ui-btn ui-shadow ui-corner-all ui-icon-plus ui-btn-icon-right">Add User</a></li>
-				<li><a href="#pageDeleteUser" id="deleteUsr" class="ui-btn ui-shadow ui-corner-all ui-icon-delete ui-btn-icon-right">Delete Users</a></li>
-				<li><a href="#pageChangeAdminPW" id="adminUsrPasswd" class="ui-btn ui-shadow ui-corner-all ui-icon-lock ui-btn-icon-right">Admin Passwd</a></li>
-				<hr class="inset">
-				<li><a href="#" data-rel="close" class="ui-btn ui-shadow ui-corner-all ui-icon-back ui-btn-icon-right">Close panel</a></li>
-			</ul>
-		</div> <!-- Menu panel -->
-
-		<div data-role="header" data-position="fixed" data-theme="b">
-			<a href="#leftpanel" data-icon="bars" class="ui-btn-left">Pages</a>
-			<h1 class="myh1">Piscine Manager</h1>
-			<a href="#optionsPiscineManager" data-icon="gear" class="ui-btn-right">Options</a>
-		</div>
-		
-		<div role="main" class="ui-content" data-inset="false">
-			<div class="ui-grid-a">
-				<div class="ui-block-a">
-					<div class="smallFillContent">
-						<label for="FeedSW" class="smallLabel" style="padding:0 0 0 1.5em">Feed logs</label>
-						<div class="switch" id="FeedSW">
-							<input type="checkbox" name="feed" id="feedSwitch" checked="true"> 
-							<label for="feed" class="switchLabel switchChecked">
-								<i class="switchChecked"></i>
-							</label> 
-							<span class="switchChecked"></span>
-						</div>
-					</div>
-				</div>
-				<div class="ui-block-b">
-					<a href="#" id="ClearText" data-role="button" data-mini="true" data-icon="refresh">Clear !</a>
-				</div>
-			</div>
-			<div class="ui-grid-a" style="margin-bottom: 2px;">
-				<div class="ui-block-a" style="width:100%">
-					<span id="hbStatus" style="font-size:0.7em; color:#507850; font-family:'Courier New',monospace; padding-left:4px;">&#9679; heartbeat: --</span>
-				</div>
-			</div>
-			<div is="grid" class="ui-grid-solo">
-				<div class="ui-block-a">
-					<div class="screenFrameDebug displayOn">
-						<div class="screenPieceDebug screenOutput screenOn">
-							<div id="debugLogContainer" class="screenTextZoneDebug"></div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>	<!-- page -->
-		
 <!-- Page Piscine Graphs -->
 	<div data-role="page" id="pagePiscineGraphs" data-theme="b" nextleft="#pagePiscineDebug" nextright="#pagePiscineMaintenance">
 		<!-- Menu Panel (profile, about, logoff -->
@@ -1748,6 +1687,67 @@
 		</div>
 	</div>	<!-- page -->
 
+<!-- Page Piscine Debug -->
+
+	<div data-role="page" id="pagePiscineDebug" data-theme="b" nextLeft="#pagePiscinePrincipale" nextRight="#pagePiscineGraphs">
+
+		<!-- Menu Panel (profile, about, logoff -->
+		<div data-role="panel" id="optionsPiscineManager" data-display="reveal" data-position="right" data-theme="b">
+			<ul data-role="listview">
+				<li><a href="#about-dlg" class="ui-btn ui-shadow ui-corner-all ui-icon-info ui-btn-icon-right">About maPiscine</a></li>
+				<hr class="inset">
+				<li><a href="#logoff-dlg" id="logoff" class="ui-btn ui-shadow ui-corner-all ui-icon-action ui-btn-icon-right">Logoff</a></li>
+				<li><a href="#pageUserProfile" id="profile" class="ui-btn ui-shadow ui-corner-all ui-icon-user ui-btn-icon-right">User Profile</a></li>
+				<hr class="inset">
+				<li><a href="#pageRegisterLogin" id="addUsr" class="ui-btn ui-shadow ui-corner-all ui-icon-plus ui-btn-icon-right">Add User</a></li>
+				<li><a href="#pageDeleteUser" id="deleteUsr" class="ui-btn ui-shadow ui-corner-all ui-icon-delete ui-btn-icon-right">Delete Users</a></li>
+				<li><a href="#pageChangeAdminPW" id="adminUsrPasswd" class="ui-btn ui-shadow ui-corner-all ui-icon-lock ui-btn-icon-right">Admin Passwd</a></li>
+				<hr class="inset">
+				<li><a href="#" data-rel="close" class="ui-btn ui-shadow ui-corner-all ui-icon-back ui-btn-icon-right">Close panel</a></li>
+			</ul>
+		</div> <!-- Menu panel -->
+
+		<div data-role="header" data-position="fixed" data-theme="b">
+			<a href="#leftpanel" data-icon="bars" class="ui-btn-left">Pages</a>
+			<h1 class="myh1">Piscine Manager</h1>
+			<a href="#optionsPiscineManager" data-icon="gear" class="ui-btn-right">Options</a>
+		</div>
+		
+		<div role="main" class="ui-content" data-inset="false">
+			<div class="ui-grid-a">
+				<div class="ui-block-a">
+					<div class="smallFillContent">
+						<label for="FeedSW" class="smallLabel" style="padding:0 0 0 1.5em">Feed logs</label>
+						<div class="switch" id="FeedSW">
+							<input type="checkbox" name="feed" id="feedSwitch" checked="true"> 
+							<label for="feed" class="switchLabel switchChecked">
+								<i class="switchChecked"></i>
+							</label> 
+							<span class="switchChecked"></span>
+						</div>
+					</div>
+				</div>
+				<div class="ui-block-b">
+					<a href="#" id="ClearText" data-role="button" data-mini="true" data-icon="refresh">Clear !</a>
+				</div>
+			</div>
+			<div class="ui-grid-a" style="margin-bottom: 2px;">
+				<div class="ui-block-a" style="width:100%">
+					<span id="hbStatus" style="font-size:0.7em; color:#507850; font-family:'Courier New',monospace; padding-left:4px;">&#9679; heartbeat: --</span>
+				</div>
+			</div>
+			<div is="grid" class="ui-grid-solo">
+				<div class="ui-block-a">
+					<div class="screenFrameDebug displayOn">
+						<div class="screenPieceDebug screenOutput screenOn">
+							<div id="debugLogContainer" class="screenTextZoneDebug"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>	<!-- page -->
+		
 
 <!-- Left Panel (menu pages) -->
 
@@ -1819,6 +1819,7 @@
 			<a href="#pageLogin" id="reloginButton" data-role="button"> Login Again </a>            
 		</div>
 	</div> <!-- End Session Alert -->
+
 <!-- Piscine Error Dialog -->
 	<div data-role="dialog" id="piscineError-dlg" data-transition="slidefade" data-close-btn="none" data-dismissible="false" data-theme="b">
 		<div data-role="header">
