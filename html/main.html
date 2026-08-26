@@ -1139,10 +1139,10 @@
 						</div>	
 					</fieldset> 
 				</div>
-					<!--  PAC : Temperature PAC -->
-				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel"> 
-					<h4>Temperature PAC</h4>
-					<fieldset class="container_12 mypanel"> 
+					<!--  PAC Contrôlée : température + horaire (fusion des anciens panneaux "Temperature PAC" et "Horaire PAC") -->
+				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
+					<h4>PAC Contrôlée</h4>
+					<fieldset class="container_12 mypanel">
 						<div class="grid_3 suffix_1">
 							<div class="ui-field-contain smallFillContent">
 								<label for="TypeTempSW" class="smallLabel" style="padding: 0 0 0 0.4em">Fixe<span STYLE="padding:0 0 0 1.8em;"></span>Relatif</label>
@@ -1152,7 +1152,7 @@
 										<i class="switchChecked"></i>
 									</label>
 	<!--									<span class="switchChecked"></span>
-	-->								</div>				
+	-->								</div>
 							</div>
 						</div>
 						<div class="grid_8">
@@ -1160,25 +1160,19 @@
 								<label for="TempFixRel" class="smallLabel" id="TempFixRelLabel" style="padding: 1em 0 0 8.5em">Temperature Relative</label>
 								<input type="range" name="TempFixRel" id="TempFixRel" value="0" min="-20" max="+20" step="1" data-mini="false" data-popup-enabled="true">
 							</div>
-						</div>	
-					</fieldset>
-				</div>
-					<!--  PAC : Horaire PAC -->
-				<div data-role="collapsible" data-mini="true" data-collapsed="true" class="mypanel">
-					<h4>Horaire PAC</h4>
-					<fieldset class="container_12 mypanel"> 
-						<div class="prefix_2 grid_4">
+						</div>
+						<div class="prefix_2 grid_4" style="margin-top:0.5em;">
 							<label for="PACstart" class="smallLabel" style="padding: 1em 0 0 0.8em">StartTime</label>
 							<div class="startPACClockpicker" data-placement="top" data-align="right" data-autoclose="true" style="width: 3.7em;">
 								<input type="text" class="form-control" id="PACstart" value="12:00">
 							</div>
-						</div>	
-						<div class="grid_4 suffix_2">
+						</div>
+						<div class="grid_4 suffix_2" style="margin-top:0.5em;">
 							<label for="PACstop" class="smallLabel" style="padding: 1em 0 0 0.8em">EndTime</label>
 							<div class="stopPACClockpicker" data-placement="left" data-align="bottom" data-autoclose="true" style="width: 3.7em;">
 								<input type="text" class="form-control" id="PACstop" value="20:00">
 							</div>
-						</div>	
+						</div>
 					</fieldset>
 				</div>
 			</div>
