@@ -27,7 +27,7 @@ form .error {
     font-family: sans-serif;
     font-size: 0.4em;
     font-weight: normal;
-    color: #9aa4b2;
+    color: inherit;
     vertical-align: super;
     margin-left: 0.2em;
 }
