@@ -277,52 +277,52 @@
 
 <!-- Page delete users -->
 
-<div data-role="dialog" id="pageDeleteUser" data-theme="b">
-	<div class="myform">
-		<h1 class="myh1">Delete Users</h1>
-		<form action="" method="post" name="deleteUsers"  id="deleteUsersForm" data-transition="slide">
-			<table>
-				<tr>
-					<td>Admin Password:</td>
-					<td><input type="password" name="adminpassword" id="adminpasswordDU" class="myinput borderFeild" maxlength="10" placeholder="Enter Admin Password"></td>
-				</tr>
-			</table>
-			<ul id="usersList" data-role="listview" data-inset="true"></ul>  
-			<br>
-			<button type="submit" class="ui-btn ui-shadow mybtn tx-fm-up">Delete Selected Users</button>
-			<fieldset class="container_12">
-				<div class="grid_8 prefix_2 suffix_2">
-					<a href="#" id="cancelButtonDU" class="myCancelBtn ui-btn ui-shadow ui-corner-all ui-icon-back ui-btn-icon-right" data-rel="back">Cancel</a>
-				</div>	   
-			</fieldset>
-		</Form>
-	</div>
-</div> <!-- page -->
+	<div data-role="dialog" id="pageDeleteUser" data-theme="b">
+		<div class="myform">
+			<h1 class="myh1">Delete Users</h1>
+			<form action="" method="post" name="deleteUsers"  id="deleteUsersForm" data-transition="slide">
+				<table>
+					<tr>
+						<td>Admin Password:</td>
+						<td><input type="password" name="adminpassword" id="adminpasswordDU" class="myinput borderFeild" maxlength="10" placeholder="Enter Admin Password"></td>
+					</tr>
+				</table>
+				<ul id="usersList" data-role="listview" data-inset="true"></ul>  
+				<br>
+				<button type="submit" class="ui-btn ui-shadow mybtn tx-fm-up">Delete Selected Users</button>
+				<fieldset class="container_12">
+					<div class="grid_8 prefix_2 suffix_2">
+						<a href="#" id="cancelButtonDU" class="myCancelBtn ui-btn ui-shadow ui-corner-all ui-icon-back ui-btn-icon-right" data-rel="back">Cancel</a>
+					</div>	   
+				</fieldset>
+			</Form>
+		</div>
+	</div> <!-- page -->
 	
 <!-- Dialog Status Login Process -->
 
-<div data-role="dialog" id="dlg-login" data-transition="slidefade" data-close-btn="none" data-dismissible="false" data-theme="b" >
-	<div data-role="header">	
-		<h1>Login</h1>
-	</div>        
-	<div data-role="content">
-		<div id="dlg-status"></div>
-		<div id="dlg-user"></div>
-		<div id="dlg-message"></div>
-		<div id="dlg-ttl"></div>
-		<a href="#pagePiscinePrincipale" id="mainPageButton" data-role="button"> OK </a>            
-		<a href="#" id="retryButton" data-role="button" data-rel="back">try again</a>
-		<a href="javascript:window.history.go(-2);" id="backButton" data-role="button" >OK</a>           
-		<a href="#pageLogin" id="loginButton">Login</a>
-	</div>
-</div> <!-- Dialog Status Login Process -->
+	<div data-role="dialog" id="dlg-login" data-transition="slidefade" data-close-btn="none" data-dismissible="false" data-theme="b" >
+		<div data-role="header">	
+			<h1>Login</h1>
+		</div>        
+		<div data-role="content">
+			<div id="dlg-status"></div>
+			<div id="dlg-user"></div>
+			<div id="dlg-message"></div>
+			<div id="dlg-ttl"></div>
+			<a href="#pagePiscinePrincipale" id="mainPageButton" data-role="button"> OK </a>            
+			<a href="#" id="retryButton" data-role="button" data-rel="back">try again</a>
+			<a href="javascript:window.history.go(-2);" id="backButton" data-role="button" >OK</a>           
+			<a href="#pageLogin" id="loginButton">Login</a>
+		</div>
+	</div> <!-- Dialog Status Login Process -->
 
 
 <!-- ----------------------- Pages --------------------- -->
 
 	<!-- Page Piscine Principale -->
 
-	<div data-role="page" id="pagePiscinePrincipale" data-theme="b" nextLeft="#pagePiscineParametres" nextRight="#pagePiscineDebug">
+	<div data-role="page" id="pagePiscinePrincipale" data-theme="b" nextLeft="#pagePiscineAlertes" nextRight="#pagePiscineDebug">
 
 
 		<!-- Menu Panel (profile, about, logoff -->
@@ -523,7 +523,7 @@
 
 <!-- Page Piscine Paramètres -->
 
-	<div data-role="page" id="pagePiscineParametres" data-theme="b" nextLeft="#pagePiscineMaintenance" nextRight="#pagePiscinePrincipale">
+	<div data-role="page" id="pagePiscineParametres" data-theme="b" nextLeft="#pagePiscineMaintenance" nextRight="#pagePiscineAlertes">
 		<!-- Menu Panel (profile, about, logoff -->
 		<div data-role="panel" id="optionsPiscineManager" data-display="reveal" data-position="right" data-theme="b">
 			<ul data-role="listview">
@@ -1185,7 +1185,7 @@
 
 <!-- Page Piscine Maintenance -->
 
-	<div data-role="page" id="pagePiscineMaintenance" data-theme="b" nextLeft="#pagePiscineAlertes" nextRight="#pagePiscineParametres">
+	<div data-role="page" id="pagePiscineMaintenance" data-theme="b" nextLeft="#pagePiscineGraphs" nextRight="#pagePiscineParametres">
 
 		<!-- Menu Panel (profile, about, logoff -->
 		<div data-role="panel" id="optionsPiscineManager" data-display="reveal" data-position="right" data-theme="b">
@@ -1379,7 +1379,7 @@
 
 <!-- Page Piscine Alertes -->
 
-	<div data-role="page" id="pagePiscineAlertes" data-theme="b" nextLeft="#pagePiscineDebug" nextRight="#pagePiscineMaintenance">
+	<div data-role="page" id="pagePiscineAlertes" data-theme="b" nextLeft="#pagePiscineParametres" nextRight="#pagePiscinePrincipale">
 
 		<!-- Menu Panel (profile, about, logoff -->
 		<div data-role="panel" id="optionsPiscineManager" data-display="reveal" data-position="right" data-theme="b">
@@ -1525,7 +1525,7 @@
 
 <!-- Page Piscine Debug -->
 
-	<div data-role="page" id="pagePiscineDebug" data-theme="b" nextLeft="#pagePiscinePrincipale" nextRight="#pagePiscineAlertes">
+	<div data-role="page" id="pagePiscineDebug" data-theme="b" nextLeft="#pagePiscinePrincipale" nextRight="#pagePiscineGraphs">
 
 		<!-- Menu Panel (profile, about, logoff -->
 		<div data-role="panel" id="optionsPiscineManager" data-display="reveal" data-position="right" data-theme="b">
@@ -1585,7 +1585,7 @@
 	</div>	<!-- page -->
 		
 <!-- Page Piscine Graphs -->
-	<div data-role="page" id="pagePiscineGraphs" data-theme="b" nextleft="#pagePiscinePrincipale" nextright="#pagePiscineDebug">
+	<div data-role="page" id="pagePiscineGraphs" data-theme="b" nextleft="#pagePiscineDebug" nextright="#pagePiscineMaintenance">
 		<!-- Menu Panel (profile, about, logoff -->
 		<div data-role="panel" id="optionsPiscineManager" data-display="reveal" data-position="right" data-theme="b">
 			<ul data-role="listview">
@@ -1757,6 +1757,7 @@
 				<h3 class="myh3">Piscine</h3>
 				<ul data-role="listview" data-inset="true">
 					<li><a href="#pagePiscinePrincipale" data-transition="flip">Page Principale</a></li>
+					<li><a href="#pagePiscineAlertes" data-transition="flip">Alertes Piscine</a></li>
 					<li><a href="#pagePiscineParametres" data-transition="flip">Parametres Piscine</a></li>
 					<li><a href="#pagePiscineMaintenance" data-transition="flip">Maintenance Piscine</a></li>
 					<li><a href="#pagePiscineGraphs" data-transition="flip">Graphs Piscine</a></li>
