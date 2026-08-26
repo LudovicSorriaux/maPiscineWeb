@@ -110,6 +110,7 @@ const char STR_DISABLED[] PROGMEM = "disabled";
 // Messages de diagnostic
 const char STR_OK_INIT_PP[] PROGMEM = "OK initPiscinePPParams done";
 const char STR_OK_INIT_PARAMS[] PROGMEM = "OK initPiscinePParamParams done";
+const char STR_OK_INIT_ALERTES[] PROGMEM = "OK initPiscineAlertesParams done";
 const char STR_OK_SET_PARAMS[] PROGMEM = "OK setPiscineParams done";
 const char STR_OK_INIT_MAINTENANCE[] PROGMEM = "OK InitPiscinePageMaintenance done";
 

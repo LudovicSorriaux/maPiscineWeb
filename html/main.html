@@ -96,6 +96,7 @@
 	<script src="/js/piscineParametres.js"></script>
 	<script src="/js/piscineDebug.js"></script>
 	<script src="/js/piscineMaintenance.js"></script>
+	<script src="/js/piscineAlertes.js"></script>
 	<script src="/js/piscineGraphs.js"></script>
 	<script src="/js/piscineScripts.js"></script>
   <!-- endbuild -->
@@ -1403,7 +1404,122 @@
 		</div>
 		
 		<div role="main" class="ui-content" data-inset="false">
-			<H1>This is pagePiscineAlertes</H1>
+
+			<div id="alertesGlobalBanner" class="alertBanner" style="display:none">
+				<span id="alertesGlobalText"></span>
+				<a href="#" id="alertesAckAll" data-role="button" data-mini="true" data-inline="true">Acquitter tout</a>
+			</div>
+
+			<div class="ledpanel" style="margin:0.8em 0.5em;">
+
+				<div class="alertRow">
+					<div class="alertRow-top">
+						<i class="led ledRouge ledOff" id="alertLed0"></i>
+						<span class="alertRow-label">Inondation</span>
+						<span class="alertRow-badge ok" id="alertBadge0">OK</span>
+					</div>
+					<div class="alertRow-bottom">
+						<span class="arow-switchlabel alertRow-switchlabel">Surveillée</span>
+						<div class="switch" id="invInnondSW">
+							<input type="checkbox" name="invInnond" id="invInnondSWitch" checked="true">
+							<label for="invInnond" class="switchLabel switchChecked"><i class="switchChecked"></i></label>
+							<span class="switchChecked"></span>
+						</div>
+					</div>
+				</div>
+
+				<div class="alertRow">
+					<div class="alertRow-top">
+						<i class="led ledRouge ledOff" id="alertLed1"></i>
+						<span class="alertRow-label">Absence de flux d'eau</span>
+						<span class="alertRow-badge ok" id="alertBadge1">OK</span>
+					</div>
+					<div class="alertRow-bottom">
+						<span class="alertRow-switchlabel">Surveillée</span>
+						<div class="switch" id="invFlowSW">
+							<input type="checkbox" name="invFlow" id="invFlowSWitch" checked="true">
+							<label for="invFlow" class="switchLabel switchChecked"><i class="switchChecked"></i></label>
+							<span class="switchChecked"></span>
+						</div>
+					</div>
+				</div>
+
+				<div class="alertRow">
+					<div class="alertRow-top">
+						<i class="led ledRouge ledOff" id="alertLed2"></i>
+						<span class="alertRow-label">Problème PAC</span>
+						<span class="alertRow-badge ok" id="alertBadge2">OK</span>
+					</div>
+					<div class="alertRow-bottom">
+						<span class="alertRow-switchlabel">Surveillée</span>
+						<div class="switch" id="invPacSW">
+							<input type="checkbox" name="invPac" id="invPacSWitch" checked="true">
+							<label for="invPac" class="switchLabel switchChecked"><i class="switchChecked"></i></label>
+							<span class="switchChecked"></span>
+						</div>
+					</div>
+				</div>
+
+				<div class="alertRow">
+					<div class="alertRow-top">
+						<i class="led ledRouge ledOff" id="alertLed3"></i>
+						<span class="alertRow-label">Plus de pH+</span>
+						<span class="alertRow-badge ok" id="alertBadge3">OK</span>
+					</div>
+					<div class="alertRow-bottom">
+						<span class="alertRow-switchlabel">Surveillée</span>
+						<div class="switch" id="invNivPHSW">
+							<input type="checkbox" name="invNivPH" id="invNivPHSWitch" checked="true">
+							<label for="invNivPH" class="switchLabel switchChecked"><i class="switchChecked"></i></label>
+							<span class="switchChecked"></span>
+						</div>
+					</div>
+				</div>
+
+				<div class="alertRow">
+					<div class="alertRow-top">
+						<i class="led ledRouge ledOff" id="alertLed4"></i>
+						<span class="alertRow-label">Plus de chlore</span>
+						<span class="alertRow-badge ok" id="alertBadge4">OK</span>
+					</div>
+					<div class="alertRow-bottom">
+						<span class="alertRow-switchlabel">Surveillée</span>
+						<div class="switch" id="invNivCLSW">
+							<input type="checkbox" name="invNivCL" id="invNivCLSWitch" checked="true">
+							<label for="invNivCL" class="switchLabel switchChecked"><i class="switchChecked"></i></label>
+							<span class="switchChecked"></span>
+						</div>
+					</div>
+				</div>
+
+				<div class="alertRow">
+					<div class="alertRow-top">
+						<i class="led ledRouge ledOff" id="alertLed5"></i>
+						<span class="alertRow-label">Plus de produit pompe 3</span>
+						<span class="alertRow-badge ok" id="alertBadge5">OK</span>
+					</div>
+					<div class="alertRow-bottom">
+						<span class="alertRow-switchlabel">Surveillée</span>
+						<div class="switch" id="invNivALGSW">
+							<input type="checkbox" name="invNivALG" id="invNivALGSWitch" checked="true">
+							<label for="invNivALG" class="switchLabel switchChecked"><i class="switchChecked"></i></label>
+							<span class="switchChecked"></span>
+						</div>
+					</div>
+				</div>
+
+				<div class="alertRow">
+					<div class="alertRow-top">
+						<i class="led ledRouge ledOff" id="alertLed6"></i>
+						<span class="alertRow-label">Fenêtre de filtration trop courte</span>
+						<span class="alertRow-badge ok" id="alertBadge6">OK</span>
+					</div>
+					<div class="alertRow-bottom">
+						<span class="alertRow-switchlabel" style="opacity:.6;">Information seule</span>
+					</div>
+				</div>
+
+			</div>
 		</div>
 	</div> <!-- page -->
 

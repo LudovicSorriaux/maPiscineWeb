@@ -1072,3 +1072,46 @@ form .error {
 .alertBanner .ui-btn {
     margin: 0.3em 0 0 0.5em;
 }
+
+/* --- Page Alertes : une ligne par type d'alerte (LED + badge + interrupteur) --- */
+.alertRow {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4em;
+    padding: 0.7em 0.5em;
+    border-bottom: 1px solid #00000055;
+}
+.alertRow:last-child {
+    border-bottom: none;
+}
+.alertRow-top {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+}
+.alertRow-label {
+    color: #00FBFF;
+    font-size: 0.85em;
+    font-weight: 600;
+    flex: 1;
+}
+.alertRow-badge {
+    font-size: 0.7em;
+    font-weight: 700;
+    padding: 0.2em 0.6em;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.alertRow-badge.ok { background:#5ee432; color:#0d2b06; }
+.alertRow-badge.bad { background:#ef4655; color:#310003; }
+.alertRow-badge.ignored { background:#3a4150; color:#9aa4b2; }
+.alertRow-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-left: 1.9em;
+}
+.alertRow-switchlabel {
+    font-size: 0.78em;
+    color: #9aa4b2;
+}

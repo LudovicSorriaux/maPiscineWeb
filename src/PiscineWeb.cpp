@@ -261,9 +261,11 @@ void PiscineWebClass::_migratePasswords() {
     void PiscineWebClass::sendNewParamsPiscine(){
             char jsonBuff[768];  // Optimisation RAM : char[] au lieu de String
             char jsonBuffParams[768];
+            char jsonBuffAlertes[256];
             JsonDocument piscineParamsEventsJson;  // Optimisation RAM
             JsonDocument piscineEventsJson;
-            bool newValPP = false, newValPParams = false;  
+            JsonDocument piscineAlertesEventsJson;
+            bool newValPP = false, newValPParams = false, newValAlertes = false;
             bool doItFull = false;
 
         if(nbAppels <= 0) {
@@ -285,6 +287,12 @@ void PiscineWebClass::_migratePasswords() {
                         if (!newValPParams) newValPParams = true;
                     }
                     piscineParams[i].changedControler = false;
+                } else if(currentPage == PAGE_ALERTES) {          // in page alertes
+                    if(piscineAlertesSet.find(i) != piscineAlertesSet.end()){
+                        piscineAlertesEventsJson[getIndexNameF(i)] = piscineParams[i].valeur;  // Optimisation RAM #6 : PROGMEM
+                        if (!newValAlertes) newValAlertes = true;
+                    }
+                    piscineParams[i].changedControler = false;
                 }
             }
         }
@@ -302,7 +310,11 @@ void PiscineWebClass::_migratePasswords() {
         } else if (newValPParams){
             serializeJson(piscineParamsEventsJson, jsonBuffParams, sizeof(jsonBuffParams));
             logger.println(jsonBuffParams);
-            piscineEvents.send(jsonBuffParams, "piscineParamsData", millis());  
+            piscineEvents.send(jsonBuffParams, "piscineParamsData", millis());
+        } else if (newValAlertes){
+            serializeJson(piscineAlertesEventsJson, jsonBuffAlertes, sizeof(jsonBuffAlertes));
+            logger.println(jsonBuffAlertes);
+            piscineEvents.send(jsonBuffAlertes, "piscineAlertesData", millis());
         }
     }
 
@@ -656,6 +668,7 @@ void PiscineWebClass::_migratePasswords() {
                 
                 if (strcmp(action, "InitPagePrincipale") == 0)         handleInitPiscinePP(request);
                 else if (strcmp(action, "InitPageParams") == 0)     handleInitPiscinePParams(request);
+                else if (strcmp(action, "InitPageAlertes") == 0)    handleInitPiscineAlertes(request);
                 else if (strcmp(action, "Parametres") == 0)          handlePiscineParams(request);
                 else if (strcmp(action, "Debug") == 0)          handlePiscinePageDebug(request);
                 else if (strcmp(action, "Maintenance") == 0)    handlePiscinePageMaintenance(request);
@@ -668,6 +681,7 @@ void PiscineWebClass::_migratePasswords() {
                                                 else if (strcmp(p, "parametres") == 0) currentPage = PAGE_PARAMETRES;
                                                 else if (strcmp(p, "debug") == 0) { currentPage = PAGE_DEBUG; logger.printf("[WEB] Page debug activée heap:%u\n", ESP.getFreeHeap()); }
                                                 else if (strcmp(p, "maintenance") == 0) currentPage = PAGE_MAINTENANCE;
+                                                else if (strcmp(p, "alertes") == 0) currentPage = PAGE_ALERTES;
                                                 request->send(200);
                                             }    
                 else request->send(404, "text/plain", F("Action inconnue"));
@@ -1454,7 +1468,26 @@ void PiscineWebClass::_migratePasswords() {
         piscineEvents.send(jsonBuffParams, "piscineParamsData", millis());  
         request->send(200, FPSTR(STR_CONTENT_PLAIN), FPSTR(STR_OK_INIT_PARAMS));
         logger.println(FPSTR(STR_OK_INIT_PARAMS));
-    }    
+    }
+
+  /*
+   * void PiscineWebClass::handleInitPiscineAlertes
+   * But : envoyer l'état complet des alertes (masque IND_Alerte + les 6 interrupteurs
+   *       d'invalidation) une fois, au chargement de la page Alertes
+   */
+    void PiscineWebClass::handleInitPiscineAlertes(AsyncWebServerRequest *request){
+        char jsonBuffAlertes[256];
+        JsonDocument piscineAlertesEventsJson;
+
+        for(int x:piscineAlertesSet){
+            piscineAlertesEventsJson[getIndexNameF(x)] = piscineParams[x].valeur;
+        }
+        serializeJson(piscineAlertesEventsJson, jsonBuffAlertes, sizeof(jsonBuffAlertes));
+        logger.println(jsonBuffAlertes);
+        piscineEvents.send(jsonBuffAlertes, "piscineAlertesData", millis());
+        request->send(200, FPSTR(STR_CONTENT_PLAIN), FPSTR(STR_OK_INIT_ALERTES));
+        logger.println(FPSTR(STR_OK_INIT_ALERTES));
+    }
 
   /*
    * void PiscineWebClass::handlePiscineParams

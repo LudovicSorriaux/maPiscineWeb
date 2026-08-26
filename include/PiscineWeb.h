@@ -50,7 +50,7 @@ class PiscineWebClass {
         void sendHeartbeat();                  // Envoie un ping SSE (maintient la connexion proxy active)
 
     private :
-            enum PageActive { PAGE_PRICIPALE, PAGE_PARAMETRES, PAGE_MAINTENANCE, PAGE_DEBUG, PAGE_NONE };  
+            enum PageActive { PAGE_PRICIPALE, PAGE_PARAMETRES, PAGE_MAINTENANCE, PAGE_DEBUG, PAGE_ALERTES, PAGE_NONE };
             PageActive currentPage = PAGE_NONE;
 
             int8_t nbAppels=20;           // refresh full des params piscines toutes les 10s env
@@ -85,6 +85,10 @@ class PiscineWebClass {
                                             IND_volume_piscine, IND_debitPompe_PP,
                                             IND_dose_PH, IND_dose_CL, IND_dose_PHm,
                                             IND_debitPompe_PH, IND_debitPompe_CL, IND_debitPompe_ALG,
+                                            };
+            std::set<int> piscineAlertesSet {IND_Alerte,
+                                            IND_InvPACAlert, IND_InvFlowAlert, IND_InvInondationAlert,
+                                            IND_InvNivPHAlert, IND_InvNivCLAlert, IND_InvNivALGAlert,
                                             };
 
             typedef struct sessions {
@@ -126,6 +130,7 @@ class PiscineWebClass {
                 // --- Piscine ----
         void handleInitPiscinePP(AsyncWebServerRequest *request);
         void handleInitPiscinePParams(AsyncWebServerRequest *request);
+        void handleInitPiscineAlertes(AsyncWebServerRequest *request);
         void handlePiscineParams(AsyncWebServerRequest *request);
         void handleGraphPlan(AsyncWebServerRequest *request);         // Chunked API: Plan chargement
         void handleGraphFileInfo(AsyncWebServerRequest *request);     // Chunked API: Info fichier
