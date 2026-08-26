@@ -653,3 +653,9 @@ $(document).on('pagecreate', detectLayout);
 // Détection initiale
 detectLayout();
 
+// Affiche la version firmware (petit texte à côté de "Piscine Manager" sur chaque page) —
+// une seule requête pour toute la session, appliquée à tous les éléments .fwVersionTag.
+fetch('/api/info').then(function(r){ return r.json(); }).then(function(info){
+  $('.fwVersionTag').text(info.version || '');
+}).catch(function(){});
+

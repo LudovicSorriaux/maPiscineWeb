@@ -1116,11 +1116,21 @@ void PiscineWebClass::_migratePasswords() {
   }
 
   /*
-   * GET /api/info — retourne la version firmware en JSON : {"version":"v4.5.6"}
+   * GET /api/info — retourne la version firmware en JSON : {"version":"v4.6.6"}
+   * Décodée depuis fwVersionEncoded (major<<12|minor<<6|patch), reçue du contrôleur — seule
+   * source de vérité désormais (voir FW_VERSION_ENCODED côté contrôleur). Vide tant que rien
+   * n'a encore été reçu (juste après un boot du module web, avant la première synchro ICSC).
    */
   void PiscineWebClass::handleApiInfo(AsyncWebServerRequest *request) {
     char jsonBuff[64];
-    snprintf(jsonBuff, sizeof(jsonBuff), "{\"version\":\"%s\"}", FW_VERSION);
+    if(fwVersionEncoded == 0){
+      snprintf(jsonBuff, sizeof(jsonBuff), "{\"version\":\"\"}");
+    } else {
+      uint8_t major = (fwVersionEncoded >> 12) & 0xF;
+      uint8_t minor = (fwVersionEncoded >> 6) & 0x3F;
+      uint8_t patch = fwVersionEncoded & 0x3F;
+      snprintf(jsonBuff, sizeof(jsonBuff), "{\"version\":\"v%u.%u.%u\"}", major, minor, patch);
+    }
     AsyncWebServerResponse *response = request->beginResponse(200, FPSTR(STR_CONTENT_JSON), jsonBuff);
     response->addHeader(FPSTR(STR_HEADER_CACHE), FPSTR(STR_HEADER_NOCACHE));
     request->send(response);

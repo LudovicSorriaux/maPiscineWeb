@@ -184,7 +184,11 @@
           case IND_WifiStatus :     // 1 = ask
               if(valeur == 1){
                 webTelecom.setWriteData(IND_BlinkWifiLed, wifi_status);  // 0: off; 1: ON; -1: blink 3 time
-              }  
+              }
+            break;
+
+          case IND_FWVersion :      // version firmware encodée, envoyée par le contrôleur (seule source de vérité)
+              fwVersionEncoded = (uint16_t)valeur;
             break;
 
           case IND_Debug :      // 1 is true: set debug true, 0 is set to false

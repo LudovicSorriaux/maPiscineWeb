@@ -14,7 +14,11 @@
  *   - globalPiscine.h (index ICSC partagés)
  *******************************************************************************/
 
-#define FW_VERSION "v4.5.6"
+// La version n'est plus définie ici : le contrôleur est l'unique source de vérité (voir
+// FW_VERSION_ENCODED dans globalPiscine.h du contrôleur), transmise via IND_FWVersion et
+// reçue dans fwVersionEncoded (PiscineWebActionControler.cpp). Ça évite la dérive constatée
+// (cette constante restait à "v4.5.6" alors que les tags étaient déjà à v4.6.6).
+extern uint16_t fwVersionEncoded;   // 0 = pas encore reçu du contrôleur
 
 #define lowByte(w) ((uint8_t) ((w) & 0xff))
 #define highByte(w) ((uint8_t) ((w) >> 8))
@@ -123,6 +127,7 @@
     #define IND_PageVolet 71
     #define IND_PageSlider 72
     #define IND_PageWeb 73
+    #define IND_FWVersion 74       // version firmware encodée par le contrôleur (major<<12|minor<<6|patch)
 
     #define IND_RefreshCriticalValues 80
     #define IND_Clavier 81
