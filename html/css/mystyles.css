@@ -518,7 +518,7 @@ form .error {
        sans pouvoir scroller (overflow:hidden global sur body). Relatif au viewport plutôt
        qu'une valeur fixe, pour s'adapter à toute la gamme de tailles de téléphones. */
     #pagePiscineDebug .screenFrameDebug {
-        height: 55vh !important;
+        height: 73vh !important;
     }
 
 }
