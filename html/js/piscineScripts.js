@@ -653,9 +653,15 @@ $(document).on('pagecreate', detectLayout);
 // Détection initiale
 detectLayout();
 
-// Affiche la version firmware (petit texte à côté de "Piscine Manager" sur chaque page) —
-// une seule requête pour toute la session, appliquée à tous les éléments .fwVersionTag.
-fetch('/api/info').then(function(r){ return r.json(); }).then(function(info){
-  $('.fwVersionTag').text(info.version || '');
-}).catch(function(){});
+// Affiche la version firmware (petit texte à côté de "Piscine Manager" sur chaque page).
+// Redemandée à chaque changement de page plutôt qu'une seule fois au chargement : l'ESP8266
+// peut occasionnellement refuser une requête sous charge (constaté ce soir), et une seule
+// tentative sans retry laissait le texte vide pour le reste de la session en cas d'échec.
+function refreshFwVersionTag(){
+  fetch('/api/info').then(function(r){ return r.json(); }).then(function(info){
+    if(info.version) $('.fwVersionTag').text(info.version);
+  }).catch(function(){});
+}
+$(document).on('pagebeforeshow', refreshFwVersionTag);
+refreshFwVersionTag();
 
