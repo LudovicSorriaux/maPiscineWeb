@@ -513,8 +513,12 @@ form .error {
 @media (max-width: 700px) and (max-aspect-ratio: 1/1) {
 
     /* --- Page Debug --- */
+    /* Hauteur fixe (680px) trop grande sur beaucoup de mobiles portrait (ex: iPhone 11,
+       viewport visible ~660-700px avec la barre Safari) : le cadre dépassait de l'écran
+       sans pouvoir scroller (overflow:hidden global sur body). Relatif au viewport plutôt
+       qu'une valeur fixe, pour s'adapter à toute la gamme de tailles de téléphones. */
     #pagePiscineDebug .screenFrameDebug {
-        height: 680px !important;
+        height: 55vh !important;
     }
 
 }
