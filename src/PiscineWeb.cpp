@@ -3116,17 +3116,23 @@ const char UPLOAD_HTML[] PROGMEM = R"rawliteral(
 </head>
 <body>
     <div class="container">
-        <h1>📤 Upload Fichiers vers SD</h1>
+        <h1>📤 Upload Fichiers</h1>
         
         <div class="upload-form">
             <label for="adminPassword">Mot de passe administrateur :</label>
             <input type="password" id="adminPassword" placeholder="Mot de passe admin" autocomplete="current-password">
             <small style="color: #ffeb3b; display: block; margin-bottom: 15px;">⚠️ Requis pour uploader des fichiers</small>
             
+            <label for="targetFs">Destination :</label>
+            <select id="targetFs" style="width:100%;padding:12px;margin-bottom:15px;border:none;border-radius:5px;background:rgba(255,255,255,0.9);color:#333;box-sizing:border-box;">
+                <option value="littlefs">LittleFS (interface web servie par l'ESP, ex: /html/main.html.lgz)</option>
+                <option value="sd">Carte SD (logs / graphs)</option>
+            </select>
+
             <label for="targetPath">Chemin de destination (ex: /html/):</label>
             <input type="text" id="targetPath" value="/html/" placeholder="/html/">
             <small style="color: #90CAF9; display: block; margin-bottom: 15px;">💡 Pour plusieurs fichiers, indiquez juste le dossier (ex: /html/)</small>
-            
+
             <label for="fileInput">Sélectionner fichier(s):</label>
             <input type="file" id="fileInput" multiple>
             <div id="fileList" style="margin-top: 10px; font-size: 13px; color: rgba(255,255,255,0.8);"></div>
@@ -3143,7 +3149,7 @@ const char UPLOAD_HTML[] PROGMEM = R"rawliteral(
         <div class="message" id="message"></div>
 
         <div class="info" id="dirListing">
-            <strong>📂 Contenu du répertoire:</strong>
+            <strong>📂 Contenu du répertoire (carte SD uniquement) :</strong>
             <div id="fileListingBefore" style="margin-top: 10px; font-family: monospace; font-size: 12px;">
                 Sélectionnez un répertoire pour voir son contenu
             </div>
@@ -3264,8 +3270,9 @@ const char UPLOAD_HTML[] PROGMEM = R"rawliteral(
                     finalPath = targetPath + file.name;
                 }
 
+                const targetFs = document.getElementById('targetFs').value;
                 try {
-                    const success = await uploadSingleFile(file, finalPath, adminPassword, (percent) => {
+                    const success = await uploadSingleFile(file, finalPath, adminPassword, targetFs, (percent) => {
                         // Progression globale
                         const fileProgress = (i / totalFiles) * 100;
                         const currentFileProgress = (percent / 100) * (100 / totalFiles);
@@ -3311,11 +3318,12 @@ const char UPLOAD_HTML[] PROGMEM = R"rawliteral(
             }, 3000);
         }
 
-        function uploadSingleFile(file, path, adminPassword, onProgress) {
+        function uploadSingleFile(file, path, adminPassword, targetFs, onProgress) {
             return new Promise((resolve, reject) => {
                 const formData = new FormData();
                 formData.append('file', file);
                 formData.append('path', path);
+                formData.append('fs', targetFs);
                 formData.append('adminPassword', adminPassword);
 
                 const xhr = new XMLHttpRequest();
@@ -3385,47 +3393,67 @@ void PiscineWebClass::handleUploadPage(AsyncWebServerRequest *request) {
 void PiscineWebClass::handleFileUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
     static File uploadFile;
     static String targetPath;
+    static bool toLittleFS;
 
     // Premier chunk : ouverture du fichier
     if (index == 0) {
+        // Destination : "littlefs" (fichiers servis par le webserver, ex: /html/main.html.lgz)
+        // ou "sd" (défaut, logs/graphs) — voir param "fs" du formulaire.
+        toLittleFS = request->hasParam("fs", true) && request->getParam("fs", true)->value() == "littlefs";
+
         // Récupérer le chemin de destination depuis le paramètre 'path'
         if (request->hasParam("path", true)) {
             targetPath = request->getParam("path", true)->value();
-            
+
             // Si le chemin se termine par /, c'est un répertoire → ajouter le nom du fichier
             if (targetPath.endsWith("/")) {
                 targetPath += filename;
                 logger.printf("[UPLOAD] Chemin répertoire détecté, ajout nom fichier: %s\n", targetPath.c_str());
             }
-            
-            logger.printf("[UPLOAD] Début upload vers: %s (fichier: %s, taille estimée: %d bytes)\n", 
-                         targetPath.c_str(), filename.c_str(), request->contentLength());
+
+            logger.printf("[UPLOAD] Début upload vers: %s [%s] (fichier: %s, taille estimée: %d bytes)\n",
+                         targetPath.c_str(), toLittleFS ? "LittleFS" : "SD", filename.c_str(), request->contentLength());
         } else {
             // Par défaut, utiliser /html/ + nom fichier
             targetPath = "/html/" + filename;
-            logger.printf("[UPLOAD] Pas de chemin spécifié, utilisation de: %s\n", targetPath.c_str());
+            logger.printf("[UPLOAD] Pas de chemin spécifié, utilisation de: %s [%s]\n", targetPath.c_str(), toLittleFS ? "LittleFS" : "SD");
         }
 
-        // Créer les répertoires parents si nécessaire
-        String dirPath = targetPath.substring(0, targetPath.lastIndexOf('/'));
-        if (!SD.exists(dirPath)) {
-            logger.printf("[UPLOAD] Création répertoire: %s\n", dirPath.c_str());
-            // Note: SD FAT ne supporte pas mkdir récursif, créer manuellement si besoin
-        }
+        if (toLittleFS) {
+            // IMPORTANT: comme pour la SD, LittleFS.open(..., "w") tronque déjà le fichier,
+            // mais on supprime explicitement par cohérence avec la branche SD ci-dessous.
+            if (LittleFS.exists(targetPath)) {
+                logger.printf("[UPLOAD] Suppression ancien fichier LittleFS: %s\n", targetPath.c_str());
+                LittleFS.remove(targetPath);
+            }
+            uploadFile = LittleFS.open(targetPath, "w");
+            if (!uploadFile) {
+                logger.printf("[UPLOAD] ERREUR: Impossible d'ouvrir %s en écriture (LittleFS)\n", targetPath.c_str());
+                request->send(500, "text/plain", "Erreur ouverture fichier LittleFS");
+                return;
+            }
+        } else {
+            // Créer les répertoires parents si nécessaire
+            String dirPath = targetPath.substring(0, targetPath.lastIndexOf('/'));
+            if (!SD.exists(dirPath)) {
+                logger.printf("[UPLOAD] Création répertoire: %s\n", dirPath.c_str());
+                // Note: SD FAT ne supporte pas mkdir récursif, créer manuellement si besoin
+            }
 
-        // IMPORTANT: Sur ESP8266, FILE_WRITE est en mode APPEND, pas TRUNCATE
-        // Il faut supprimer le fichier existant avant de le recréer
-        if (SD.exists(targetPath)) {
-            logger.printf("[UPLOAD] Suppression ancien fichier: %s\n", targetPath.c_str());
-            SD.remove(targetPath);
-        }
+            // IMPORTANT: Sur ESP8266, FILE_WRITE est en mode APPEND, pas TRUNCATE
+            // Il faut supprimer le fichier existant avant de le recréer
+            if (SD.exists(targetPath)) {
+                logger.printf("[UPLOAD] Suppression ancien fichier: %s\n", targetPath.c_str());
+                SD.remove(targetPath);
+            }
 
-        // Ouvrir le fichier en écriture (maintenant vide après suppression)
-        uploadFile = SD.open(targetPath, FILE_WRITE);
-        if (!uploadFile) {
-            logger.printf("[UPLOAD] ERREUR: Impossible d'ouvrir %s en écriture\n", targetPath.c_str());
-            request->send(500, "text/plain", "Erreur ouverture fichier SD");
-            return;
+            // Ouvrir le fichier en écriture (maintenant vide après suppression)
+            uploadFile = SD.open(targetPath, FILE_WRITE);
+            if (!uploadFile) {
+                logger.printf("[UPLOAD] ERREUR: Impossible d'ouvrir %s en écriture\n", targetPath.c_str());
+                request->send(500, "text/plain", "Erreur ouverture fichier SD");
+                return;
+            }
         }
     }
 

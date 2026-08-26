@@ -162,7 +162,12 @@
    pleinement appliqués, pas de disque plat qui les masquerait). Une seule barre plutôt qu'une croix :
    reste lisible même en tout petit. */
 .ledInvalid {
-    background: #7a0e1a !important;
+    background: #e10600 !important;
+    /* .led applique mix-blend-mode:hard-light, qui fond une couleur sombre comme
+       celle-ci dans le panneau sombre derrière (elle devient quasi invisible).
+       Les LED normales utilisent des teintes vives qui survivent au blend ; on
+       désactive donc le blend ici pour que le fond rouge reste bien visible. */
+    mix-blend-mode: normal !important;
 }
 .ledInvalid::after {
     content: '';
