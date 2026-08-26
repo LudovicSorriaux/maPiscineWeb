@@ -164,12 +164,13 @@ $(document).delegate("#pagePiscineAlertes", "pagebeforecreate", function () {
 		console.log('-- STARTING Piscine Alertes Server Events --');
 		piscineAlertesEvent.start();
 		fetch('/setPiscine?action=setActivePage&page=alertes', {method: 'POST'});
-		// Pas d'appel direct à initPageAlertes() ici : la connexion SSE qu'on vient de
-		// démarrer n'est pas forcément établie côté serveur au moment où la réponse
-		// arriverait, et la diffusion serait perdue pour cette connexion (constaté :
-		// état pas à jour tant qu'on ne rechargeait pas complètement la page). On ne
-		// compte que sur le "hello!" envoyé par le serveur une fois la connexion
-		// réellement active (même pattern que piscineParametres.js).
+		// Appel direct ET déclencheur "hello!" (onMessage plus bas) : on avait tenté de
+		// retirer cet appel direct en pariant uniquement sur le "hello!" pour éviter une
+		// éventuelle race SSE, mais ça s'est révélé pire — le "hello!" ne se déclenchait
+		// pas du tout dans ce contexte (aucun log InitPageAlertes constaté côté serveur).
+		// On revient à un double appel (idempotent, sans risque) plutôt que de ne compter
+		// sur un seul mécanisme non fiable.
+		initPageAlertes();
 	});
 	$(document).on('pagebeforehide', '#pagePiscineAlertes', function(){
 		console.log('-- STOPPING Piscine Alertes Server Events --');
