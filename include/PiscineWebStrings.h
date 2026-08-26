@@ -18,6 +18,7 @@
 const char STR_MODE_AUTO[] PROGMEM = "Mode Automatique";
 const char STR_MODE_MANUEL[] PROGMEM = "Mode Manuel";
 const char STR_PP_FOR[] PROGMEM = " PP for ";
+const char STR_PP_PAC[] PROGMEM = "Pompe principale controlee par la PAC";
 const char STR_PH_MINUS_FOR[] PROGMEM = ", PH- for ";
 const char STR_PH_PLUS_FOR[] PROGMEM = ", PH+ for ";
 const char STR_CL_FOR[] PROGMEM = ", CL for ";

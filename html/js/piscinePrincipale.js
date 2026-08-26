@@ -393,7 +393,7 @@
 							voletSWVal = 1;
 						}	
 					}
-					// PP/PH/CL/P3 : -2=invalidée (OFF + croix), -1=manuel forcé (ON), 0=off, >0=durée en cours (ON).
+					// PH/CL/P3 : -2=invalidée (OFF + croix), -1=manuel forcé (ON), 0=off, >0=durée en cours (ON).
 					// Un simple test "!= 0" allumait la LED pour -2 (invalidée) — corrigé, et la LED distingue
 					// maintenant visuellement "invalidée" (croix rouge) d'un simple "off" normal.
 					function setPumpLed(led, value){
@@ -406,8 +406,16 @@
 							$led.removeClass('ledOff ledInvalid').addClass('ledOn');
 						}
 					}
+					// PP (pompe principale) n'a pas de notion d'"invalidée" ici : -2=forcée (manuel ou PAC
+					// autonome), -3=forcée par la PAC hors créneau normal — les deux sont bien "en marche",
+					// contrairement à -2 pour les pompes doseuses. Seul 0 est réellement "off".
 					if(returnedData.hasOwnProperty('PP')){
-						setPumpLed('#PPLed', returnedData.PP);
+						var $ppLed = $('#PPLed');
+						if(returnedData.PP == 0){
+							$ppLed.removeClass('ledOn ledInvalid').addClass('ledOff');
+						} else {
+							$ppLed.removeClass('ledOff ledInvalid').addClass('ledOn');
+						}
 					}
 					if(returnedData.hasOwnProperty('PAC')){
 						if(returnedData.PAC == 0) {

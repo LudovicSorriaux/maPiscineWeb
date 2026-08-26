@@ -370,6 +370,12 @@ void PiscineWebClass::_migratePasswords() {
                         strcat(strTempo3, temp);
                     }
                     jsonRoot["ligne3"] = strTempo3;
+                } else if (piscineParams[IND_PP].valeur == -3) {
+                    // PAC autonome pilote la pompe hors créneau normal de filtration : l'écran restait
+                    // muet auparavant (-3 ne passe pas le test "> 0"), alors qu'il se passe bien quelque
+                    // chose — indique-le explicitement plutôt que de ne rien afficher.
+                    strcpy_P(strTempo3, STR_PP_PAC);
+                    jsonRoot["ligne3"] = strTempo3;
                 }
             } else {                                            // mode manu
                 strcpy_P(strTempo1, STR_MODE_MANUEL);
