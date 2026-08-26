@@ -280,9 +280,11 @@
 
 		// --- Bandeau d'alerte : décodage local du masque IND_Alerte reçu du contrôleur ---
 		// bit1=inondation, bit2=flux, bit3=PAC, bit4=pH vide, bit5=CL vide, bit6=ALG vide,
-		// bit7=fenêtre de filtration trop courte. Ordre = priorité d'affichage (bit1 en premier).
+		// bit7=fenêtre de filtration trop courte, bit8=sonde pH/Redox figée. Ordre = priorité
+		// d'affichage (bit1 en premier).
 		var ALERT_LABELS = ["Inondation", "Absence de flux d'eau", "Problème PAC", "Plus de pH+",
-		                     "Plus de chlore", "Plus de produit pompe 3", "Fenêtre de filtration trop courte"];
+		                     "Plus de chlore", "Plus de produit pompe 3", "Fenêtre de filtration trop courte",
+		                     "Sonde pH/Redox figée ou illisible"];
 
 		function updateAlertBanner(valAlert){
 			if(!valAlert || valAlert === 0){

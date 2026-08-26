@@ -1,5 +1,5 @@
-// Page Alertes : état des 7 alertes (masque IND_Alerte, bit0=Inondation..bit6=Fenêtre filtration)
-// + interrupteurs de surveillance (6 des 7 types, la fenêtre de filtration est informative seule).
+// Page Alertes : état des 8 alertes (masque IND_Alerte, bit0=Inondation..bit7=Sonde figée)
+// + interrupteurs de surveillance (6 des 8 types, fenêtre de filtration et sonde figée sont informatives seules).
 
 $(document).delegate("#pagePiscineAlertes", "pagebeforecreate", function () {
 
@@ -11,14 +11,16 @@ $(document).delegate("#pagePiscineAlertes", "pagebeforecreate", function () {
 		{ ledId:'#alertLed3', badgeId:'#alertBadge3', switchId:'#invNivPHSW',  inputId:'#invNivPHSWitch',  param:'nivPH' },
 		{ ledId:'#alertLed4', badgeId:'#alertBadge4', switchId:'#invNivCLSW',  inputId:'#invNivCLSWitch',  param:'nivCL' },
 		{ ledId:'#alertLed5', badgeId:'#alertBadge5', switchId:'#invNivALGSW', inputId:'#invNivALGSWitch', param:'nivALG' },
-		{ ledId:'#alertLed6', badgeId:'#alertBadge6', switchId:null,           inputId:null,               param:null }
+		{ ledId:'#alertLed6', badgeId:'#alertBadge6', switchId:null,           inputId:null,               param:null },
+		{ ledId:'#alertLed7', badgeId:'#alertBadge7', switchId:null,           inputId:null,               param:null }
 	];
 	var ALERT_LABELS = ["Inondation", "Absence de flux d'eau", "Problème PAC", "Plus de pH+",
-	                     "Plus de chlore", "Plus de produit pompe 3", "Fenêtre de filtration trop courte"];
+	                     "Plus de chlore", "Plus de produit pompe 3", "Fenêtre de filtration trop courte",
+	                     "Sonde pH/Redox figée ou illisible"];
 
 	var currentAlertMask = 0;
-	var invalidState = [false,false,false,false,false,false,false];   // true = ignorée (interrupteur off)
-	var switchToServer = [true,true,true,true,true,true,true];        // anti-écho, un par ligne
+	var invalidState = [false,false,false,false,false,false,false,false];   // true = ignorée (interrupteur off)
+	var switchToServer = [true,true,true,true,true,true,true,true];         // anti-écho, un par ligne
 
 	// Applique classes + checked directement (pas de .click() simulé) : évite le risque de flag
 	// anti-écho bloqué constaté ailleurs dans l'appli quand le sync et le clic utilisateur interagissent.
