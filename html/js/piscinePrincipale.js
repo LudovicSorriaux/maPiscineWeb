@@ -1,7 +1,7 @@
 	// page PiscinePrincipale create inits
 	$(document).delegate("#pagePiscinePrincipale", "pagebeforecreate", function () {
 	//$( document ).on('pagecreate','#pagePiscinePrincipale',function() {		// depricated
-		$('.screenOutput').empty().append(
+		$('#pagePiscinePrincipale .screenOutput').empty().append(
 			'<h4 class="screenTextTitle"> Piscine Manager' + (APP_VERSION ? ' <span class="fwVersionTag">'+APP_VERSION+'</span>' : '') + '</h4>' +
 			'<P class="screenTextStatus">Connexion en cours…</P>' +
 			'<P class="screenTextLine"></P>'
@@ -134,12 +134,12 @@
 
 		$('#powerSW').click( function () {
 			if (power == false) {										// then power on
-				$('.screenOutput').removeClass('screenOff').addClass('screenOn');
+				$('#pagePiscinePrincipale .screenOutput').removeClass('screenOff').addClass('screenOn');
 				$('.screenFrame').removeClass('displayOff').addClass('displayOn');
 				piscineEvent.start();
 				power = true;
 			} else {													// then power off
-				$('.screenOutput').removeClass('screenOn').addClass('screenOff');
+				$('#pagePiscinePrincipale .screenOutput').removeClass('screenOn').addClass('screenOff');
 				$('.screenFrame').removeClass('displayOn').addClass('displayOff');
 				$('#lampeLed').removeClass('ledOn').addClass('ledOff');
 				$('#voletLed').removeClass('ledOn').addClass('ledOff');
@@ -484,18 +484,18 @@
 						}
 					}
 					if(returnedData.hasOwnProperty('Alerte')){										// mode Alerte 
-						$('.screenOutput').empty();
+						$('#pagePiscinePrincipale .screenOutput').empty();
 						var wordDiv = '<h4 class="screenTextTitle"> Piscine Manager' + (APP_VERSION ? ' <span class="fwVersionTag">'+APP_VERSION+'</span>' : '') + '</h4>'+
 						'<P class="screenTextStatus" id="alertMsg">' + EcranLigne1 +'</P>'+
 						'<P class="screenTextLine">' + EcranLigne2 + '<BR>' + EcranLigne3 +'</P>';
-						$('.screenOutput').append(wordDiv).trigger( "create" );
+						$('#pagePiscinePrincipale .screenOutput').append(wordDiv).trigger( "create" );
 						blink('#alertMsg');
 					} else {																		// mode normal Auto ou manuel	
-						$('.screenOutput').empty();
+						$('#pagePiscinePrincipale .screenOutput').empty();
 						var wordDiv = '<h4 class="screenTextTitle"> Piscine Manager' + (APP_VERSION ? ' <span class="fwVersionTag">'+APP_VERSION+'</span>' : '') + '</h4>'+
 						'<P class="screenTextStatus">' + EcranLigne1 +'</P>'+
 						'<P class="screenTextLine">' + EcranLigne2 + '<BR>' + EcranLigne3 +'</P>';
-						$('.screenOutput').append(wordDiv).trigger( "create" );
+						$('#pagePiscinePrincipale .screenOutput').append(wordDiv).trigger( "create" );
 					}
 				}	
 			}

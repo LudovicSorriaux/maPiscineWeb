@@ -1,4 +1,10 @@
 // page PiscineDebug — logs temps réel via SSE
+// Titre + version : statique, indépendant du widget LCD de la page Accueil (qui utilisait
+// un sélecteur jQuery non scopé $('.screenOutput') affectant par erreur cette page aussi).
+fetch('/api/info').then(function(r){ return r.json(); }).then(function(d){
+    if(d.version) $('#debugFwVersionTag').text(d.version);
+}).catch(function(){});
+
 var debugLogEl = null;
 var debugLineCount = 0;
 var piscineDebugEvent = null;

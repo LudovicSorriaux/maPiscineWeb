@@ -468,6 +468,10 @@ form .error {
 #pagePiscineDebug .screenPieceDebug {
     overflow: auto;
 }
+#pagePiscineDebug .debugScreenTitle {
+    font-size: 0.9em;
+    margin: 0.3em 0;
+}
 #pagePiscineDebug #debugLogContainer {
     font-family: 'Courier New', monospace;
     font-size: 0.72em;
