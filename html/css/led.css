@@ -157,23 +157,22 @@
       animation:         blink .5s infinite;
 }
 
-/* LED invalidée (pompe désactivée/invalide, distincte d'un simple "off") : teinte la bille de LED en
-   rouge façon panneau d'interdiction, tout en conservant son relief/brillance (.led, .ledOff restent
-   pleinement appliqués, pas de disque plat qui les masquerait) ; la croix blanche épaisse est dessinée
-   en transparence par-dessus (pas de fond plein), donc le verre bombé reste visible. */
+/* LED invalidée (pompe désactivée/invalide, distincte d'un simple "off") : façon panneau "sens interdit"
+   (disque rouge + barre blanche), en gardant le relief/brillance de la LED (.led, .ledOff restent
+   pleinement appliqués, pas de disque plat qui les masquerait). Une seule barre plutôt qu'une croix :
+   reste lisible même en tout petit. */
 .ledInvalid {
     background: #7a0e1a !important;
 }
 .ledInvalid::after {
     content: '';
     position: absolute;
-    top: 12%;
-    left: 12%;
-    width: 76%;
-    height: 76%;
-    background:
-        linear-gradient(45deg, transparent 40%, #fff 40%, #fff 60%, transparent 60%),
-        linear-gradient(135deg, transparent 40%, #fff 40%, #fff 60%, transparent 60%);
+    top: 42%;
+    left: 10%;
+    width: 80%;
+    height: 16%;
+    background: #fff;
+    border-radius: 2px;
     filter: drop-shadow(0 0 1.5px rgba(0,0,0,.9));
     pointer-events: none;
 }
