@@ -163,11 +163,18 @@
    reste lisible même en tout petit. */
 .ledInvalid {
     background: #e10600 !important;
+    color: #e10600 !important;
     /* .led applique mix-blend-mode:hard-light, qui fond une couleur sombre comme
        celle-ci dans le panneau sombre derrière (elle devient quasi invisible).
        Les LED normales utilisent des teintes vives qui survivent au blend ; on
        désactive donc le blend ici pour que le fond rouge reste bien visible. */
     mix-blend-mode: normal !important;
+    /* .ledOff (toujours présente en même temps que .ledInvalid) ajoute de lourdes
+       ombres internes sombres qui donnent l'aspect "éteint" — elles écrasaient le
+       rouge en un brun terne. On reprend plutôt le halo extérieur de .ledOn
+       (sans couleur explicite = utilise `color` ci-dessus) pour un rendu vif. */
+    border: 0 !important;
+    box-shadow: 0 0 4px 2px !important;
 }
 .ledInvalid::after {
     content: '';

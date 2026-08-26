@@ -3321,10 +3321,14 @@ const char UPLOAD_HTML[] PROGMEM = R"rawliteral(
         function uploadSingleFile(file, path, adminPassword, targetFs, onProgress) {
             return new Promise((resolve, reject) => {
                 const formData = new FormData();
-                formData.append('file', file);
+                // IMPORTANT: 'path'/'fs' doivent précéder 'file' dans le multipart. Le
+                // serveur lit ces paramètres dès le premier chunk du champ fichier ; s'ils
+                // arrivent après, ils ne sont pas encore parsés (upload silencieusement
+                // redirigé vers la destination par défaut).
                 formData.append('path', path);
                 formData.append('fs', targetFs);
                 formData.append('adminPassword', adminPassword);
+                formData.append('file', file);
 
                 const xhr = new XMLHttpRequest();
                 
