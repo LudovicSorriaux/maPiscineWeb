@@ -1074,11 +1074,19 @@ form .error {
 }
 
 /* --- Page Alertes : une ligne par type d'alerte (LED + badge + interrupteur) --- */
+/* Liste scrollable : sur 8 lignes, le contenu dépasse l'écran en mobile portrait.
+   Le panneau défile sur lui-même (bannière + bouton "Acquitter tout" restent visibles
+   au-dessus), le reste de la page garde son overflow:hidden habituel. */
+#pagePiscineAlertes .ledpanel {
+    max-height: 62vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
 .alertRow {
     display: flex;
     flex-direction: column;
-    gap: 0.4em;
-    padding: 0.7em 0.5em;
+    gap: 0.25em;
+    padding: 0.45em 0.5em;
     border-bottom: 1px solid #00000055;
 }
 .alertRow:last-child {
@@ -1108,7 +1116,7 @@ form .error {
 .alertRow-bottom {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     padding-left: 1.9em;
 }
 .alertRow-switchlabel {

@@ -38,6 +38,8 @@ $(document).delegate("#pagePiscineAlertes", "pagebeforecreate", function () {
 		$sw.find("input").prop('checked', checked);
 	}
 
+	// LED : vert fixe = surveillée/OK, rouge clignotant = alerte active, rouge barré = ignorée.
+	// (avant : simplement éteinte quand OK — passage au vert testé à la demande, réversible.)
 	function renderRow(bit){
 		var row = ALERT_ROWS[bit];
 		var $led = $(row.ledId);
@@ -45,14 +47,14 @@ $(document).delegate("#pagePiscineAlertes", "pagebeforecreate", function () {
 		var active = (currentAlertMask & (1 << bit)) !== 0;
 
 		if(invalidState[bit]){
-			$led.removeClass('ledOn blink').addClass('ledOff ledInvalid');
+			$led.removeClass('ledOn blink ledVert').addClass('ledRouge ledOff ledInvalid');
 			$badge.removeClass('ok bad').addClass('ignored').text('IGNORÉE');
 		} else if(active){
-			$led.removeClass('ledOff ledInvalid').addClass('ledOn blink');
+			$led.removeClass('ledOff ledInvalid ledVert').addClass('ledRouge ledOn blink');
 			$badge.removeClass('ok ignored').addClass('bad').text('ALERTE');
 		} else {
-			$led.removeClass('ledOn blink ledInvalid').addClass('ledOff');
-			$badge.removeClass('bad ignored').addClass('ok').text('OK');
+			$led.removeClass('ledOff ledInvalid blink ledRouge').addClass('ledVert ledOn');
+			$badge.removeClass('bad ignored').addClass('ok').text('Surveillée');
 		}
 	}
 
@@ -162,7 +164,12 @@ $(document).delegate("#pagePiscineAlertes", "pagebeforecreate", function () {
 		console.log('-- STARTING Piscine Alertes Server Events --');
 		piscineAlertesEvent.start();
 		fetch('/setPiscine?action=setActivePage&page=alertes', {method: 'POST'});
-		initPageAlertes();
+		// Pas d'appel direct à initPageAlertes() ici : la connexion SSE qu'on vient de
+		// démarrer n'est pas forcément établie côté serveur au moment où la réponse
+		// arriverait, et la diffusion serait perdue pour cette connexion (constaté :
+		// état pas à jour tant qu'on ne rechargeait pas complètement la page). On ne
+		// compte que sur le "hello!" envoyé par le serveur une fois la connexion
+		// réellement active (même pattern que piscineParametres.js).
 	});
 	$(document).on('pagebeforehide', '#pagePiscineAlertes', function(){
 		console.log('-- STOPPING Piscine Alertes Server Events --');
