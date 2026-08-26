@@ -128,7 +128,7 @@ void PiscineWebClass::_migratePasswords() {
             MDNSAppels = 120;          // every minute
         }
     //    sendNewParams();              // for debuging
-        if(currentPage == PAGE_PRICIPALE || currentPage == PAGE_PARAMETRES) {          // in page principal or in page param
+        if(currentPage == PAGE_PRICIPALE || currentPage == PAGE_PARAMETRES || currentPage == PAGE_ALERTES) {          // in page principal, param ou alertes
             sendNewParamsPiscine();
         }
         if( currentPage == PAGE_DEBUG ) {          // in page debug
