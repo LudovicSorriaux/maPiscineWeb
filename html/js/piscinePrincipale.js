@@ -2,15 +2,17 @@
 	$(document).delegate("#pagePiscinePrincipale", "pagebeforecreate", function () {
 	//$( document ).on('pagecreate','#pagePiscinePrincipale',function() {		// depricated
 		$('.screenOutput').empty().append(
-			'<h4 class="screenTextTitle"> Piscine Manager</h4>' +
-			'<P class="screenTextStatus">' + APP_VERSION + '</P>' +
-			'<P class="screenTextLine">Connexion en cours…</P>'
+			'<h4 class="screenTextTitle"> Piscine Manager' + (APP_VERSION ? ' <span class="fwVersionTag">'+APP_VERSION+'</span>' : '') + '</h4>' +
+			'<P class="screenTextStatus">Connexion en cours…</P>' +
+			'<P class="screenTextLine"></P>'
 		).trigger('create');
+		// Version affichée en permanence à côté du titre (uniquement ici, page Accueil) — le
+		// contrôleur est l'unique source de vérité (/api/info relaie ce qu'il a reçu via
+		// IND_FWVersion). APP_VERSION est relue à chaque reconstruction du titre ci-dessous
+		// (mode Alerte / mode normal), donc une fois cette requête résolue elle apparaît au
+		// prochain event SSE sans code supplémentaire.
 		fetch('/api/info').then(function(r){ return r.json(); }).then(function(d){
-			if(d.version) {
-				APP_VERSION = d.version;
-				$('.screenOutput .screenTextStatus').text(d.version);
-			}
+			if(d.version) APP_VERSION = d.version;
 		}).catch(function(){});
 
 		var power = true;
@@ -483,14 +485,14 @@
 					}
 					if(returnedData.hasOwnProperty('Alerte')){										// mode Alerte 
 						$('.screenOutput').empty();
-						var wordDiv = '<h4 class="screenTextTitle"> Piscine Manager</h4>'+
+						var wordDiv = '<h4 class="screenTextTitle"> Piscine Manager' + (APP_VERSION ? ' <span class="fwVersionTag">'+APP_VERSION+'</span>' : '') + '</h4>'+
 						'<P class="screenTextStatus" id="alertMsg">' + EcranLigne1 +'</P>'+
 						'<P class="screenTextLine">' + EcranLigne2 + '<BR>' + EcranLigne3 +'</P>';
 						$('.screenOutput').append(wordDiv).trigger( "create" );
 						blink('#alertMsg');
 					} else {																		// mode normal Auto ou manuel	
 						$('.screenOutput').empty();
-						var wordDiv = '<h4 class="screenTextTitle"> Piscine Manager</h4>'+
+						var wordDiv = '<h4 class="screenTextTitle"> Piscine Manager' + (APP_VERSION ? ' <span class="fwVersionTag">'+APP_VERSION+'</span>' : '') + '</h4>'+
 						'<P class="screenTextStatus">' + EcranLigne1 +'</P>'+
 						'<P class="screenTextLine">' + EcranLigne2 + '<BR>' + EcranLigne3 +'</P>';
 						$('.screenOutput').append(wordDiv).trigger( "create" );

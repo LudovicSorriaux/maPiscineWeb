@@ -1,8 +1,10 @@
 
 // Global functions and variables
 
-var APP_VERSION = 'v4.5.6';
-console.log('[VERSION] piscineScripts ' + APP_VERSION);
+// Plus de constante figée ici : le contrôleur est l'unique source de vérité pour la version
+// (voir /api/info et FW_VERSION_ENCODED côté contrôleur). Remplie par piscinePrincipale.js
+// dès que /api/info répond, affichée uniquement sur le LCD virtuel de la page Accueil.
+var APP_VERSION = '';
 
 var maPiscine = maPiscine || {};
 
@@ -652,16 +654,4 @@ $(document).on('pagecreate', detectLayout);
 
 // Détection initiale
 detectLayout();
-
-// Affiche la version firmware (petit texte à côté de "Piscine Manager" sur chaque page).
-// Redemandée à chaque changement de page plutôt qu'une seule fois au chargement : l'ESP8266
-// peut occasionnellement refuser une requête sous charge (constaté ce soir), et une seule
-// tentative sans retry laissait le texte vide pour le reste de la session en cas d'échec.
-function refreshFwVersionTag(){
-  fetch('/api/info').then(function(r){ return r.json(); }).then(function(info){
-    if(info.version) $('.fwVersionTag').text(info.version);
-  }).catch(function(){});
-}
-$(document).on('pagebeforeshow', refreshFwVersionTag);
-refreshFwVersionTag();
 
