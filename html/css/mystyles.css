@@ -1078,7 +1078,7 @@ form .error {
    Le panneau défile sur lui-même (bannière + bouton "Acquitter tout" restent visibles
    au-dessus), le reste de la page garde son overflow:hidden habituel. */
 #pagePiscineAlertes .ledpanel {
-    max-height: 62vh;
+    max-height: 72vh;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }

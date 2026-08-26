@@ -193,6 +193,12 @@
     background:SpringGreen;
     color:SpringGreen;
 }
+/* Vert plus sombre/moins criant que .ledVert — utilisé pour l'état "Surveillée" de la
+   page Alertes, où .ledVert (SpringGreen) était jugé trop vif pour un état "tout va bien". */
+.ledVertSombre {
+    background:#2f9e44;
+    color:#2f9e44;
+}
 .ledCyan {
     background:Cyan;
     color:Cyan;

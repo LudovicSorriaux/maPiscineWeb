@@ -1485,6 +1485,14 @@ void PiscineWebClass::_migratePasswords() {
         char jsonBuffAlertes[256];
         JsonDocument piscineAlertesEventsJson;
 
+        // Les invalidations ne sont resynchronisées depuis le contrôleur qu'au boot/reconnexion
+        // ICSC ou toutes les heures (refreshData périodique) — le cache local piscineParams[]
+        // peut donc être périmé par rapport à l'état réel (NVS) si une invalidation a eu lieu
+        // entre-temps sans écho reçu. On redemande explicitement une resynchro 'critique' (qui
+        // couvre les indices d'alertes) à chaque ouverture de la page ; la réponse arrivera dans
+        // les tout prochains cycles et sera poussée par le flux SSE normal de la page Alertes.
+        webTelecom.sendAskSyncMess('C');
+
         for(int x:piscineAlertesSet){
             piscineAlertesEventsJson[getIndexNameF(x)] = piscineParams[x].valeur;
         }

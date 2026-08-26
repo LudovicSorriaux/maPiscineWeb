@@ -47,13 +47,13 @@ $(document).delegate("#pagePiscineAlertes", "pagebeforecreate", function () {
 		var active = (currentAlertMask & (1 << bit)) !== 0;
 
 		if(invalidState[bit]){
-			$led.removeClass('ledOn blink ledVert').addClass('ledRouge ledOff ledInvalid');
+			$led.removeClass('ledOn blink ledVertSombre').addClass('ledRouge ledOff ledInvalid');
 			$badge.removeClass('ok bad').addClass('ignored').text('IGNORÉE');
 		} else if(active){
-			$led.removeClass('ledOff ledInvalid ledVert').addClass('ledRouge ledOn blink');
+			$led.removeClass('ledOff ledInvalid ledVertSombre').addClass('ledRouge ledOn blink');
 			$badge.removeClass('ok ignored').addClass('bad').text('ALERTE');
 		} else {
-			$led.removeClass('ledOff ledInvalid blink ledRouge').addClass('ledVert ledOn');
+			$led.removeClass('ledOff ledInvalid blink ledRouge').addClass('ledVertSombre ledOn');
 			$badge.removeClass('bad ignored').addClass('ok').text('Surveillée');
 		}
 	}
