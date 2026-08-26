@@ -157,22 +157,23 @@
       animation:         blink .5s infinite;
 }
 
-/* Croix rouge par-dessus une LED invalidée (pompe désactivée/invalide, distincte d'un simple "off") */
+/* Croix rouge épaisse par-dessus une LED invalidée (pompe désactivée/invalide, distincte d'un simple
+   "off") : dessinée en CSS pur (pas un glyphe de police, trop fin) sur un disque clair pour garder un
+   fort contraste quelle que soit la couleur/l'état de la LED en dessous — repère visible au premier
+   coup d'œil, type pictogramme "interdit". */
 .ledInvalid::after {
-    content: '✕';
+    content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: .7em;
-    font-weight: bold;
-    line-height: 1em;
-    color: #ef4655;
-    text-shadow: 0 0 3px rgba(0,0,0,.85), 0 0 1px #fff;
+    top: 8%;
+    left: 8%;
+    width: 84%;
+    height: 84%;
+    border-radius: 50%;
+    background:
+        linear-gradient(45deg, transparent 38%, #d9052a 38%, #d9052a 62%, transparent 62%),
+        linear-gradient(135deg, transparent 38%, #d9052a 38%, #d9052a 62%, transparent 62%),
+        #f4f4f4;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.6), 0 1px 2px rgba(0,0,0,.7);
     pointer-events: none;
 }
 
