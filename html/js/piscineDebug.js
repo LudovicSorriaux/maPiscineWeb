@@ -146,6 +146,11 @@ $(document).on("pagebeforeshow", "#pagePiscineDebug", function () {
     debugLogEl = null;    // sera défini dans pageshow quand le DOM est attaché
     debugQueue = [];
     if (piscineDebugEvent) piscineDebugEvent.start();
+    // Appel direct EN PLUS du déclencheur "hello!" (onMessage plus haut) : le "hello!" s'est
+    // révélé peu fiable dans ce contexte (même constat que la page Alertes) — sans lui,
+    // currentPage ne passe jamais à PAGE_DEBUG côté serveur et manageDebugLCD() ne pousse
+    // jamais rien, d'où l'écran resté vide malgré une connexion SSE ouverte avec succès.
+    debugActivate();
     showToast("Mise à jour temps réel des logs activée", 'info');
 });
 
