@@ -376,6 +376,24 @@ void PiscineWebClass::_migratePasswords() {
                     // chose — indique-le explicitement plutôt que de ne rien afficher.
                     strcpy_P(strTempo3, STR_PP_PAC);
                     jsonRoot["ligne3"] = strTempo3;
+                } else if (piscineParams[IND_PP].valeur == 0) {
+                    // Filtration à l'arrêt : aucune mesure en cours (IND_PHVal/IND_RedoxVal sont à 0,
+                    // les gauges affichent "---"). On affiche ici la dernière valeur réellement
+                    // mesurée avant l'arrêt (jamais remise à 0, contrairement à IND_PHVal/IND_RedoxVal)
+                    // pour que l'utilisateur garde une idée de l'état de son bassin.
+                    if(lastPHVal != 0 || lastRedoxVal != 0){
+                        char temp[48];
+                        strcpy(strTempo3, "Derniere mesure: ");
+                        if(lastPHVal != 0){
+                            snprintf(temp, sizeof(temp), "pH %.1f (%dh%02d) ", lastPHVal/100.0f, lastPHTime/60, lastPHTime%60);
+                            strcat(strTempo3, temp);
+                        }
+                        if(lastRedoxVal != 0){
+                            snprintf(temp, sizeof(temp), "Redox %d (%dh%02d)", lastRedoxVal, lastRedoxTime/60, lastRedoxTime%60);
+                            strcat(strTempo3, temp);
+                        }
+                        jsonRoot["ligne3"] = strTempo3;
+                    }
                 }
             } else {                                            // mode manu
                 strcpy_P(strTempo1, STR_MODE_MANUEL);

@@ -19,6 +19,10 @@
 // reçue dans fwVersionEncoded (PiscineWebActionControler.cpp). Ça évite la dérive constatée
 // (cette constante restait à "v4.5.6" alors que les tags étaient déjà à v4.6.6).
 extern uint16_t fwVersionEncoded;   // 0 = pas encore reçu du contrôleur
+extern int16_t lastPHVal;      // dernière valeur pH connue (x100), 0 = jamais reçue
+extern int16_t lastRedoxVal;   // dernière valeur redox connue (mV), 0 = jamais reçue
+extern int16_t lastPHTime;     // heure de cette mesure (HH*60+MM)
+extern int16_t lastRedoxTime;  // heure de cette mesure (HH*60+MM)
 
 #define lowByte(w) ((uint8_t) ((w) & 0xff))
 #define highByte(w) ((uint8_t) ((w) >> 8))
@@ -128,6 +132,14 @@ extern uint16_t fwVersionEncoded;   // 0 = pas encore reçu du contrôleur
     #define IND_PageSlider 72
     #define IND_PageWeb 73
     #define IND_FWVersion 74       // version firmware encodée par le contrôleur (major<<12|minor<<6|patch)
+
+    // Dernières valeurs pH/Redox mesurées + heure (HH*60+MM), jamais remises à 0 à l'arrêt de
+    // la filtration (contrairement à IND_PHVal/IND_RedoxVal) — pour afficher "dernière mesure
+    // connue" pendant un arrêt sans laisser croire à une lecture live.
+    #define IND_LastPHVal 75
+    #define IND_LastRedoxVal 76
+    #define IND_LastPHTime 77
+    #define IND_LastRedoxTime 78
 
     #define IND_RefreshCriticalValues 80
     #define IND_Clavier 81

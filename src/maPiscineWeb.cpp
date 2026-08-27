@@ -64,6 +64,10 @@
     const uint8_t SDchipSelect = D8;
     int8_t wifi_status = 0;    // 0: off; 1: ON; -1: blink 3 times, -2 blink fast for ever, -3 blink slow for ever
     uint16_t fwVersionEncoded = 0;   // reçu du contrôleur (IND_FWVersion) — 0 tant que pas encore reçu
+    int16_t lastPHVal = 0;
+    int16_t lastRedoxVal = 0;
+    int16_t lastPHTime = 0;
+    int16_t lastRedoxTime = 0;
     const char* mdnsName = "mapiscine"; 			// Domain name for the mDNS responder
 
 

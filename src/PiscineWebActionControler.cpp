@@ -191,6 +191,22 @@
               fwVersionEncoded = (uint16_t)valeur;
             break;
 
+          // Dernière valeur pH/Redox connue + heure — jamais remise à 0 à l'arrêt de la
+          // filtration côté contrôleur (contrairement à IND_PHVal/IND_RedoxVal), pour
+          // afficher "dernière mesure" sur le LCD virtuel accueil pendant un arrêt.
+          case IND_LastPHVal :
+              lastPHVal = valeur;
+            break;
+          case IND_LastRedoxVal :
+              lastRedoxVal = valeur;
+            break;
+          case IND_LastPHTime :
+              lastPHTime = valeur;
+            break;
+          case IND_LastRedoxTime :
+              lastRedoxTime = valeur;
+            break;
+
           case IND_Debug :      // 1 is true: set debug true, 0 is set to false
               (valeur == 1) ? debug = true : debug = false;
             break;
