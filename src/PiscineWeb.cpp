@@ -35,68 +35,67 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
 /**
  * @brief Démarrage complet du serveur web : Charge sessions SD, appelle startServer() (routes AsyncWebServer) et startMDNS() (mDNS responder piscine.local)
  */
-// ─── Hash SHA-256 + sel (BearSSL, ESP8266) ────────────────────────────────────
-
-// Format stocké : "SSSSSSSS:HHHH...H" (8 hex sel + ':' + 64 hex SHA-256 = 73 chars + '\0')
-void PiscineWebClass::_hashPassword(const char* plain, char* out, size_t outLen) {
-    if (!plain || !out || outLen < MAX_PW_HASH_SIZE) return;
-    uint32_t r = (uint32_t)micros() ^ ((uint32_t)random() << 8) ^ ((uint32_t)millis() << 16);
-    char salt[9]; snprintf(salt, sizeof(salt), "%08X", r);
-    char input[9 + MAX_USERNAME_SIZE + 1];
-    snprintf(input, sizeof(input), "%s%s", salt, plain);
-    br_sha256_context ctx;
-    br_sha256_init(&ctx);
-    br_sha256_update(&ctx, input, strlen(input));
-    uint8_t hash[32]; br_sha256_out(&ctx, hash);
-    snprintf(out, outLen, "%s:", salt);
-    char* p = out + 9;
-    for (int i = 0; i < 32; i++, p += 2) snprintf(p, 3, "%02X", hash[i]);
-}
-
-bool PiscineWebClass::_checkPassword(const char* stored, const char* entered) {
-    if (!stored || !entered) return false;
-    size_t len = strlen(stored);
-    if (len == 73 && stored[8] == ':') {
-        char salt[9]; strncpy(salt, stored, 8); salt[8] = '\0';
+    // ─── Hash SHA-256 + sel (BearSSL, ESP8266) ────────────────────────────────────
+    // Format stocké : "SSSSSSSS:HHHH...H" (8 hex sel + ':' + 64 hex SHA-256 = 73 chars + '\0')
+    void PiscineWebClass::_hashPassword(const char* plain, char* out, size_t outLen) {
+        if (!plain || !out || outLen < MAX_PW_HASH_SIZE) return;
+        uint32_t r = (uint32_t)micros() ^ ((uint32_t)random() << 8) ^ ((uint32_t)millis() << 16);
+        char salt[9]; snprintf(salt, sizeof(salt), "%08X", r);
         char input[9 + MAX_USERNAME_SIZE + 1];
-        snprintf(input, sizeof(input), "%s%s", salt, entered);
+        snprintf(input, sizeof(input), "%s%s", salt, plain);
         br_sha256_context ctx;
         br_sha256_init(&ctx);
         br_sha256_update(&ctx, input, strlen(input));
         uint8_t hash[32]; br_sha256_out(&ctx, hash);
-        char computed[65]; char* p = computed;
+        snprintf(out, outLen, "%s:", salt);
+        char* p = out + 9;
         for (int i = 0; i < 32; i++, p += 2) snprintf(p, 3, "%02X", hash[i]);
-        return strncmp(stored + 9, computed, 64) == 0;
     }
-    return strcmp(stored, entered) == 0;  // fallback plaintext (avant migration)
-}
 
-// Hash les mots de passe plaintext présents en mémoire au démarrage, sauvegarde le résultat
-void PiscineWebClass::_migratePasswords() {
-    bool changed = false;
-    auto needsMigration = [](const char* s) {
-        size_t l = strlen(s); return l > 0 && !(l == 73 && s[8] == ':');
-    };
-    if (needsMigration(config.adminPassword)) {
-        char plain[MAX_USERNAME_SIZE];
-        strlcpy(plain, config.adminPassword, MAX_USERNAME_SIZE);
-        _hashPassword(plain, config.adminPassword, MAX_PW_HASH_SIZE);
-        changed = true;
+    bool PiscineWebClass::_checkPassword(const char* stored, const char* entered) {
+        if (!stored || !entered) return false;
+        size_t len = strlen(stored);
+        if (len == 73 && stored[8] == ':') {
+            char salt[9]; strncpy(salt, stored, 8); salt[8] = '\0';
+            char input[9 + MAX_USERNAME_SIZE + 1];
+            snprintf(input, sizeof(input), "%s%s", salt, entered);
+            br_sha256_context ctx;
+            br_sha256_init(&ctx);
+            br_sha256_update(&ctx, input, strlen(input));
+            uint8_t hash[32]; br_sha256_out(&ctx, hash);
+            char computed[65]; char* p = computed;
+            for (int i = 0; i < 32; i++, p += 2) snprintf(p, 3, "%02X", hash[i]);
+            return strncmp(stored + 9, computed, 64) == 0;
+        }
+        return strcmp(stored, entered) == 0;  // fallback plaintext (avant migration)
     }
-    for (int i = 0; i < MAX_USERS; i++) {
-        if (config.users[i].user[0] == 0) continue;
-        if (needsMigration(config.users[i].user_passwd)) {
+
+    // Hash les mots de passe plaintext présents en mémoire au démarrage, sauvegarde le résultat
+    void PiscineWebClass::_migratePasswords() {
+        bool changed = false;
+        auto needsMigration = [](const char* s) {
+            size_t l = strlen(s); return l > 0 && !(l == 73 && s[8] == ':');
+        };
+        if (needsMigration(config.adminPassword)) {
             char plain[MAX_USERNAME_SIZE];
-            strlcpy(plain, config.users[i].user_passwd, MAX_USERNAME_SIZE);
-            _hashPassword(plain, config.users[i].user_passwd, MAX_PW_HASH_SIZE);
+            strlcpy(plain, config.adminPassword, MAX_USERNAME_SIZE);
+            _hashPassword(plain, config.adminPassword, MAX_PW_HASH_SIZE);
             changed = true;
         }
+        for (int i = 0; i < MAX_USERS; i++) {
+            if (config.users[i].user[0] == 0) continue;
+            if (needsMigration(config.users[i].user_passwd)) {
+                char plain[MAX_USERNAME_SIZE];
+                strlcpy(plain, config.users[i].user_passwd, MAX_USERNAME_SIZE);
+                _hashPassword(plain, config.users[i].user_passwd, MAX_PW_HASH_SIZE);
+                changed = true;
+            }
+        }
+        if (changed) {
+            saveConfiguration();
+            logger.println(F("[AUTH] Passwords migrated to SHA-256"));
+        }
     }
-    if (changed) {
-        saveConfiguration();
-        logger.println(F("[AUTH] Passwords migrated to SHA-256"));
-    }
-}
 
     void PiscineWebClass::startup(){
       logger.println("[WEB] maPiscineWeb Startup ... ");
@@ -673,7 +672,8 @@ void PiscineWebClass::_migratePasswords() {
                 request->send(400, "text/plain", F("Action manquante"));
             }
         });
-/*        server.on("/logon", HTTP_POST, [this](AsyncWebServerRequest *request){ handleLogin(request); }); 			  
+/*
+        server.on("/logon", HTTP_POST, [this](AsyncWebServerRequest *request){ handleLogin(request); }); 			  
         server.on("/register", HTTP_POST, [this](AsyncWebServerRequest *request){ handleRegister(request); }); 	
         server.on("/changeAdmin", HTTP_POST, [this](AsyncWebServerRequest *request){ handleChangAdminPW(request); }); 	
         server.on("/userProfile", HTTP_POST, [this](AsyncWebServerRequest *request){ handleUserProfile(request); });  
@@ -714,14 +714,6 @@ void PiscineWebClass::_migratePasswords() {
             }
         });
 
-/*
-        server.on("/setPiscinePagePrincip", HTTP_POST, [this](AsyncWebServerRequest *request){ handleInitPiscinePP(request); }); 
-        server.on("/setPiscinePageParams", HTTP_POST, [this](AsyncWebServerRequest *request){ handleInitPiscinePParams(request); }); 
-        server.on("/setPiscineParam", HTTP_POST, [this](AsyncWebServerRequest *request){ handlePiscineParams(request); }); 
-        server.on("/setPiscineDebug", HTTP_POST, [this](AsyncWebServerRequest *request){ handlePiscinePageDebug(request); }); 
-        server.on("/setPiscineMaintenance", HTTP_POST, [this](AsyncWebServerRequest *request){ handlePiscinePageMaintenance(request); }); 
-        server.on("/setPiscineInitMaintenance", HTTP_POST, [this](AsyncWebServerRequest *request){ handleInitPiscinePageMaintenance(request); }); 
-*/
             // ---------- Routeur ------
         server.on("/setRouteurInfo", HTTP_POST, [this](AsyncWebServerRequest *request){ handleRouteurInfo(request); }); 
 
@@ -738,31 +730,6 @@ void PiscineWebClass::_migratePasswords() {
             client->send("hello! PiscineEvents Ready", NULL, millis(), 10000);  // send message "hello!", id current millis and set reconnect delay to 1 second
         });
         server.addHandler(&piscineEvents);
-
-/*      piscineParamsEvents.onConnect([](AsyncEventSourceClient *client){
-            if(client->lastId()){
-            logger.printf("[WEB] Client reconnected! Last message ID: %u\n", client->lastId());
-            }
-            client->send("hello! PiscineParamsEvents Ready", NULL, millis(), 10000);
-        });
-        piscineDebugEvents.onConnect([](AsyncEventSourceClient *client){
-            if(client->lastId()){
-                logger.printf("[WEB] Client reconnected! Last message ID: %u\n", client->lastId());
-            }
-            logger.setDebugMessage(true);
-            client->send("hello! piscineDebugEvents Ready", NULL, millis(), 10000);
-        });
-        piscineMaintenanceEvents.onConnect([](AsyncEventSourceClient *client){
-            if(client->lastId()){
-                logger.printf("[WEB] Client reconnected! Last message ID: %u\n", client->lastId());
-            }
-            client->send("hello! piscineMaintenanceEvents Ready", NULL, millis(), 10000);
-        });
-
-        server.addHandler(&piscineParamsEvents);
-        server.addHandler(&piscineDebugEvents);
-        server.addHandler(&piscineMaintenanceEvents);
-*/
 
     // --- 3. FICHIERS STATIQUES (L'ordre est important !) ---
         server.serveStatic("/images", LittleFS, "/html/images/").setCacheControl("max-age=86400");
@@ -819,68 +786,105 @@ void PiscineWebClass::_migratePasswords() {
         server.onNotFound([this](AsyncWebServerRequest *request){ handleOtherFiles(request); });           			  // When a client requests an unknown URI (i.e. something other than "/"), call function handleNotFound"
     
     // Endpoint pour lister le contenu d'un répertoire
-    server.on("/listdir", HTTP_GET, [this](AsyncWebServerRequest *request) {
-        if (!request->hasParam("adminPassword") || !request->hasParam("path")) {
-            request->send(400, "application/json", "{\"error\":\"Missing parameters\"}");
-            return;
-        }
-        
-        char adminPwd[11];
-        request->getParam("adminPassword")->value().toCharArray(adminPwd, 11);
-        if (!_checkPassword(config.adminPassword, adminPwd)) {
-            logger.print("[LISTDIR] ❌ Mot de passe incorrect\n");
-            request->send(403, "application/json", "{\"error\":\"Invalid password\"}");
-            return;
-        }
-        
-        String dirPath = request->getParam("path")->value();
-        logger.printf("[LISTDIR] Lecture répertoire: %s\n", dirPath.c_str());
-        
-        File dir = SD.open(dirPath);
-        if (!dir) {
-            logger.printf("[LISTDIR] ❌ Répertoire introuvable: %s\n", dirPath.c_str());
-            request->send(404, "application/json", "{\"error\":\"Directory not found\"}");
-            return;
-        }
-        
-        if (!dir.isDirectory()) {
-            logger.printf("[LISTDIR] ❌ Chemin n'est pas un répertoire: %s\n", dirPath.c_str());
-            dir.close();
-            request->send(400, "application/json", "{\"error\":\"Path is not a directory\"}");
-            return;
-        }
-        
-        String json = "{\"files\":[";
-        bool first = true;
-        int fileCount = 0;
-        
-        File file = dir.openNextFile();
-        while (file) {
-            if (!first) json += ",";
-            
-            String fileName = String(file.name());
-            // Extraire seulement le nom de fichier sans le chemin complet
-            int lastSlash = fileName.lastIndexOf('/');
-            if (lastSlash >= 0) {
-                fileName = fileName.substring(lastSlash + 1);
+        server.on("/listdir", HTTP_GET, [this](AsyncWebServerRequest *request) {
+            if (!request->hasParam("adminPassword") || !request->hasParam("path")) {
+                request->send(400, "application/json", "{\"error\":\"Missing parameters\"}");
+                return;
             }
             
-            json += "{\"name\":\"" + fileName + "\",\"size\":" + String(file.size());
-            json += ",\"date\":" + String(file.getLastWrite());
-            json += ",\"isDir\":" + String(file.isDirectory() ? "true" : "false") + "}";
+            char adminPwd[11];
+            request->getParam("adminPassword")->value().toCharArray(adminPwd, 11);
+            if (!_checkPassword(config.adminPassword, adminPwd)) {
+                logger.print("[LISTDIR] ❌ Mot de passe incorrect\n");
+                request->send(403, "application/json", "{\"error\":\"Invalid password\"}");
+                return;
+            }
             
-            first = false;
-            fileCount++;
-            file.close();
-            file = dir.openNextFile();
-        }
-        json += "]}";
-        dir.close();
-        
-        logger.printf("[LISTDIR] ✅ Répertoire lu: %d fichier(s) trouvé(s)\n", fileCount);
-        request->send(200, "application/json", json);
-    });
-    
+            String dirPath = request->getParam("path")->value();
+            logger.printf("[LISTDIR] Lecture répertoire: %s\n", dirPath.c_str());
+            
+            File dir = SD.open(dirPath);
+            if (!dir) {
+                logger.printf("[LISTDIR] ❌ Répertoire introuvable: %s\n", dirPath.c_str());
+                request->send(404, "application/json", "{\"error\":\"Directory not found\"}");
+                return;
+            }
+            
+            if (!dir.isDirectory()) {
+                logger.printf("[LISTDIR] ❌ Chemin n'est pas un répertoire: %s\n", dirPath.c_str());
+                dir.close();
+                request->send(400, "application/json", "{\"error\":\"Path is not a directory\"}");
+                return;
+            }
+            
+            String json = "{\"files\":[";
+            bool first = true;
+            int fileCount = 0;
+            
+            File file = dir.openNextFile();
+            while (file) {
+                if (!first) json += ",";
+                
+                String fileName = String(file.name());
+                // Extraire seulement le nom de fichier sans le chemin complet
+                int lastSlash = fileName.lastIndexOf('/');
+                if (lastSlash >= 0) {
+                    fileName = fileName.substring(lastSlash + 1);
+                }
+                
+                json += "{\"name\":\"" + fileName + "\",\"size\":" + String(file.size());
+                json += ",\"date\":" + String(file.getLastWrite());
+                json += ",\"isDir\":" + String(file.isDirectory() ? "true" : "false") + "}";
+                
+                first = false;
+                fileCount++;
+                file.close();
+                file = dir.openNextFile();
+            }
+            json += "]}";
+            dir.close();
+            
+            logger.printf("[LISTDIR] ✅ Répertoire lu: %d fichier(s) trouvé(s)\n", fileCount);
+            request->send(200, "application/json", json);
+        });
+
+    // Endpoint pour télécharger un fichier depuis la carte SD (logs, graphs, etc.)
+        server.on("/download", HTTP_GET, [this](AsyncWebServerRequest *request) {
+            if (!request->hasParam("adminPassword") || !request->hasParam("path")) {
+                request->send(400, "text/plain", "Missing parameters");
+                return;
+            }
+
+            char adminPwd[11];
+            request->getParam("adminPassword")->value().toCharArray(adminPwd, 11);
+            if (!_checkPassword(config.adminPassword, adminPwd)) {
+                logger.print("[DOWNLOAD] ❌ Mot de passe incorrect\n");
+                request->send(403, "text/plain", "Invalid password");
+                return;
+            }
+
+            String filePath = request->getParam("path")->value();
+            logger.printf("[DOWNLOAD] Requête fichier: %s\n", filePath.c_str());
+
+            if (!SD.exists(filePath)) {
+                logger.printf("[DOWNLOAD] ❌ Fichier introuvable: %s\n", filePath.c_str());
+                request->send(404, "text/plain", "File not found");
+                return;
+            }
+
+            File f = SD.open(filePath, FILE_READ);
+            if (!f || f.isDirectory()) {
+                if (f) f.close();
+                logger.printf("[DOWNLOAD] ❌ Chemin n'est pas un fichier: %s\n", filePath.c_str());
+                request->send(400, "text/plain", "Not a file");
+                return;
+            }
+            f.close();
+
+            logger.printf("[DOWNLOAD] ✅ Envoi fichier: %s\n", filePath.c_str());
+            request->send(SDFS, filePath, "application/octet-stream", true);
+        });
+
     // --- 5. DÉMARRAGE ---
         server.begin();                             			  // start the HTTP server
         logger.print("[WEB] HTTP server started, IP address: ");
@@ -3152,7 +3156,7 @@ const char UPLOAD_HTML[] PROGMEM = R"rawliteral(
 </head>
 <body>
     <div class="container">
-        <h1>📤 Upload Fichiers</h1>
+        <h1>📤📥 Upload / Download Fichiers</h1>
         
         <div class="upload-form">
             <label for="adminPassword">Mot de passe administrateur :</label>
@@ -3185,7 +3189,7 @@ const char UPLOAD_HTML[] PROGMEM = R"rawliteral(
         <div class="message" id="message"></div>
 
         <div class="info" id="dirListing">
-            <strong>📂 Contenu du répertoire (carte SD uniquement) :</strong>
+            <strong>📂 Contenu du répertoire (carte SD uniquement) — cliquez sur "télécharger" pour un fichier :</strong>
             <div id="fileListingBefore" style="margin-top: 10px; font-family: monospace; font-size: 12px;">
                 Sélectionnez un répertoire pour voir son contenu
             </div>
@@ -3236,7 +3240,12 @@ const char UPLOAD_HTML[] PROGMEM = R"rawliteral(
                             data.files.map(f => {
                                 const sizeKB = (f.size / 1024).toFixed(1);
                                 const dateStr = f.date ? formatDate(f.date) : 'N/A';
-                                return `• ${f.name} <span style="color: #90CAF9;">(${sizeKB} KB - ${dateStr})</span>`;
+                                if (f.isDir) {
+                                    return `• 📁 ${f.name} <span style="color: #90CAF9;">(${dateStr})</span>`;
+                                }
+                                const downloadUrl = `/download?path=${encodeURIComponent(dirPath + f.name)}&adminPassword=${encodeURIComponent(adminPassword)}`;
+                                return `• ${f.name} <span style="color: #90CAF9;">(${sizeKB} KB - ${dateStr})</span> ` +
+                                    `<a href="${downloadUrl}" style="color:#FFEB3B;text-decoration:none;">⬇ télécharger</a>`;
                             }).join('<br>');
                     } else {
                         listing.innerHTML = `<strong>📂 ${dirPath}</strong><br><em>Répertoire vide</em>`;
