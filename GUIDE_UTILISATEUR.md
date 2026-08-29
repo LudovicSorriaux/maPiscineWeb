@@ -73,7 +73,16 @@ Un bouton présent dans la bannière permet d'**acquitter** l'alerte (reconnaît
 
 Certaines alertes peuvent être désactivées individuellement depuis la page Paramètres (par exemple si vous n'utilisez pas de capteur de débit) — ce réglage change ce qui est surveillé, il ne doit pas être confondu avec l'acquittement d'une alerte déjà déclenchée.
 
-## 7. Dépannage courant
+## 7. Récupérer des fichiers (page technique `/upload`)
+
+Une page technique, séparée de l'application principale, permet de gérer les fichiers stockés sur le boîtier — notamment les fichiers de log (relevés quotidiens, moyennes, alertes) enregistrés sur la carte SD. Elle est réservée à un usage avancé (mise à jour de fichiers, récupération de logs pour analyse) et n'est pas accessible depuis le menu de l'application.
+
+- **Accès** : ouvrez `http://mapiscine.local/upload`. Un mot de passe **administrateur** est demandé (différent, le cas échéant, de votre mot de passe utilisateur habituel) — sans lui, aucune action n'est possible.
+- **Consulter le contenu d'un dossier** : une fois le mot de passe saisi, indiquez un chemin (par exemple `/log/2026/logs/aout/`) dans le champ prévu — le contenu du dossier s'affiche automatiquement en dessous, avec la taille et la date de chaque fichier.
+- **Télécharger un fichier** : à côté de chaque fichier listé, un lien **⬇ télécharger** déclenche son enregistrement directement dans votre navigateur, comme n'importe quel téléchargement classique — pratique pour récupérer un log et l'ouvrir dans un tableur.
+- **Envoyer un fichier** (mise à jour) : à réserver aux personnes qui savent ce qu'elles font, cette même page permet aussi d'envoyer un fichier vers le boîtier ; une mauvaise manipulation ici peut rendre l'application inaccessible.
+
+## 8. Dépannage courant
 
 **L'application n'affiche aucune donnée ou reste bloquée sur "connexion..."**
 Vérifiez que votre appareil est bien connecté au WiFi de la maison, ou que la connexion Internet fonctionne si vous êtes à l'extérieur. Rechargez la page.
