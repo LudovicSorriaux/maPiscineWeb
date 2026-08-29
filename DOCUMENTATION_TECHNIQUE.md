@@ -126,8 +126,9 @@ Chaque tentative pilote une LED d'état via `IND_BlinkWifiLed` (0=off, 1=on, -1=
 | POST | `/api/graph/plan` | `handleGraphPlan` | Étape 1 du système graphique "chunké" |
 | GET | `/api/graph/file-info` | `handleGraphFileInfo` | Étape 2 |
 | GET | `/api/graph/chunk` | `handleGraphChunk` | Étape 3 |
-| GET/POST | `/upload` | page HTML + `handleFileUpload` | Upload de fichiers vers la **carte SD**, protégé par `adminPassword` |
+| GET/POST | `/upload` | page HTML + `handleFileUpload` | Upload de fichiers vers **LittleFS** ou la **carte SD** (paramètre `fs`), protégé par `adminPassword`, avec listing/téléchargement intégrés |
 | GET | `/listdir` | lambda | Liste un répertoire SD, protégé par `adminPassword` + `path` |
+| GET | `/download` | lambda | Télécharge un fichier depuis la carte SD (`path`), protégé par `adminPassword` |
 | notFound | * | `handleOtherFiles` | Sert un fichier statique LittleFS quelconque, 404 sinon |
 | static | `/images/*`, `/*` | `serveStatic` LittleFS `/html` | Cache-Control 24h |
 | SSE | `/piscineEvents` | `AsyncEventSource` | Flux unique (voir §4.5) |
@@ -208,7 +209,9 @@ Ce module **ne fait aucun décodage/traitement** de cette valeur : elle est reç
 ### 4.7 Fichiers statiques et upload
 
 - **Fichiers web statiques → LittleFS** (`handleFileRead`, préfixe `/html`) : cherche d'abord `<chemin>.lgz` (gzip pré-compressé par Gulp), sinon sert le fichier brut. `Cache-Control: max-age=86400`.
-- **Upload / listing de répertoire → carte SD** (`handleFileUpload`, `/upload`, `/listdir`), protégés par le paramètre `adminPassword` comparé via `_checkPassword()`.
+- **Upload / listing / téléchargement de répertoire → carte SD** (`handleFileUpload`, `/upload`, `/listdir`, `/download`), protégés par le paramètre `adminPassword` comparé via `_checkPassword()`.
+- **`GET /download?path=<chemin>&adminPassword=<pwd>`** : vérifie le mot de passe puis l'existence du fichier sur `SD` (`SD.exists`/`SD.open` en lecture pour rejeter un répertoire), puis sert le contenu via `request->send(SDFS, filePath, "application/octet-stream", true)` (le dernier paramètre `download=true` force l'en-tête `Content-Disposition: attachment`). Utilise l'objet global `SDFS` (`fs::FS`, déclaré dans `SDFS.h`) plutôt que `SD` (`SDClass`) car `AsyncWebServerRequest::send(FS&, ...)` exige un vrai `fs::FS` — `SDClass` n'en hérite pas sur ce framework ESP8266, seul le wrapper `SDFS` sous-jacent le fait. Réponse streamée directement depuis la carte SD, sans double-buffering en RAM (important pour les gros fichiers de log).
+- Page HTML `/upload` (PROGMEM, `UPLOAD_HTML`) : formulaire d'upload (LittleFS ou SD, multi-fichiers) + panneau "contenu du répertoire" alimenté par `/listdir`, chaque fichier listé (non-dossier) portant désormais un lien `<a href="/download?...">⬇ télécharger</a>` qui déclenche le téléchargement navigateur nativement (le mot de passe admin est passé en query string, cohérent avec `/listdir`).
 - 404 : tente `/404.html` (LittleFS) puis fallback sur une page HTML embarquée en PROGMEM dans le firmware si absente.
 
 ## 5. Protocole ICSC côté web
@@ -371,7 +374,7 @@ Double stockage client : cookie `maPiscine` (le `sessID`) + `localStorage["maPis
 | Support | Contenu |
 |---|---|
 | **LittleFS** | Fichiers web statiques (`/html/*.lgz`), configuration (`/cfg/piscine.cfg`), tampons de logs (`/buf/log_buf.log`, `/buf/alert_buf.log`) avant flush SD |
-| **Carte SD** (CS = `D8`, FAT) | Logs journaliers (`/log/{année}/logs/{mois}/...`), logs de moyennes horaires (`...-Moy.log`), logs d'alertes/debug (`/log/{année}/alerts/Alerts-{mois}.log`), sessions actives (`/sessions.json`), fichiers uploadés via `/upload` |
+| **Carte SD** (CS = `D8`, FAT) | Logs journaliers (`/log/{année}/logs/{mois}/...`), logs de moyennes horaires (`...-Moy.log`), logs d'alertes/debug (`/log/{année}/alerts/Alerts-{mois}.log`), sessions actives (`/sessions.json`), fichiers uploadés via `/upload`, téléchargeables via `/download` |
 
 `startSD()` retente 3 fois (`SD.begin()`) avec 500 ms d'attente entre essais ; en cas d'échec, `cardPresent=false` et le logger bascule en mode "tampon LittleFS uniquement" (voir §9 Logger ci-dessous). `checkSD()` retente ensuite le montage à chaque flush (toutes les 15 min) tant que la carte reste absente, et recrée l'arborescence `/log/` dès qu'elle est (re)détectée.
 
