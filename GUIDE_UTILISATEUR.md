@@ -73,14 +73,21 @@ Un bouton présent dans la bannière permet d'**acquitter** l'alerte (reconnaît
 
 Certaines alertes peuvent être désactivées individuellement depuis la page Paramètres (par exemple si vous n'utilisez pas de capteur de débit) — ce réglage change ce qui est surveillé, il ne doit pas être confondu avec l'acquittement d'une alerte déjà déclenchée.
 
-## 7. Récupérer des fichiers (page technique `/upload`)
+## 7. Récupérer ou envoyer des fichiers (pages techniques)
 
-Une page technique, séparée de l'application principale, permet de gérer les fichiers stockés sur le boîtier — notamment les fichiers de log (relevés quotidiens, moyennes, alertes) enregistrés sur la carte SD. Elle est réservée à un usage avancé (mise à jour de fichiers, récupération de logs pour analyse) et n'est pas accessible depuis le menu de l'application.
+Deux pages techniques, séparées de l'application principale et non accessibles depuis son menu, permettent de gérer les fichiers stockés sur le boîtier — notamment les fichiers de log (relevés quotidiens, moyennes, alertes) enregistrés sur la carte SD. Elles sont réservées à un usage avancé.
 
-- **Accès** : ouvrez `http://mapiscine.local/upload`. Un mot de passe **administrateur** est demandé (différent, le cas échéant, de votre mot de passe utilisateur habituel) — sans lui, aucune action n'est possible.
-- **Consulter le contenu d'un dossier** : une fois le mot de passe saisi, indiquez un chemin (par exemple `/log/2026/logs/aout/`) dans le champ prévu — le contenu du dossier s'affiche automatiquement en dessous, avec la taille et la date de chaque fichier.
-- **Télécharger un fichier** : à côté de chaque fichier listé, un lien **⬇ télécharger** déclenche son enregistrement directement dans votre navigateur, comme n'importe quel téléchargement classique — pratique pour récupérer un log et l'ouvrir dans un tableur.
-- **Envoyer un fichier** (mise à jour) : à réserver aux personnes qui savent ce qu'elles font, cette même page permet aussi d'envoyer un fichier vers le boîtier ; une mauvaise manipulation ici peut rendre l'application inaccessible.
+### 7.1 Télécharger des fichiers — `http://mapiscine.local/download`
+
+C'est la page à utiliser pour **récupérer** un fichier (par exemple un log à ouvrir dans un tableur) :
+
+- **Accès** : ouvrez `http://mapiscine.local/download`. Un mot de passe **administrateur** est demandé (différent, le cas échéant, de votre mot de passe utilisateur habituel) — sans lui, aucune action n'est possible.
+- **Consulter le contenu d'un dossier** : saisissez le mot de passe, indiquez un chemin (par exemple `/log/2026/logs/aout/`) dans le champ prévu, puis cliquez sur "Actualiser la liste" — le contenu du dossier s'affiche avec la taille et la date de chaque fichier.
+- **Télécharger un fichier** : à côté de chaque fichier listé, un bouton **⬇ Télécharger** déclenche son enregistrement directement dans votre navigateur, comme n'importe quel téléchargement classique.
+
+### 7.2 Envoyer / mettre à jour des fichiers — `http://mapiscine.local/upload`
+
+Cette page sert à **envoyer** un fichier vers le boîtier (mise à jour) — à réserver aux personnes qui savent ce qu'elles font, une mauvaise manipulation ici peut rendre l'application inaccessible. Elle affiche également le contenu d'un dossier de la même façon que la page de téléchargement, avec un lien direct vers celle-ci si vous souhaitez seulement récupérer un fichier plutôt qu'en envoyer un.
 
 ## 8. Dépannage courant
 

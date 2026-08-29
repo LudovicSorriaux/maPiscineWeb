@@ -848,10 +848,11 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
             request->send(200, "application/json", json);
         });
 
-    // Endpoint pour télécharger un fichier depuis la carte SD (logs, graphs, etc.)
+    // Page de téléchargement (accessible via /download?adminPassword=xxx) + téléchargement effectif d'un fichier (?path=...)
         server.on("/download", HTTP_GET, [this](AsyncWebServerRequest *request) {
-            if (!request->hasParam("adminPassword") || !request->hasParam("path")) {
-                request->send(400, "text/plain", "Missing parameters");
+            if (!request->hasParam("adminPassword")) {
+                request->send(401, "text/plain", "Accès refusé : paramètre adminPassword manquant");
+                logger.println("[DOWNLOAD] ❌ Tentative d'accès sans adminPassword");
                 return;
             }
 
@@ -860,6 +861,13 @@ const char PiscineWebClass::piscineFolder[] PROGMEM = "/html";
             if (!_checkPassword(config.adminPassword, adminPwd)) {
                 logger.print("[DOWNLOAD] ❌ Mot de passe incorrect\n");
                 request->send(403, "text/plain", "Invalid password");
+                return;
+            }
+
+            // Pas de fichier demandé : afficher la page de navigation/téléchargement
+            if (!request->hasParam("path")) {
+                logger.println("[DOWNLOAD] ✓ Accès autorisé à la page de téléchargement");
+                handleDownloadPage(request);
                 return;
             }
 
@@ -3195,10 +3203,16 @@ const char UPLOAD_HTML[] PROGMEM = R"rawliteral(
             </div>
         </div>
 
+        <a href="/download" id="gotoDownloadLink" class="back-link">📥 Page de téléchargement dédiée</a>
         <a href="/" class="back-link">← Retour à l'accueil</a>
     </div>
 
     <script>
+        // Garde le mot de passe déjà saisi lors du passage vers la page de téléchargement dédiée
+        document.getElementById('adminPassword').addEventListener('input', function() {
+            const link = document.getElementById('gotoDownloadLink');
+            link.href = this.value ? `/download?adminPassword=${encodeURIComponent(this.value)}` : '/download';
+        });
         // Affiche la liste des fichiers sélectionnés (sans modifier le chemin)
         document.getElementById('fileInput').addEventListener('change', (e) => {
             const fileList = document.getElementById('fileList');
@@ -3422,12 +3436,276 @@ const char UPLOAD_HTML[] PROGMEM = R"rawliteral(
 </html>
 )rawliteral";
 
+// HTML de la page de téléchargement dédiée (PROGMEM pour économiser RAM)
+const char DOWNLOAD_HTML[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Téléchargement Fichiers SD - Piscine</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+        .container {
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .upload-form {
+            background: rgba(255,255,255,0.2);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255,255,255,0.9);
+            color: #333;
+            box-sizing: border-box;
+        }
+        input[type="password"] {
+            font-size: 18px;
+            letter-spacing: 2px;
+        }
+        small {
+            display: block;
+            margin-top: -10px;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        button:hover { background: #45a049; }
+        .message {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+            white-space: pre-line;
+            text-align: left;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .error {
+            background: rgba(244, 67, 54, 0.3);
+            border: 2px solid #f44336;
+            display: block;
+        }
+        .info {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        .info strong { display: block; margin-bottom: 10px; }
+        .file-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+        }
+        .file-row:last-child { border-bottom: none; }
+        .file-name { font-family: monospace; font-size: 13px; }
+        .file-meta { font-size: 11px; color: #90CAF9; }
+        .dl-btn {
+            background: #2196F3;
+            color: white;
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: bold;
+            white-space: nowrap;
+            margin-left: 10px;
+        }
+        .dl-btn:hover { background: #1976D2; }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .back-link:hover { background: rgba(255,255,255,0.3); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📥 Téléchargement Fichiers</h1>
+
+        <div class="upload-form">
+            <label for="adminPassword">Mot de passe administrateur :</label>
+            <input type="password" id="adminPassword" placeholder="Mot de passe admin" autocomplete="current-password">
+            <small style="color: #ffeb3b; display: block; margin-bottom: 15px;">⚠️ Requis pour lister et télécharger des fichiers</small>
+
+            <label for="dirPath">Répertoire à consulter (carte SD, ex: /log/2026/logs/aout/):</label>
+            <input type="text" id="dirPath" value="/log/" placeholder="/log/">
+
+            <button id="refreshBtn" onclick="refreshListing()">Actualiser la liste</button>
+        </div>
+
+        <div class="message" id="message"></div>
+
+        <div class="info" id="dirListing">
+            <strong>📂 Contenu du répertoire :</strong>
+            <div id="fileListingBefore" style="margin-top: 10px;">
+                Saisissez le mot de passe et un chemin pour voir son contenu
+            </div>
+        </div>
+
+        <a href="/upload" id="gotoUploadLink" class="back-link">📤 Page d'upload</a>
+        <a href="/" class="back-link">← Retour à l'accueil</a>
+    </div>
+
+    <script>
+        // Pré-remplissage depuis le paramètre ?adminPassword= éventuel (venant de la page upload)
+        (function() {
+            const params = new URLSearchParams(window.location.search);
+            const pwd = params.get('adminPassword');
+            if (pwd) {
+                document.getElementById('adminPassword').value = pwd;
+            }
+        })();
+
+        function formatDate(timestamp) {
+            const date = new Date(timestamp * 1000);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${day}/${month}/${year} ${hours}:${minutes}`;
+        }
+
+        function showMessage(text, type) {
+            const message = document.getElementById('message');
+            message.textContent = text;
+            message.className = 'message ' + type;
+            message.style.display = 'block';
+        }
+
+        async function refreshListing() {
+            const dirPath = document.getElementById('dirPath').value;
+            const adminPassword = document.getElementById('adminPassword').value;
+            const listing = document.getElementById('fileListingBefore');
+
+            if (!adminPassword) {
+                showMessage('⚠️ Mot de passe administrateur requis', 'error');
+                return;
+            }
+            if (!dirPath || !dirPath.endsWith('/')) {
+                showMessage('⚠️ Le chemin doit être un répertoire terminé par /', 'error');
+                return;
+            }
+            message_hide();
+
+            try {
+                const response = await fetch(`/listdir?path=${encodeURIComponent(dirPath)}&adminPassword=${encodeURIComponent(adminPassword)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.files && data.files.length > 0) {
+                        listing.innerHTML = `<strong style="display:block;margin-bottom:10px;">📂 ${dirPath}</strong>` +
+                            data.files.map(f => {
+                                if (f.isDir) {
+                                    return `<div class="file-row"><span class="file-name">📁 ${f.name}</span><span class="file-meta">${formatDate(f.date)}</span></div>`;
+                                }
+                                const sizeKB = (f.size / 1024).toFixed(1);
+                                const downloadUrl = `/download?path=${encodeURIComponent(dirPath + f.name)}&adminPassword=${encodeURIComponent(adminPassword)}`;
+                                return `<div class="file-row">` +
+                                    `<span><span class="file-name">${f.name}</span><br><span class="file-meta">${sizeKB} KB - ${formatDate(f.date)}</span></span>` +
+                                    `<a class="dl-btn" href="${downloadUrl}">⬇ Télécharger</a>` +
+                                    `</div>`;
+                            }).join('');
+                    } else {
+                        listing.innerHTML = `<strong>📂 ${dirPath}</strong><br><em>Répertoire vide</em>`;
+                    }
+                } else if (response.status === 403) {
+                    showMessage('⚠️ Mot de passe incorrect', 'error');
+                } else {
+                    showMessage('⚠️ Répertoire introuvable', 'error');
+                }
+            } catch (e) {
+                showMessage('⚠️ Erreur réseau', 'error');
+            }
+        }
+
+        function message_hide() {
+            document.getElementById('message').style.display = 'none';
+        }
+
+        // Garde le mot de passe déjà saisi lors du passage vers la page d'upload
+        document.getElementById('adminPassword').addEventListener('input', function() {
+            const link = document.getElementById('gotoUploadLink');
+            link.href = this.value ? `/upload?adminPassword=${encodeURIComponent(this.value)}` : '/upload';
+        });
+
+        // Actualisation automatique si mot de passe déjà pré-rempli (venant de /upload)
+        window.addEventListener('load', function() {
+            if (document.getElementById('adminPassword').value) {
+                refreshListing();
+            }
+        });
+
+        document.getElementById('dirPath').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') refreshListing();
+        });
+    </script>
+</body>
+</html>
+)rawliteral";
+
 /**
  * @brief Page HTML d'upload de fichiers vers la carte SD
  * @param request Requête HTTP AsyncWebServer
  */
 void PiscineWebClass::handleUploadPage(AsyncWebServerRequest *request) {
     request->send_P(200, "text/html", UPLOAD_HTML);
+}
+
+/**
+ * @brief Page HTML dédiée à la navigation/téléchargement de fichiers depuis la carte SD
+ * @param request Requête HTTP AsyncWebServer
+ */
+void PiscineWebClass::handleDownloadPage(AsyncWebServerRequest *request) {
+    request->send_P(200, "text/html", DOWNLOAD_HTML);
 }
 
 /**

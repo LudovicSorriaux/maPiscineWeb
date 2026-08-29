@@ -126,9 +126,9 @@ Chaque tentative pilote une LED d'état via `IND_BlinkWifiLed` (0=off, 1=on, -1=
 | POST | `/api/graph/plan` | `handleGraphPlan` | Étape 1 du système graphique "chunké" |
 | GET | `/api/graph/file-info` | `handleGraphFileInfo` | Étape 2 |
 | GET | `/api/graph/chunk` | `handleGraphChunk` | Étape 3 |
-| GET/POST | `/upload` | page HTML + `handleFileUpload` | Upload de fichiers vers **LittleFS** ou la **carte SD** (paramètre `fs`), protégé par `adminPassword`, avec listing/téléchargement intégrés |
+| GET/POST | `/upload` | page HTML (`UPLOAD_HTML`) + `handleFileUpload` | Upload de fichiers vers **LittleFS** ou la **carte SD** (paramètre `fs`), protégé par `adminPassword`, avec listing de répertoire intégré |
 | GET | `/listdir` | lambda | Liste un répertoire SD, protégé par `adminPassword` + `path` |
-| GET | `/download` | lambda | Télécharge un fichier depuis la carte SD (`path`), protégé par `adminPassword` |
+| GET | `/download` | page HTML (`DOWNLOAD_HTML`, `handleDownloadPage`) + streaming fichier | Sans `path` : page dédiée de navigation/téléchargement. Avec `path` : télécharge le fichier SD correspondant (`Content-Disposition: attachment`). Protégé par `adminPassword` dans les deux cas |
 | notFound | * | `handleOtherFiles` | Sert un fichier statique LittleFS quelconque, 404 sinon |
 | static | `/images/*`, `/*` | `serveStatic` LittleFS `/html` | Cache-Control 24h |
 | SSE | `/piscineEvents` | `AsyncEventSource` | Flux unique (voir §4.5) |
@@ -210,8 +210,12 @@ Ce module **ne fait aucun décodage/traitement** de cette valeur : elle est reç
 
 - **Fichiers web statiques → LittleFS** (`handleFileRead`, préfixe `/html`) : cherche d'abord `<chemin>.lgz` (gzip pré-compressé par Gulp), sinon sert le fichier brut. `Cache-Control: max-age=86400`.
 - **Upload / listing / téléchargement de répertoire → carte SD** (`handleFileUpload`, `/upload`, `/listdir`, `/download`), protégés par le paramètre `adminPassword` comparé via `_checkPassword()`.
-- **`GET /download?path=<chemin>&adminPassword=<pwd>`** : vérifie le mot de passe puis l'existence du fichier sur `SD` (`SD.exists`/`SD.open` en lecture pour rejeter un répertoire), puis sert le contenu via `request->send(SDFS, filePath, "application/octet-stream", true)` (le dernier paramètre `download=true` force l'en-tête `Content-Disposition: attachment`). Utilise l'objet global `SDFS` (`fs::FS`, déclaré dans `SDFS.h`) plutôt que `SD` (`SDClass`) car `AsyncWebServerRequest::send(FS&, ...)` exige un vrai `fs::FS` — `SDClass` n'en hérite pas sur ce framework ESP8266, seul le wrapper `SDFS` sous-jacent le fait. Réponse streamée directement depuis la carte SD, sans double-buffering en RAM (important pour les gros fichiers de log).
-- Page HTML `/upload` (PROGMEM, `UPLOAD_HTML`) : formulaire d'upload (LittleFS ou SD, multi-fichiers) + panneau "contenu du répertoire" alimenté par `/listdir`, chaque fichier listé (non-dossier) portant désormais un lien `<a href="/download?...">⬇ télécharger</a>` qui déclenche le téléchargement navigateur nativement (le mot de passe admin est passé en query string, cohérent avec `/listdir`).
+- **`GET /download`** : un seul handler `server.on("/download", HTTP_GET, ...)` couvre deux cas, distingués par la présence du paramètre `path` (même logique que `/upload` GET vs POST) :
+  - **sans `path`** (juste `?adminPassword=<pwd>`) : sert `DOWNLOAD_HTML` via `handleDownloadPage()`, la page dédiée de navigation.
+  - **avec `path`** (`?path=<chemin>&adminPassword=<pwd>`) : vérifie l'existence du fichier sur `SD` (`SD.exists`/`SD.open` en lecture pour rejeter un répertoire), puis sert le contenu via `request->send(SDFS, filePath, "application/octet-stream", true)` (le dernier paramètre `download=true` force l'en-tête `Content-Disposition: attachment`). Utilise l'objet global `SDFS` (`fs::FS`, déclaré dans `SDFS.h`) plutôt que `SD` (`SDClass`) car `AsyncWebServerRequest::send(FS&, ...)` exige un vrai `fs::FS` — `SDClass` n'en hérite pas sur ce framework ESP8266, seul le wrapper `SDFS` sous-jacent le fait. Réponse streamée directement depuis la carte SD, sans double-buffering en RAM (important pour les gros fichiers de log).
+  Dans les deux cas, `adminPassword` est vérifié en premier via `_checkPassword()`.
+- Page HTML `/upload` (PROGMEM, `UPLOAD_HTML`) : formulaire d'upload (LittleFS ou SD, multi-fichiers) + panneau "contenu du répertoire" alimenté par `/listdir`, chaque fichier listé (non-dossier) portant un lien `<a href="/download?...">⬇ télécharger</a>`, plus un lien croisé vers `/download` (page dédiée) qui reporte le mot de passe déjà saisi.
+- Page HTML `/download` (PROGMEM, `DOWNLOAD_HTML`, `handleDownloadPage()`) : page dédiée à la consultation/téléchargement, sans formulaire d'upload — champ mot de passe + chemin de répertoire, bouton "Actualiser" qui interroge `/listdir`, chaque fichier listé affichant un bouton "⬇ Télécharger" pointant vers `/download?path=...`. Lien croisé vers `/upload`. Si arrivée avec `?adminPassword=` déjà renseigné (venant du lien croisé de la page upload), le mot de passe est pré-rempli et le listing se charge automatiquement au chargement de la page.
 - 404 : tente `/404.html` (LittleFS) puis fallback sur une page HTML embarquée en PROGMEM dans le firmware si absente.
 
 ## 5. Protocole ICSC côté web

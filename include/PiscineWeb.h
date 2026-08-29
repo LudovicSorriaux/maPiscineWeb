@@ -123,6 +123,7 @@ class PiscineWebClass {
         void handleNotFound(AsyncWebServerRequest *request); 	                    // if the requested file or page doesn't exist, return a 404 not found error
         void handleFileUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final);  // Upload de fichiers vers SD
         void handleUploadPage(AsyncWebServerRequest *request);                    // Page HTML d'upload
+        void handleDownloadPage(AsyncWebServerRequest *request);                  // Page HTML de téléchargement (navigation + liens de téléchargement)
 
             
         // --- PAGES HANDLERS ---
